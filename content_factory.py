@@ -10,7 +10,8 @@ import re
 import sys
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 import requests
 
@@ -40,6 +41,22 @@ RSS_FEEDS: dict[str, str] = {
 MAX_ARTICLES_PER_SOURCE: int = 5
 MAX_CONTENT_LENGTH: int = 8000
 REQUEST_DELAY: int = 2  # seconds - for rate limiting
+CUTOFF_DATE: datetime = datetime(2026, 1, 13, tzinfo=timezone.utc)
+
+
+def parse_date(pub_date: str) -> datetime | None:
+    """Parse RFC 2822 date string to datetime.
+
+    Args:
+        pub_date: Date string in RFC 2822 format.
+
+    Returns:
+        Parsed datetime or None if parsing fails.
+    """
+    try:
+        return parsedate_to_datetime(pub_date)
+    except (ValueError, TypeError):
+        return None
 
 
 def get_webhook_url() -> str:
@@ -93,7 +110,16 @@ def fetch_rss(url: str) -> list[dict]:
             link = re.sub(r"<!\[CDATA\[|\]\]>", "", link)
 
             if title and link:
-                items.append({"title": title, "link": link, "pub_date": pub_date})
+                # Check date filter
+                parsed_date = parse_date(pub_date)
+                if parsed_date is None:
+                    logger.warning(f"Could not parse date, processing anyway: {title}")
+                    items.append({"title": title, "link": link, "pub_date": pub_date})
+                elif parsed_date < CUTOFF_DATE:
+                    logger.info(f"Skipping old article: {title} (published {pub_date})")
+                    continue
+                else:
+                    items.append({"title": title, "link": link, "pub_date": pub_date})
 
         logger.info(f"Found {len(items)} items")
         return items
@@ -214,6 +240,7 @@ def main() -> None:
     logger.info("=" * 60)
 
     webhook_url = get_webhook_url()
+    logger.info(f"Using webhook URL: {webhook_url}")
 
     total_sent = 0
     total_failed = 0
