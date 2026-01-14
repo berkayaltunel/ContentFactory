@@ -31,17 +31,60 @@ logger = logging.getLogger(__name__)
 # ———————————————————————————————————————————————————————————————
 
 RSS_FEEDS: dict[str, str] = {
+    # ===== ŞİRKET BLOGLARI =====
     "Anthropic News": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml",
-    "Anthropic Engineering": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml",
-    "Anthropic Research": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml",
-    "OpenAI Research": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_openai_research.xml",
-    "xAI News": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_xainews.xml",
+    "Anthropic Engineering": "https://raw.githubusercontent.com/conoro/anthropic-engineering-rss-feed/main/anthropic_engineering_rss.xml",
+    "OpenAI News": "https://openai.com/news/rss.xml",
+    "Google AI Blog": "https://blog.google/technology/ai/rss/",
+    "Google Research": "https://research.google/blog/rss/",
+    "DeepMind": "https://deepmind.google/blog/rss.xml",
+    "Meta AI": "https://rsshub.app/meta/ai/blog",
+    "Hugging Face Blog": "https://huggingface.co/blog/feed.xml",
+    "LangChain": "https://blog.langchain.dev/rss/",
+    "NVIDIA AI Blog": "https://developer.nvidia.com/blog/feed/",
+    "Microsoft AI Blog": "https://blogs.microsoft.com/ai/feed/",
+    "Microsoft Research": "https://www.microsoft.com/en-us/research/feed/",
+    "AWS Machine Learning": "https://aws.amazon.com/blogs/machine-learning/feed/",
+    "Replicate": "https://replicate.com/blog/rss",
+    # ===== HABER KAYNAKLARI =====
+    "Techmeme": "https://www.techmeme.com/feed.xml",
+    "TechCrunch": "https://techcrunch.com/feed/",
+    "TechCrunch AI": "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "VentureBeat": "https://venturebeat.com/feed/",
+    "VentureBeat AI": "https://venturebeat.com/category/ai/feed/",
+    "The Verge": "https://www.theverge.com/rss/index.xml",
+    "Wired": "https://www.wired.com/feed/rss",
+    "Wired AI": "https://www.wired.com/feed/tag/ai/latest/rss",
+    "SiliconANGLE": "https://siliconangle.com/feed/",
+    # ===== DERİNLEMESİNE ANALİZ =====
+    "The Decoder": "https://the-decoder.com/feed/",
+    "Ars Technica": "https://feeds.arstechnica.com/arstechnica/index",
+    "Ars Technica AI": "https://arstechnica.com/ai/feed/",
+    "MIT Tech Review": "https://www.technologyreview.com/feed/",
+    "IEEE Spectrum AI": "https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss",
+    # ===== ARAŞTIRMA =====
+    "BAIR Blog": "https://bair.berkeley.edu/blog/feed.xml",
+    "Distill.pub": "https://distill.pub/rss.xml",
+    "ML@CMU": "https://blog.ml.cmu.edu/feed/",
+    # ===== NEWSLETTER =====
+    "The Rundown AI": "https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml",
+    "TheSequence": "https://thesequence.substack.com/feed",
+    "Latent Space": "https://www.latent.space/feed",
+    "Ahead of AI": "https://magazine.sebastianraschka.com/feed",
+    "AI Snake Oil": "https://aisnakeoil.substack.com/feed",
+    # ===== COMMUNITY =====
+    "Hacker News": "https://hnrss.org/frontpage",
+    "Product Hunt AI": "https://www.producthunt.com/feed?category=artificial-intelligence",
+    "Reddit r/MachineLearning": "https://www.reddit.com/r/MachineLearning/.rss",
 }
 
-MAX_ARTICLES_PER_SOURCE: int = 5
+MAX_ARTICLES_PER_SOURCE: int = 3
 MAX_CONTENT_LENGTH: int = 8000
 REQUEST_DELAY: int = 2  # seconds - for rate limiting
 CUTOFF_DATE: datetime = datetime(2026, 1, 13, tzinfo=timezone.utc)
+REQUEST_HEADERS: dict[str, str] = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+}
 
 
 def parse_date(pub_date: str) -> datetime | None:
@@ -91,7 +134,7 @@ def fetch_rss(url: str) -> list[dict]:
     """
     try:
         logger.info(f"Fetching RSS: {url}")
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, headers=REQUEST_HEADERS, timeout=30)
         response.raise_for_status()
         root = ET.fromstring(response.content)
 
@@ -153,7 +196,7 @@ def fetch_article_content(url: str) -> str:
 
     try:
         logger.info(f"Fetching content via Jina: {url}")
-        response = requests.get(jina_url, timeout=60)
+        response = requests.get(jina_url, headers=REQUEST_HEADERS, timeout=60)
         raw_content = response.text
 
         # Parse: Get content after "Markdown Content:"
