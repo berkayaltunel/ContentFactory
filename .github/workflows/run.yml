@@ -2,7 +2,9 @@ name: Content Factory
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    # Turkey time: 08:00, 11:00, 16:00, 19:00, 22:00
+    # UTC: 05, 08, 13, 16, 19
+    - cron: '0 5,8,13,16,19 * * *'
   workflow_dispatch:
 
 jobs:
