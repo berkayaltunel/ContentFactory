@@ -57,7 +57,6 @@ RSS_FEEDS: dict[str, str] = {
     "Wired AI": "https://www.wired.com/feed/tag/ai/latest/rss",
     "SiliconANGLE": "https://siliconangle.com/feed/",
     # ===== DERİNLEMESİNE ANALİZ =====
-    "The Decoder": "https://the-decoder.com/feed/",
     "Ars Technica": "https://feeds.arstechnica.com/arstechnica/index",
     "Ars Technica AI": "https://arstechnica.com/ai/feed/",
     "MIT Tech Review": "https://www.technologyreview.com/feed/",
