@@ -72,7 +72,6 @@ RSS_FEEDS: dict[str, str] = {
     "Ahead of AI": "https://magazine.sebastianraschka.com/feed",
     "AI Snake Oil": "https://aisnakeoil.substack.com/feed",
     # ===== COMMUNITY =====
-    "Hacker News": "https://hnrss.org/frontpage",
     "Product Hunt AI": "https://www.producthunt.com/feed?category=artificial-intelligence",
     "Reddit r/MachineLearning": "https://www.reddit.com/r/MachineLearning/.rss",
 }
