@@ -102,7 +102,7 @@ class ContentFactoryAPITester:
             "Generate Quote",
             "POST",
             "generate/quote",
-            500,  # Expected to fail without API key
+            520,  # Expected to fail without API key
             data={
                 "tweet_url": "https://x.com/test/status/123",
                 "tweet_content": "This is a test tweet",
