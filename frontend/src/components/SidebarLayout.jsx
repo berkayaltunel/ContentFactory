@@ -179,6 +179,9 @@ export default function SidebarLayout() {
         <DialogContent className="sm:max-w-md" data-testid="settings-modal">
           <DialogHeader>
             <DialogTitle className="font-outfit">Ayarlar</DialogTitle>
+            <DialogDescription className="sr-only">
+              Uygulama ayarlarını yapılandırın
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
