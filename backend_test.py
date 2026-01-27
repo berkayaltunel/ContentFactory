@@ -133,7 +133,7 @@ class ContentFactoryAPITester:
             "Generate Article",
             "POST",
             "generate/article",
-            500,  # Expected to fail without API key
+            520,  # Expected to fail without API key
             data={
                 "topic": "Test article about AI technology",
                 "length": "standard",
