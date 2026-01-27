@@ -190,6 +190,11 @@ def main():
     
     # Test history endpoint
     tester.test_generation_history()
+    
+    # Test user stats and favorites
+    tester.test_user_stats()
+    tester.test_favorites_get()
+    tester.test_favorites_add()
 
     # Print final results
     print("\n" + "=" * 50)
