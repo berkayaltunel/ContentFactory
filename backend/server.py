@@ -52,7 +52,7 @@ class StatusCheckCreate(BaseModel):
 # Content Generation Models
 class TweetGenerateRequest(BaseModel):
     topic: str
-    mode: str = "classic"  # classic or apex
+    mode: str = "classic"  # classic or ultra
     length: str = "short"  # micro, short, medium, rush, thread
     variants: int = 1
     persona: str = "expert"  # expert, leaked, coach, news, meme, against
@@ -248,8 +248,8 @@ async def generate_tweet(request: TweetGenerateRequest):
         system_prompt = build_system_prompt(request.persona, request.tone, request.language)
         
         mode_instruction = ""
-        if request.mode == "apex":
-            mode_instruction = "APEX MODU: Maksimum viral potansiyel için yaz. Hook çok güçlü olmalı, engagement yaratmalı."
+        if request.mode == "ultra":
+            mode_instruction = "ULTRA MODU: Maksimum viral potansiyel için yaz. Hook çok güçlü olmalı, engagement yaratmalı."
         
         user_prompt = f"""Aşağıdaki konu hakkında tweet yaz:
 
