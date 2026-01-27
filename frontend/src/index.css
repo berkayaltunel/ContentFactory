@@ -159,7 +159,13 @@
   position: relative;
   padding: 1px;
   border-radius: 0.5rem;
-  background: linear-gradient(135deg, #00f2ea 0%, #4f46e5 50%, #8b5cf6 100%);
+  background: linear-gradient(
+    var(--angle, 135deg),
+    #00f2ea 0%,
+    #4f46e5 50%,
+    #8b5cf6 100%
+  );
+  animation: rotate-gradient 8s linear infinite;
 }
 
 .gradient-border-wrapper::before {
@@ -167,10 +173,16 @@
   position: absolute;
   inset: -3px;
   border-radius: 0.625rem;
-  background: linear-gradient(135deg, #00f2ea 0%, #4f46e5 50%, #8b5cf6 100%);
+  background: linear-gradient(
+    var(--angle, 135deg),
+    #00f2ea 0%,
+    #4f46e5 50%,
+    #8b5cf6 100%
+  );
   filter: blur(12px);
-  opacity: 0.4;
+  opacity: 0.35;
   z-index: -1;
+  animation: rotate-gradient 8s linear infinite;
 }
 
 .gradient-border-wrapper > textarea {
@@ -178,6 +190,18 @@
   border: none !important;
   border-radius: calc(0.5rem - 1px);
   width: 100%;
+}
+
+@property --angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 135deg;
+}
+
+@keyframes rotate-gradient {
+  to {
+    --angle: 495deg;
+  }
 }
 
 /* Chip/Tag selector styles */
