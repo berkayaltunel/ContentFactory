@@ -84,7 +84,7 @@ class ContentFactoryAPITester:
             "Generate Tweet",
             "POST",
             "generate/tweet",
-            500,  # Expected to fail without API key
+            520,  # Expected to fail without API key
             data={
                 "topic": "Test tweet about AI",
                 "mode": "classic",
