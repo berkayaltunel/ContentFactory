@@ -154,6 +154,52 @@
   @apply bg-gradient-to-r from-yellow-500 to-orange-500;
 }
 
+/* Animated gradient border for textarea */
+.gradient-border-wrapper {
+  position: relative;
+  border-radius: 0.5rem;
+  padding: 2px;
+  background: linear-gradient(90deg, #00f2ea, #4f46e5, #06b6d4, #8b5cf6, #00f2ea);
+  background-size: 300% 300%;
+  animation: gradient-rotate 3s linear infinite;
+}
+
+.gradient-border-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  padding: 2px;
+  background: linear-gradient(90deg, #00f2ea, #4f46e5, #06b6d4, #8b5cf6, #00f2ea);
+  background-size: 300% 300%;
+  animation: gradient-rotate 3s linear infinite;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: blur(8px);
+  opacity: 0.6;
+}
+
+.gradient-border-wrapper > textarea {
+  background: hsl(var(--card));
+  border: none !important;
+  border-radius: calc(0.5rem - 2px);
+}
+
+@keyframes gradient-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Chip/Tag selector styles */
 .chip {
   @apply px-3 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer;
