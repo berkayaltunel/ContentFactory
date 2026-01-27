@@ -208,7 +208,7 @@ def main():
         if not result["success"] and "error" in result:
             print(f"   Error: {result['error']}")
     
-    return 0 if tester.tests_passed >= 6 else 1  # At least basic endpoints should work
+    return 0 if tester.tests_passed >= 9 else 1  # At least basic endpoints should work
 
 if __name__ == "__main__":
     sys.exit(main())
