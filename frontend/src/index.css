@@ -150,7 +150,7 @@
 }
 
 /* Custom toggle styles */
-.toggle-apex {
+.toggle-ultra {
   @apply bg-gradient-to-r from-yellow-500 to-orange-500;
 }
 
