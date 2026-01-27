@@ -184,34 +184,78 @@ function VariantCounter({ value, onChange, max = 5 }) {
 
 // Generated content display
 function GeneratedContent({ variants, onCopy, onRegenerate }) {
+  const [favorites, setFavorites] = useState(new Set());
+
+  const handleTweet = (content) => {
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
+    window.open(tweetUrl, '_blank');
+    toast.success("Twitter açılıyor...");
+  };
+
+  const handleFavorite = async (variant, index) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(index)) {
+      newFavorites.delete(index);
+      toast.success("Favorilerden kaldırıldı");
+    } else {
+      newFavorites.add(index);
+      toast.success("Favorilere eklendi!");
+      // TODO: Save to backend when auth is ready
+    }
+    setFavorites(newFavorites);
+  };
+
   if (!variants || variants.length === 0) return null;
 
   return (
     <div className="space-y-4 mt-6" data-testid="generated-content">
       <h3 className="font-outfit text-lg font-semibold">Üretilen İçerik</h3>
       {variants.map((variant, index) => (
-        <Card key={variant.id || index} className="bg-card border-border">
+        <Card key={variant.id || index} className="bg-card border-border hover:border-primary/20 transition-colors">
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <p className="whitespace-pre-wrap">{variant.content}</p>
               </div>
-              <div className="flex flex-col gap-2">
+            </div>
+            <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{variant.character_count} karakter</Badge>
+                {variants.length > 1 && (
+                  <Badge variant="outline">Varyant {index + 1}</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => onCopy(variant.content)}
                   data-testid={`copy-variant-${index}`}
+                  className="gap-1.5"
                 >
                   <Copy className="h-4 w-4" />
+                  Kopyala
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFavorite(variant, index)}
+                  data-testid={`favorite-variant-${index}`}
+                  className={cn("gap-1.5", favorites.has(index) && "text-red-500")}
+                >
+                  <Heart className={cn("h-4 w-4", favorites.has(index) && "fill-current")} />
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleTweet(variant.content)}
+                  data-testid={`tweet-variant-${index}`}
+                  className="gap-1.5 bg-sky-500 hover:bg-sky-600 text-white"
+                >
+                  <Send className="h-4 w-4" />
+                  Tweetle
                 </Button>
               </div>
-            </div>
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-              <Badge variant="secondary">{variant.character_count} karakter</Badge>
-              {variants.length > 1 && (
-                <Badge variant="outline">Varyant {index + 1}</Badge>
-              )}
             </div>
           </CardContent>
         </Card>
