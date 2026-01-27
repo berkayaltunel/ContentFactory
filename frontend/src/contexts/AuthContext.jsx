@@ -9,7 +9,8 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || !supabase) {
+      // Dev mode - no auth
       setLoading(false);
       return;
     }
@@ -60,6 +61,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = async (email, password, name) => {
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -73,6 +75,7 @@ export function AuthProvider({ children }) {
   };
 
   const signIn = async (email, password) => {
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -82,6 +85,7 @@ export function AuthProvider({ children }) {
   };
 
   const signInWithGoogle = async () => {
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -93,6 +97,11 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
+    if (!supabase) {
+      setUser(null);
+      setSession(null);
+      return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setUser(null);
