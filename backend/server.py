@@ -483,6 +483,49 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
     generations = await db.generations.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return generations
 
+@api_router.get("/user/stats")
+async def get_user_stats():
+    """Get user statistics"""
+    try:
+        total_generations = await db.generations.count_documents({})
+        total_tweets = await db.generations.count_documents({"type": "tweet"})
+        total_favorites = await db.favorites.count_documents({}) if "favorites" in await db.list_collection_names() else 0
+        
+        return {
+            "generations": total_generations,
+            "tweets": total_tweets,
+            "favorites": total_favorites
+        }
+    except Exception as e:
+        return {"generations": 0, "tweets": 0, "favorites": 0}
+
+@api_router.get("/favorites")
+async def get_favorites(limit: int = 50):
+    """Get user favorites"""
+    try:
+        favorites = await db.favorites.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)
+        return favorites
+    except:
+        return []
+
+@api_router.post("/favorites")
+async def add_favorite(content: dict):
+    """Add content to favorites"""
+    favorite_doc = {
+        "id": str(uuid.uuid4()),
+        "content": content.get("content", ""),
+        "type": content.get("type", "tweet"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.favorites.insert_one(favorite_doc)
+    return {"success": True, "id": favorite_doc["id"]}
+
+@api_router.delete("/favorites/{favorite_id}")
+async def remove_favorite(favorite_id: str):
+    """Remove content from favorites"""
+    await db.favorites.delete_one({"id": favorite_id})
+    return {"success": True}
+
 # Include the router in the main app
 app.include_router(api_router)
 
