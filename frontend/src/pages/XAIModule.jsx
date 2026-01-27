@@ -352,7 +352,7 @@ function TweetTab() {
       {/* Main Input */}
       <div className="gradient-border-wrapper">
         <Textarea
-          placeholder="Ne hakkında tweet üreteyim?"
+          placeholder={mode === "ultra" ? "ULTRA modunda üret..." : "Ne hakkında tweet üreteyim?"}
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           className="min-h-[120px] text-base resize-none pr-16"
