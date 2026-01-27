@@ -350,15 +350,17 @@ function TweetTab() {
       </div>
 
       {/* Main Input */}
-      <div className="relative">
+      <div className="gradient-border-wrapper">
         <Textarea
           placeholder="Ne hakkında tweet üreteyim?"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          className="min-h-[120px] text-base resize-none pr-16 border-border focus:border-border"
+          className="min-h-[120px] text-base resize-none pr-16"
           data-testid="tweet-input"
         />
-        <span className="absolute bottom-3 right-3 text-sm text-muted-foreground">
+      </div>
+      <div className="flex justify-end -mt-8 mr-3 relative z-10">
+        <span className="text-sm text-muted-foreground bg-card px-1">
           {topic.length}/280
         </span>
       </div>
