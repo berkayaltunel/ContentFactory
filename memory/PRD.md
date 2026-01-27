@@ -7,6 +7,10 @@ Create a complete content generation platform called "ContentFactory" with a mod
 - Other modules as placeholders
 - Dark/Light mode support
 - OpenAI integration for content generation
+- Supabase Authentication
+- Hybrid layout: Landing page + Dashboard
+- Tweetle button (direct Twitter posting)
+- Favorites and History system
 
 ## User Personas
 - Content creators
@@ -19,26 +23,40 @@ Create a complete content generation platform called "ContentFactory" with a mod
 - Dark mode default
 - Module-specific color themes
 - OpenAI GPT integration
-- No authentication (for now)
-- No credit system
+- Supabase Authentication (to be configured)
+- Favorites system
+- Generation history
 
 ## What's Been Implemented (Jan 27, 2025)
 
-### Frontend
-- ✅ SidebarLayout with navigation for 6 modules
-- ✅ ThemeProvider with Dark/Light mode toggle
+### Authentication & Pages
+- ✅ Landing page with hero, features, stats sections
+- ✅ Login page with email/password, Google OAuth, Dev mode
+- ✅ Signup page with registration form
+- ✅ Supabase Auth integration (ready for user's credentials)
+- ✅ Protected routes with dev mode fallback
+
+### Frontend Dashboard
+- ✅ DashboardLayout with sidebar navigation
+- ✅ User profile display in sidebar
+- ✅ Generation stats display (X üretim · Y favoriler)
 - ✅ X AI Module (fully functional):
   - Tweet tab: Klasik/APEX modes, length selector, variant counter, persona/tone/language chips
   - Quote tab: URL input, tweet preview, generation
   - Reply tab: URL input, reply modes (Support/Challenge/Question/Expand/Joke)
   - Article tab: Title, topic, length, style, reference links
+- ✅ "Tweetle" button - direct Twitter posting
+- ✅ Favorites button with heart icon
+- ✅ Copy button for each generated content
 - ✅ YouTubeAI placeholder page
 - ✅ InstaFlow AI placeholder page
 - ✅ TikTrend AI placeholder page
 - ✅ LinkShareAI placeholder page
 - ✅ Blog Architect placeholder page
+- ✅ History page with generation list
+- ✅ Favorites page
 - ✅ Settings modal
-- ✅ Module-specific accent colors
+- ✅ Dark/Light theme toggle
 
 ### Backend
 - ✅ FastAPI server with /api prefix
@@ -47,13 +65,34 @@ Create a complete content generation platform called "ContentFactory" with a mod
 - ✅ POST /api/generate/reply
 - ✅ POST /api/generate/article
 - ✅ GET /api/generations/history
+- ✅ GET /api/user/stats
+- ✅ GET /api/favorites
+- ✅ POST /api/favorites
+- ✅ DELETE /api/favorites/{id}
 - ✅ GET /api/health
-- ✅ MongoDB integration for saving generations
+- ✅ MongoDB integration
+
+## Configuration Required by User
+
+### Supabase Auth
+Add to `/app/frontend/.env`:
+```
+REACT_APP_SUPABASE_URL=https://xxxxx.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+```
+
+### OpenAI API Key
+Add to `/app/backend/.env`:
+```
+OPENAI_API_KEY=sk-...
+```
+Then restart backend: `sudo supervisorctl restart backend`
 
 ## Prioritized Backlog
 
-### P0 (Critical)
+### P0 (User Action Required)
 - [ ] User adds OPENAI_API_KEY to /app/backend/.env
+- [ ] User configures Supabase credentials
 
 ### P1 (Next Phase)
 - [ ] YouTubeAI module full implementation
@@ -63,15 +102,20 @@ Create a complete content generation platform called "ContentFactory" with a mod
 - [ ] Blog Architect module full implementation
 
 ### P2 (Future)
-- [ ] User authentication (JWT or Google OAuth)
-- [ ] Credit system for tracking usage
-- [ ] Generation history page
+- [ ] User-scoped favorites (per user)
+- [ ] User-scoped history (per user)
 - [ ] Export/download generated content
 - [ ] Scheduled posts feature
 - [ ] Team collaboration
 
+## Tech Stack
+- Frontend: React, Tailwind CSS, shadcn/ui
+- Backend: FastAPI, MongoDB
+- Auth: Supabase (ready for configuration)
+- AI: OpenAI GPT-4o
+
 ## Next Tasks
-1. User to add OPENAI_API_KEY
-2. Test content generation with real API
-3. Implement YouTubeAI module (SEO analysis, script generation)
+1. User adds API keys (OpenAI, Supabase)
+2. Test full content generation flow
+3. Implement YouTubeAI module
 4. Implement remaining modules one by one
