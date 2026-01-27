@@ -154,68 +154,30 @@
   @apply bg-gradient-to-r from-yellow-500 to-orange-500;
 }
 
-/* Animated gradient border for textarea */
+/* Gradient border for textarea */
 .gradient-border-wrapper {
   position: relative;
-  padding: 2px;
+  padding: 1px;
   border-radius: 0.5rem;
-  background: linear-gradient(
-    90deg,
-    #00f2ea,
-    #4f46e5,
-    #8b5cf6,
-    #ec4899,
-    #f97316,
-    #06b6d4,
-    #00f2ea,
-    #4f46e5,
-    #8b5cf6
-  );
-  background-size: 400% 100%;
-  animation: gradient-flow 4s ease infinite;
+  background: linear-gradient(135deg, #00f2ea 0%, #4f46e5 50%, #8b5cf6 100%);
 }
 
 .gradient-border-wrapper::before {
   content: '';
   position: absolute;
-  inset: -4px;
-  border-radius: 0.75rem;
-  background: linear-gradient(
-    90deg,
-    #00f2ea,
-    #4f46e5,
-    #8b5cf6,
-    #ec4899,
-    #f97316,
-    #06b6d4,
-    #00f2ea,
-    #4f46e5,
-    #8b5cf6
-  );
-  background-size: 400% 100%;
-  animation: gradient-flow 4s ease infinite;
-  filter: blur(20px);
-  opacity: 0.6;
+  inset: -3px;
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, #00f2ea 0%, #4f46e5 50%, #8b5cf6 100%);
+  filter: blur(12px);
+  opacity: 0.4;
   z-index: -1;
 }
 
 .gradient-border-wrapper > textarea {
   background: hsl(var(--card)) !important;
   border: none !important;
-  border-radius: calc(0.5rem - 2px);
+  border-radius: calc(0.5rem - 1px);
   width: 100%;
-}
-
-@keyframes gradient-flow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 /* Chip/Tag selector styles */
