@@ -146,6 +146,27 @@ class ContentFactoryAPITester:
         """Test generation history endpoint"""
         return self.run_test("Get Generation History", "GET", "generations/history", 200)
 
+    def test_user_stats(self):
+        """Test user stats endpoint"""
+        return self.run_test("Get User Stats", "GET", "user/stats", 200)
+
+    def test_favorites_get(self):
+        """Test get favorites endpoint"""
+        return self.run_test("Get Favorites", "GET", "favorites", 200)
+
+    def test_favorites_add(self):
+        """Test add to favorites endpoint"""
+        return self.run_test(
+            "Add to Favorites",
+            "POST",
+            "favorites",
+            200,
+            data={
+                "content": "Test favorite content",
+                "type": "tweet"
+            }
+        )
+
 def main():
     print("🚀 Starting ContentFactory API Tests...")
     print("=" * 50)
