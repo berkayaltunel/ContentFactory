@@ -335,17 +335,17 @@ function TweetTab() {
         </button>
         <button
           type="button"
-          onClick={() => setMode("apex")}
+          onClick={() => setMode("ultra")}
           className={cn(
             "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1",
-            mode === "apex" 
+            mode === "ultra" 
               ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white" 
               : "bg-secondary text-muted-foreground hover:bg-secondary/80"
           )}
-          data-testid="mode-apex"
+          data-testid="mode-ultra"
         >
           <Zap className="h-4 w-4" />
-          APEX
+          ULTRA
         </button>
       </div>
 
@@ -355,7 +355,7 @@ function TweetTab() {
           placeholder="Ne hakkında tweet üreteyim?"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          className="min-h-[120px] text-base resize-none pr-16"
+          className="min-h-[120px] text-base resize-none pr-16 border-border focus:border-border"
           data-testid="tweet-input"
         />
         <span className="absolute bottom-3 right-3 text-sm text-muted-foreground">
