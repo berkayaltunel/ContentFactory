@@ -8,6 +8,8 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
+import re
+import httpx
 from datetime import datetime, timezone
 from openai import OpenAI
 
@@ -38,6 +40,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ==================== PROMPT SYSTEM ====================
+# Import from modular prompt system
+from prompts.builder import (
+    build_final_prompt,
+    PERSONAS,
+    TONES,
+    KNOWLEDGE_MODES,
+    LENGTH_CONSTRAINTS,
+    REPLY_MODES,
+    ARTICLE_STYLES
+)
+
 # ==================== AUTH ====================
 
 async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
@@ -66,31 +80,37 @@ class StatusCheckCreate(BaseModel):
 class TweetGenerateRequest(BaseModel):
     topic: str
     mode: str = "classic"
-    length: str = "short"
+    length: str = "punch"
     variants: int = 1
-    persona: str = "expert"
-    tone: str = "casual"
+    persona: str = "otorite"
+    tone: str = "natural"
+    knowledge: Optional[str] = None  # insider, contrarian, hidden, expert
     language: str = "auto"
     additional_context: Optional[str] = None
+    style_profile_id: Optional[str] = None
+    image_url: Optional[str] = None  # For image attachment
+    image_base64: Optional[str] = None  # Base64 encoded image for vision analysis
 
 class QuoteGenerateRequest(BaseModel):
     tweet_url: str
     tweet_content: Optional[str] = None
-    length: str = "short"
+    length: str = "punch"
     variants: int = 1
-    persona: str = "expert"
-    tone: str = "casual"
+    persona: str = "otorite"
+    tone: str = "natural"
+    knowledge: Optional[str] = None
     language: str = "auto"
     additional_context: Optional[str] = None
 
 class ReplyGenerateRequest(BaseModel):
     tweet_url: str
     tweet_content: Optional[str] = None
-    length: str = "short"
+    length: str = "punch"
     reply_mode: str = "support"
     variants: int = 1
-    persona: str = "expert"
-    tone: str = "casual"
+    persona: str = "otorite"
+    tone: str = "natural"
+    knowledge: Optional[str] = None
     language: str = "auto"
     additional_context: Optional[str] = None
 
@@ -108,6 +128,7 @@ class GeneratedContent(BaseModel):
     content: str
     variant_index: int = 0
     character_count: int = 0
+    media_suggestion: Optional[dict] = None  # For video/media suggestions
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class GenerationResponse(BaseModel):
@@ -115,496 +136,37 @@ class GenerationResponse(BaseModel):
     variants: List[GeneratedContent]
     error: Optional[str] = None
 
-# ==================== PROMPT SYSTEM ====================
-
-SYSTEM_IDENTITY = """Sen "ContentFactory" platformunun X/Twitter içerik üretim uzmanısın.
-
-### Temel Yeteneklerin:
-- Viral tweet ve thread yazımında uzmansın
-- X/Twitter algoritmasını ve kullanıcı davranışlarını iyi biliyorsun
-- Hook yazımında, engagement optimizasyonunda deneyimlisin
-- Türk ve global Twitter dinamiklerini anlıyorsun
-
-### Temel Kuralların:
-- Her zaman özgün içerik üret, asla klişe veya template gibi yazma
-- Verilen persona ve ton'a sadık kal
-- Karakter limitlerini kesinlikle aşma
-- Spam veya cringe hissi verme
-- Değer kat, boş içerik üretme
-- EMOJİ KULLANMA. Hiçbir emoji, emoticon veya sembol kullanma. Sadece düz metin yaz.
-- Hazır kalıplar ve AI çıktısı gibi görünen ifadeler kullanma. Gerçek bir insan gibi yaz.
-"""
-
-TASK_DEFINITIONS = {
-    "tweet": """### Görevin:
-Verilen konuya göre tek tweet veya thread üreteceksin.
-
-### Beklenen:
-- Dikkat çekici bir hook ile başla
-- Ana mesajı net ver
-- Gerekirse CTA (Call to Action) ekle
-- Thread ise her tweet bağımsız okunabilir olsun
-""",
-    "quote": """### Görevin:
-Verilen orijinal tweet'e quote tweet yazacaksın.
-
-### Beklenen:
-- Orijinal tweet'e değer katacak bir yorum yap
-- Sadece "katılıyorum" veya "harika" gibi boş yorumlar yapma
-- Kendi perspektifini ekle
-- Orijinal tweet'in bağlamını anla ve ona göre yanıt ver
-
-### Orijinal Tweet:
-{original_tweet}
-""",
-    "reply": """### Görevin:
-Verilen tweet'e reply yazacaksın.
-
-### Beklenen:
-- Tweet'in bağlamına uygun yanıt ver
-- Belirlenen reply moduna sadık kal
-- Konuşma başlatacak veya değer katacak şekilde yaz
-- Gereksiz yere uzatma
-
-### Reply Atacağın Tweet:
-{original_tweet}
-""",
-    "article": """### Görevin:
-X/Twitter'ın uzun form Article formatında içerik üreteceksin.
-
-### Beklenen:
-- Dikkat çekici başlık oluştur (verilmemişse)
-- Güçlü bir giriş paragrafı ile başla
-- Mantıklı akış ve bölümleme yap
-- Sonuç ve takeaway'ler ekle
-"""
-}
-
-PERSONAS = {
-    "expert": {
-        "name": "Expert",
-        "identity": "Sektörde 10+ yıl tecrübeli, içeriden bilen bir uzman",
-        "voice": "Güvenilir, bilgili, kesin, otoriter",
-        "key_traits": [
-            "Kesin ve net konuşur, 'belki', 'sanırım' gibi belirsiz ifadeler kullanmaz",
-            "Tecrübeye dayalı içgörüler paylaşır",
-            "Yaygın yanlış anlamaları düzeltir",
-            "Karmaşık konuları basitleştirir"
-        ],
-        "signature_phrases": [
-            "Şunu net söyleyeyim:",
-            "Çoğu kişinin gözden kaçırdığı şey şu:",
-            "X yıldır bu işi yapıyorum, şunu öğrendim:",
-            "Herkes Y diyor ama gerçek şu:"
-        ],
-        "avoid": [
-            "Belirsiz ifadeler (belki, sanırım, galiba)",
-            "Aşırı teknik jargon (erişilebilir ol)",
-            "Kendini övme, ego",
-            "Kaynak belirtmeden büyük iddialar"
-        ]
-    },
-    "leaked": {
-        "name": "Leaked",
-        "identity": "İç bilgilere sahip, perde arkasını gören bir kaynak",
-        "voice": "Gizli bilgi paylaşan, eksklüzif, 'bunu duyan az' hissi veren",
-        "key_traits": [
-            "Sanki gizli bir bilgi paylaşıyor gibi yazar",
-            "Merak uyandırır",
-            "Eksklüziflik hissi verir",
-            "Perde arkası detaylar verir"
-        ],
-        "signature_phrases": [
-            "Bunu duyan çok az kişi var:",
-            "Perde arkasında olan şey şu:",
-            "Henüz duyurulmadı ama:",
-            "Kimse bundan bahsetmiyor ama:"
-        ],
-        "avoid": [
-            "Doğrulanamayacak iddialar",
-            "Gerçek gizli bilgi ifşası (legal risk)",
-            "Spekülasyonu gerçek gibi sunma",
-            "Aşırı dramatize etme"
-        ]
-    },
-    "coach": {
-        "name": "Coach",
-        "identity": "Hem teknik bilgi veren hem motive eden bir mentor",
-        "voice": "Öğretici, ilham verici, destekleyici, enerjik",
-        "key_traits": [
-            "Bilgiyi aksiyona dönüştürür",
-            "Karmaşığı basitleştirir",
-            "Motive eder, cesaretlendirir",
-            "Pratik tavsiyeler verir"
-        ],
-        "signature_phrases": [
-            "Şunu dene, hayatın değişecek:",
-            "Çoğu kişi bunu atlar ama:",
-            "Basit ama güçlü bir framework:",
-            "Bunu yaptığında farkı göreceksin:"
-        ],
-        "avoid": [
-            "Patronize etme, küçümseme",
-            "Aşırı basitleştirme (gerçeklikten kopma)",
-            "Toxic positivity",
-            "Garantili sonuç vaat etme"
-        ]
-    },
-    "news": {
-        "name": "News",
-        "identity": "Objektif, hızlı ve bilgilendirici haber muhabiri",
-        "voice": "Tarafsız, faktüel, net, profesyonel",
-        "key_traits": [
-            "5N1K formatını kullanır",
-            "Kişisel yorum katmaz",
-            "Kaynak belirtir",
-            "Net ve öz yazar"
-        ],
-        "signature_phrases": [
-            "SON DAKİKA:",
-            "DUYURULDU:",
-            "Resmi açıklamaya göre:",
-            "Gelişmelere göre:"
-        ],
-        "avoid": [
-            "Kişisel görüş ve yorum",
-            "Spekülatif ifadeler",
-            "Sansasyonel dil",
-            "Doğrulanmamış bilgi"
-        ]
-    },
-    "meme": {
-        "name": "Meme",
-        "identity": "İnternet kültürüne hakim, absürt humor ustası",
-        "voice": "İronik, absürt, self-aware, viral",
-        "key_traits": [
-            "Beklenmedik twist'ler yapar",
-            "Format ve template'leri yaratıcı kullanır",
-            "Self-aware ve ironic",
-            "Relatable durumları yakalar"
-        ],
-        "signature_phrases": [
-            "POV:",
-            "Nobody: ... Me:",
-            "[X] be like:",
-            "bro really said"
-        ],
-        "avoid": [
-            "Açıklama yapma, espriyi öldürme",
-            "Forced humor",
-            "Offensive veya problematik içerik",
-            "Ölmüş meme'ler"
-        ]
-    },
-    "against": {
-        "name": "Against",
-        "identity": "Popüler görüşlere meydan okuyan contrarian düşünür",
-        "voice": "Provokatif, cesur, sorgulayıcı, düşündürücü",
-        "key_traits": [
-            "Mainstream görüşün tersini savunur",
-            "Mantıklı argümanlarla destekler",
-            "Düşünmeye zorlar",
-            "Tartışma başlatır"
-        ],
-        "signature_phrases": [
-            "Hot take:",
-            "Unpopular opinion:",
-            "Herkes X diyor, ben Y diyorum:",
-            "Buna katılmayacaksınız ama:"
-        ],
-        "avoid": [
-            "Sadece karşı çıkmak için karşı çıkma",
-            "Mantıksız argümanlar",
-            "Kişisel saldırı",
-            "Trollük (constructive ol)"
-        ]
-    }
-}
-
-TONES = {
-    "casual": {
-        "name": "Casual",
-        "description": "Doğal, rahat, yapısız konuşma dili",
-        "rules": [
-            "Sanki arkadaşınla mesajlaşıyorsun gibi yaz",
-            "Akademik veya kurumsal dil kullanma",
-            "Emoji kullanma, sadece düz metin yaz",
-            "Kısaltmalar okay (yani, aslında, vs.)",
-            "Perfect grammar şart değil, doğal ol"
-        ]
-    },
-    "unfiltered": {
-        "name": "Unfiltered",
-        "description": "Ham düşünce akışı, filtresiz brain dump",
-        "rules": [
-            "Düzenleme yapma, ham bırak",
-            "İç sesin gibi yaz",
-            "Düşünceler arası bağlantı gevşek olabilir",
-            "Incomplete thought'lar okay",
-            "Gerçek iç diyalogunu yansıt"
-        ]
-    },
-    "structured": {
-        "name": "Structured",
-        "description": "Thesis → Evidence → Insight formatı, organize ve mantıklı",
-        "rules": [
-            "İddia → Kanıt → Sonuç yapısını takip et",
-            "Her paragrafın tek bir ana fikri olsun",
-            "Geçişler net olsun",
-            "Bullet point veya numaralı liste kullanabilirsin",
-            "Sonunda net bir takeaway ver"
-        ]
-    },
-    "absurd": {
-        "name": "Absurd",
-        "description": "Shock → Escalate → Twist formatı, beklenmedik ve kaotik",
-        "rules": [
-            "İlk cümle dikkat çeksin, şok etsin",
-            "Giderek tırmandır, absürtleştir",
-            "Sonunda beklenmedik twist yap",
-            "Mantık kurallarını bük",
-            "Güldürürken düşündür"
-        ]
-    }
-}
-
-LENGTH_CONSTRAINTS = {
-    "tweet": {
-        "micro": {
-            "chars": (50, 100),
-            "guidance": "Tek güçlü cümle. Maksimum impact, minimum kelime. Her kelime earn edilmeli."
-        },
-        "short": {
-            "chars": (140, 280),
-            "guidance": "Klasik tweet. Hook + Ana mesaj. Tek nefeste okunabilir. 1-2 ana fikir max."
-        },
-        "medium": {
-            "chars": (400, 600),
-            "guidance": "Bir paragraf, tam bir düşünce. Hook → Açıklama → Sonuç. 2-3 destekleyici nokta."
-        },
-        "rush": {
-            "chars": (700, 1000),
-            "guidance": "Mini thread hissi ama tek tweet. Hook + 2-3 ana nokta + Conclusion. Line break'ler ile ayır."
-        },
-        "thread": {
-            "chars": (1000, 2500),
-            "guidance": "4-8 tweet thread. İlk tweet güçlü hook. Her tweet bağımsız değer versin. Numaralandır: 1/, 2/, 3/. Her tweet 280 karakteri geçmesin."
-        }
-    },
-    "reply": {
-        "micro": {"chars": (50, 100), "guidance": "Quick reaction, tek cümle, direkt yanıt"},
-        "short": {"chars": (140, 280), "guidance": "Normal reply, yanıt + kısa değer ekleme"},
-        "medium": {"chars": (400, 600), "guidance": "Detailed response, yanıt + açıklama + değer"}
-    },
-    "quote": {
-        "micro": {"chars": (50, 100), "guidance": "Tek cümle yorum"},
-        "short": {"chars": (140, 280), "guidance": "Kısa değerli yorum"},
-        "medium": {"chars": (400, 600), "guidance": "Detaylı perspektif"},
-        "rush": {"chars": (700, 1000), "guidance": "Kapsamlı yorum ve analiz"}
-    },
-    "article": {
-        "brief": {"chars": (1500, 2000), "guidance": "Özet makale, hızlı okuma. Intro + 2-3 sections + Conclusion"},
-        "standard": {"chars": (3000, 4000), "guidance": "Normal makale, detaylı ama sıkmadan. Intro + 4-5 sections + Examples + Conclusion"},
-        "deep": {"chars": (5000, 8000), "guidance": "Derinlemesine analiz, comprehensive. Multiple sections + Case studies + Data + Conclusion"}
-    }
-}
-
-REPLY_MODES = {
-    "support": {
-        "name": "Support",
-        "approach": "Katıl + Değer ekle + Deneyim paylaş",
-        "guidance": "Tweet'e katıldığını belirt. Kendi deneyim/bilginle destekle. Ek bir perspektif veya örnek ekle. Övücü ama yağcı olma."
-    },
-    "challenge": {
-        "name": "Challenge",
-        "approach": "Saygılı disagreement + Alternatif perspektif + Açık kapı bırak",
-        "guidance": "Saygılı bir şekilde farklı görüşünü belirt. Neden farklı düşündüğünü açıkla. Alternatif bir bakış açısı sun. Tartışmaya açık ol."
-    },
-    "question": {
-        "name": "Question",
-        "approach": "Genuine curiosity + Specific question + Conversation starter",
-        "guidance": "Gerçekten merak ettiğin bir soru sor. Genel değil, spesifik ol. Konuşma başlatacak şekilde sor."
-    },
-    "expand": {
-        "name": "Expand",
-        "approach": "Build on top + Add dimension + Connect dots",
-        "guidance": "Tweet'in üzerine inşa et. Yeni bir boyut ekle. İlişkili başka bir konuya bağla. Değer kat, tekrar etme."
-    },
-    "joke": {
-        "name": "Joke",
-        "approach": "Witty observation + Relatable humor + Light touch",
-        "guidance": "Konuyla ilgili witty bir yorum yap. Relatable olsun. Offensive olma. Esprinin açıklamasını yapma."
-    }
-}
-
-ARTICLE_STYLES = {
-    "raw": {
-        "name": "Raw",
-        "structure": "Stream of consciousness, personal narrative",
-        "guidance": "Kişisel perspektiften yaz. Düşünce sürecini paylaş. İç sesin gibi."
-    },
-    "authority": {
-        "name": "Authority",
-        "structure": "Intro → Problem/Context → Analysis → Solutions/Insights → Conclusion",
-        "guidance": "Otoritif ton. Veri ve örneklerle destekle. Actionable insights ver. Net sonuçlar çıkar."
-    },
-    "story": {
-        "name": "Story",
-        "structure": "Hook → Setup → Tension/Conflict → Resolution → Lesson",
-        "guidance": "Karakterler ve setting kur. Conflict olsun. Show don't tell. Sonunda öğrenilen ders."
-    },
-    "tutorial": {
-        "name": "Tutorial",
-        "structure": "Problem → Prerequisites → Steps → Common Mistakes → Result",
-        "guidance": "Problem'i tanımla. Adım adım anlat. Sık yapılan hataları belirt."
-    },
-    "opinion": {
-        "name": "Opinion",
-        "structure": "Hot take → Arguments → Counter-arguments → Conclusion",
-        "guidance": "Net bir pozisyon al. Argümanlarını sun. Karşı argümanları acknowledge et. CTA ile bitir."
-    }
-}
-
-QUALITY_CRITERIA = """### Output Kalite Kontrolü
-Her üretimde şunları kontrol et:
-- İlk 5-7 kelime dikkat çekici mi? Scroll'u durduracak güçte mi?
-- Değer katıyor mu? Özgün mü? Persona'ya sadık mı? Ton tutarlı mı?
-- Karakter limiti içinde mi? Okunabilir mi?
-
-### YASAKLAR
-Aşağıdakilerden herhangi biri varsa içeriği baştan yaz:
-- Emoji, emoticon veya sembol kullanma. Asla. Sıfır emoji.
-- AI tarafından yazılmış hissi veren kalıp ifadeler
-- Cringe/spam hissi, boş/generic içerik, mantık hatası, persona kırılması
-
-### Yasaklı Kalıp İfadeler (bunları asla kullanma):
-- "Hadi gelin birlikte bakalım", "Peki ama neden?", "İşte tam da bu noktada"
-- "Bir düşünün", "Şimdi size bir şey söyleyeceğim", "Ve işte karşınızda"
-- "Bu yazıda/tweet'te", "Bugün sizlerle paylaşmak istediğim"
-- "Merak etmeyin", "Hazır mısınız?", "Hadi başlayalım!"
-- "Son olarak şunu belirtmek isterim", "Özetlemek gerekirse"
-- "Değerli takipçiler", "Sevgili okurlar"
-- Aşırı soru sorma (art arda 2+ soru)
-- "Bu çok önemli", "Kesinlikle", "Muhteşem", "Harika" gibi abartılı sıfatlar
-"""
-
 # ==================== HELPER FUNCTIONS ====================
 
-def build_final_prompt(
-    content_type: str,
-    topic: str = None,
-    persona: str = "expert",
-    tone: str = "casual",
-    length: str = "short",
-    language: str = "auto",
-    original_tweet: str = None,
-    reply_mode: str = None,
-    article_style: str = None,
-    references: list = None,
-    additional_context: str = None,
-    is_ultra: bool = False
-) -> str:
-    """Build the complete prompt by combining all layers."""
-    parts = []
-
-    # 1. System Identity
-    parts.append(SYSTEM_IDENTITY)
-
-    # 2. Task Definition
-    task = TASK_DEFINITIONS.get(content_type, TASK_DEFINITIONS["tweet"])
-    if original_tweet and "{original_tweet}" in task:
-        task = task.format(original_tweet=original_tweet)
-    parts.append(task)
-
-    # 3. Persona
-    p = PERSONAS.get(persona, PERSONAS["expert"])
-    parts.append(f"""### Persona: {p['name']}
-{p['identity']}
-**Sesin:** {p['voice']}
-**Kullanabileceğin ifadeler:** {', '.join(p['signature_phrases'])}
-**Kaçınman gerekenler:** {', '.join(p['avoid'])}
-**Özellikler:** {', '.join(p['key_traits'])}
-""")
-
-    # 4. Tone
-    t = TONES.get(tone, TONES["casual"])
-    parts.append(f"""### Ton: {t['name']}
-{t['description']}
-**Kurallar:**
-{chr(10).join('- ' + r for r in t['rules'])}
-""")
-
-    # 5. Length
-    lc = LENGTH_CONSTRAINTS.get(content_type, LENGTH_CONSTRAINTS["tweet"])
-    ld = lc.get(length, list(lc.values())[0])
-    min_c, max_c = ld["chars"]
-    parts.append(f"""### Uzunluk: {length.upper()}
-Karakter aralığı: {min_c}-{max_c}
-{ld['guidance']}
-""")
-
-    # 6. Reply Mode
-    if content_type == "reply" and reply_mode:
-        rm = REPLY_MODES.get(reply_mode, REPLY_MODES["support"])
-        parts.append(f"""### Reply Modu: {rm['name']}
-**Yaklaşım:** {rm['approach']}
-{rm['guidance']}
-""")
-
-    # 7. Article Style
-    if content_type == "article" and article_style:
-        ast = ARTICLE_STYLES.get(article_style, ARTICLE_STYLES["authority"])
-        parts.append(f"""### Makale Stili: {ast['name']}
-**Yapı:** {ast['structure']}
-{ast['guidance']}
-""")
-
-    # 8. References (article)
-    if references:
-        parts.append(f"### Referans Linkler\n{chr(10).join('- ' + r for r in references)}")
-
-    # 9. Language
-    lang_map = {
-        "auto": "Konunun diline göre otomatik olarak Türkçe veya İngilizce yaz.",
-        "tr": "Kesinlikle Türkçe yaz.",
-        "en": "Write in English only."
-    }
-    parts.append(f"### Dil\n{lang_map.get(language, lang_map['auto'])}")
-
-    # 10. Ultra mode
-    if is_ultra:
-        parts.append("""### ULTRA MOD
-
-Maksimum viral potansiyel için yaz. Hook çok güçlü olmalı, engagement yaratmalı. Sıradan olmayan, dikkat çekici ve paylaşılabilir içerik üret.
-
-**Ultra Mod Gereksinimleri:**
-- Hook: İlk cümle MUTLAKA scroll durdurucu olmalı
-- Engagement: Yorum, RT veya kaydetme tetikleyici unsurlar ekle
-- Uniqueness: Daha önce görülmemiş açı veya ifade kullan
-- Shareability: İnsanların "bunu paylaşmalıyım" diyeceği içerik
-- Memorability: Akılda kalıcı, tekrar edilebilir cümleler
-
-**Ultra Mod'da YASAK:**
-- Generic açılışlar
-- Tahmin edilebilir yapılar
-- Sıradan tavsiyeler
-- Template hissi veren içerik""")
-
-    # 11. Additional Context
-    if additional_context:
-        parts.append(f"### Ek Bağlam\n{additional_context}")
-
-    # 12. Topic
-    if topic:
-        parts.append(f"### Konu\n{topic}")
-
-    # 13. Quality
-    parts.append(QUALITY_CRITERIA)
-
-    # 14. Output instruction
-    parts.append("Sadece içeriğin kendisini yaz. JSON, açıklama veya meta bilgi ekleme. Düz metin olarak üret.")
-
-    return "\n\n---\n\n".join(parts)
+async def analyze_image_with_vision(image_base64: str) -> str:
+    """Analyze an uploaded image with GPT-4o vision and return a description."""
+    if not openai_client or not image_base64:
+        return ""
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Bu görseli kısaca analiz et. Ne görüyorsun? Renkleri, objeleri, ortamı, duyguyu ve varsa metni belirt. Max 3 cümle, Türkçe yaz."
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_base64}
+                        }
+                    ]
+                }
+            ],
+            max_tokens=200
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Vision analysis error: {str(e)}")
+        return ""
 
 async def generate_with_openai(system_prompt: str, user_prompt: str, variants: int = 1) -> List[str]:
     """Generate content using OpenAI API"""
@@ -617,7 +179,14 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
         try:
             variant_prompt = user_prompt
             if variants > 1:
-                variant_prompt += f"\n\n(Bu {i+1}. varyant. Diğerlerinden farklı bir yaklaşım kullan.)"
+                approaches = [
+                    "Kişisel deneyim/gözlem açısından yaz. 'Ben...' veya 'Gördüğüm kadarıyla...' ile başla.",
+                    "Contrarian/karşıt bir açıdan yaz. Herkesin kabul ettiği bir şeyi sorgula.",
+                    "Spesifik bir veri, rakam veya örnek üzerinden git. Somut ol.",
+                    "Kısa ve keskin bir iddia ortaya koy. Açıklama yapma, sadece söyle.",
+                    "Bir karşılaştırma veya analoji üzerinden anlat."
+                ]
+                variant_prompt += f"\n\nBu {i+1}. varyant. Yaklaşım: {approaches[i % len(approaches)]}"
 
             response = openai_client.chat.completions.create(
                 model="gpt-4o",
@@ -625,8 +194,8 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": variant_prompt}
                 ],
-                temperature=0.8 + (i * 0.1),
-                max_tokens=2000
+                temperature=0.85 + (i * 0.05),  # Increase temperature for more variety
+                max_tokens=3000
             )
 
             content = response.choices[0].message.content.strip()
@@ -666,21 +235,166 @@ async def get_status_checks():
     result = supabase.table("status_checks").select("*").limit(1000).execute()
     return result.data
 
+# ==================== METADATA ROUTES ====================
+
+@api_router.get("/meta/personas")
+async def get_personas():
+    """Return available personas for frontend"""
+    return [
+        {"id": key, "name": val["name"], "label": val["label"], "description": val["description"]}
+        for key, val in PERSONAS.items()
+    ]
+
+@api_router.get("/meta/tones")
+async def get_tones():
+    """Return available tones for frontend"""
+    return [
+        {"id": key, "name": val["name"], "label": val["label"], "description": val["description"]}
+        for key, val in TONES.items()
+    ]
+
+@api_router.get("/meta/knowledge-modes")
+async def get_knowledge_modes():
+    """Return available knowledge modes for frontend"""
+    return [
+        {"id": key, "name": val["name"], "label": val["label"], "description": val["description"]}
+        for key, val in KNOWLEDGE_MODES.items()
+    ]
+
+@api_router.get("/meta/lengths/{content_type}")
+async def get_lengths(content_type: str):
+    """Return available lengths for a content type"""
+    type_constraints = LENGTH_CONSTRAINTS.get(content_type, LENGTH_CONSTRAINTS["tweet"])
+    return [
+        {"id": key, "label": val["label"], "chars": val["chars"]}
+        for key, val in type_constraints.items()
+    ]
+
+@api_router.get("/meta/reply-modes")
+async def get_reply_modes():
+    """Return available reply modes for frontend"""
+    return [
+        {"id": key, "name": val["name"], "approach": val["approach"]}
+        for key, val in REPLY_MODES.items()
+    ]
+
+@api_router.get("/meta/article-styles")
+async def get_article_styles():
+    """Return available article styles for frontend"""
+    return [
+        {"id": key, "name": val["name"], "structure": val["structure"], "guidance": val["guidance"]}
+        for key, val in ARTICLE_STYLES.items()
+    ]
+
+# ==================== TWEET FETCH ROUTE ====================
+
+def extract_tweet_id(url_or_id: str) -> Optional[str]:
+    """Extract tweet ID from URL or return as-is if it's an ID"""
+    # Direct ID
+    if url_or_id.isdigit():
+        return url_or_id
+    # URL patterns
+    match = re.search(r'/status/(\d+)', url_or_id)
+    if match:
+        return match.group(1)
+    return None
+
+@api_router.get("/tweet/fetch")
+async def fetch_tweet(url: str):
+    """Fetch tweet content from Twitter syndication API"""
+    tweet_id = extract_tweet_id(url)
+    if not tweet_id:
+        raise HTTPException(status_code=400, detail="Geçersiz tweet URL'si veya ID'si")
+    
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            # Use FxTwitter API (open source Twitter proxy, no auth needed)
+            resp = await client.get(
+                f"https://api.fxtwitter.com/status/{tweet_id}",
+                headers={"User-Agent": "ContentFactory/1.0"}
+            )
+            
+            if resp.status_code == 200:
+                data = resp.json()
+                tweet = data.get("tweet")
+                if tweet:
+                    author = tweet.get("author", {})
+                    
+                    media = []
+                    for m in (tweet.get("media", {}).get("all", []) or []):
+                        media.append({
+                            "type": m.get("type", "photo"),
+                            "url": m.get("url", ""),
+                            "thumbnail": m.get("thumbnail_url", m.get("url", "")),
+                        })
+                    
+                    return {
+                        "success": True,
+                        "tweet": {
+                            "id": tweet_id,
+                            "text": tweet.get("text", ""),
+                            "author": {
+                                "name": author.get("name", ""),
+                                "username": author.get("screen_name", ""),
+                                "avatar": author.get("avatar_url", ""),
+                            },
+                            "created_at": tweet.get("created_at", ""),
+                            "metrics": {
+                                "likes": tweet.get("likes", 0),
+                                "retweets": tweet.get("retweets", 0),
+                                "replies": tweet.get("replies", 0),
+                            },
+                            "media": media,
+                        }
+                    }
+            
+            raise HTTPException(status_code=404, detail="Tweet bulunamadı. Silinmiş veya gizli olabilir.")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Tweet fetch error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Tweet çekilemedi: {str(e)}")
+
 # ==================== CONTENT GENERATION ROUTES ====================
 
 @api_router.post("/generate/tweet", response_model=GenerationResponse)
 async def generate_tweet(request: TweetGenerateRequest, user_id: str = Depends(get_current_user_id)):
     """Generate tweet content"""
     try:
+        # Fetch style prompt if style_profile_id provided
+        style_prompt = None
+        if request.style_profile_id:
+            from services.style_analyzer import analyzer
+            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).execute()
+            if result.data:
+                fingerprint = result.data[0].get('style_fingerprint', {})
+                style_prompt = analyzer.generate_style_prompt(fingerprint)
+        
+        # Analyze image if provided
+        image_context = None
+        if request.image_base64:
+            image_description = await analyze_image_with_vision(request.image_base64)
+            if image_description:
+                image_context = f"Kullanıcı bir görsel ekledi. Görselde: {image_description}. Bu görselle uyumlu, görseli referans alan bir tweet yaz."
+        
+        # Combine additional context with image context
+        combined_context = request.additional_context or ""
+        if image_context:
+            combined_context = f"{combined_context}\n\n{image_context}" if combined_context else image_context
+        
+        # Build the complete prompt using modular system
         system_prompt = build_final_prompt(
             content_type="tweet",
             topic=request.topic,
             persona=request.persona,
             tone=request.tone,
+            knowledge=request.knowledge,
             length=request.length,
             language=request.language,
-            additional_context=request.additional_context,
-            is_ultra=(request.mode == "ultra")
+            additional_context=combined_context if combined_context else None,
+            is_apex=(request.mode == "ultra" or request.mode == "apex"),
+            style_prompt=style_prompt
         )
 
         contents = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants)
@@ -693,6 +407,7 @@ async def generate_tweet(request: TweetGenerateRequest, user_id: str = Depends(g
                 character_count=len(content)
             ))
 
+        # Log to database
         supabase.table("generations").insert({
             "type": "tweet",
             "user_id": user_id,
@@ -701,9 +416,10 @@ async def generate_tweet(request: TweetGenerateRequest, user_id: str = Depends(g
             "length": request.length,
             "persona": request.persona,
             "tone": request.tone,
+            "knowledge": request.knowledge,
             "language": request.language,
             "additional_context": request.additional_context,
-            "is_ultra": request.mode == "ultra",
+            "is_ultra": request.mode in ["ultra", "apex"],
             "variant_count": request.variants,
             "variants": [v.model_dump(mode="json") for v in variants],
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -732,6 +448,7 @@ async def generate_quote(request: QuoteGenerateRequest, user_id: str = Depends(g
             content_type="quote",
             persona=request.persona,
             tone=request.tone,
+            knowledge=request.knowledge,
             length=request.length,
             language=request.language,
             original_tweet=request.tweet_content,
@@ -756,6 +473,7 @@ async def generate_quote(request: QuoteGenerateRequest, user_id: str = Depends(g
             "length": request.length,
             "persona": request.persona,
             "tone": request.tone,
+            "knowledge": request.knowledge,
             "language": request.language,
             "additional_context": request.additional_context,
             "variant_count": request.variants,
@@ -786,6 +504,7 @@ async def generate_reply(request: ReplyGenerateRequest, user_id: str = Depends(g
             content_type="reply",
             persona=request.persona,
             tone=request.tone,
+            knowledge=request.knowledge,
             length=request.length,
             language=request.language,
             original_tweet=request.tweet_content,
@@ -812,6 +531,7 @@ async def generate_reply(request: ReplyGenerateRequest, user_id: str = Depends(g
             "length": request.length,
             "persona": request.persona,
             "tone": request.tone,
+            "knowledge": request.knowledge,
             "language": request.language,
             "additional_context": request.additional_context,
             "variant_count": request.variants,
@@ -833,13 +553,13 @@ async def generate_article(request: ArticleGenerateRequest, user_id: str = Depen
     try:
         topic = request.topic
         if request.title:
-            topic = f"{request.title}\n\n{topic}"
+            topic = f"Başlık: {request.title}\n\nKonu: {topic}"
 
         system_prompt = build_final_prompt(
             content_type="article",
             topic=topic,
-            persona="expert",
-            tone="structured",
+            persona="otorite",
+            tone="polished",
             length=request.length,
             language=request.language,
             article_style=request.style,
@@ -945,6 +665,68 @@ async def remove_favorite(favorite_id: str, user_id: str = Depends(get_current_u
         query = query.eq("user_id", user_id)
     query.execute()
     return {"success": True}
+
+# Include sources router
+from routes.sources import router as sources_router
+api_router.include_router(sources_router)
+
+# Include styles router
+from routes.styles import router as styles_router
+api_router.include_router(styles_router)
+
+# Include repurpose router
+from routes.repurpose import router as repurpose_router
+api_router.include_router(repurpose_router)
+
+# Include coach router
+from routes.coach import router as coach_router
+api_router.include_router(coach_router)
+
+# Include new platform routers
+from routes.linkedin import router as linkedin_router
+api_router.include_router(linkedin_router)
+
+from routes.instagram import router as instagram_router
+api_router.include_router(instagram_router)
+
+from routes.blog import router as blog_router
+api_router.include_router(blog_router)
+
+from routes.youtube import router as youtube_router
+api_router.include_router(youtube_router)
+
+from routes.tiktok import router as tiktok_router
+api_router.include_router(tiktok_router)
+
+from routes.trends import router as trends_router
+api_router.include_router(trends_router)
+
+from routes.account_analysis import router as analysis_router
+api_router.include_router(analysis_router)
+
+# Include trends router
+from routes.trends import router as trends_router
+api_router.include_router(trends_router)
+
+# Include account analysis router
+from routes.account_analysis import router as account_analysis_router
+api_router.include_router(account_analysis_router)
+
+# Include media router
+from routes.media import router as media_router
+api_router.include_router(media_router)
+
+# Include settings router
+from routes.settings import router as settings_router
+api_router.include_router(settings_router)
+
+# Include posting times router
+from routes.posting_times import router as posting_times_router
+api_router.include_router(posting_times_router)
+
+# Include cookie management router
+from routes.cookies import router as cookies_router
+api_router.include_router(cookies_router)
 
 # Include the router in the main app
 app.include_router(api_router)

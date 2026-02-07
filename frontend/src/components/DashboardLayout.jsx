@@ -16,7 +16,12 @@ import {
   History,
   Heart,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Dna,
+  RefreshCw,
+  Palette,
+  TrendingUp,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
@@ -39,8 +44,145 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import axios from "axios";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
+
+// Style Profile Settings Component
+function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
+  const [profiles, setProfiles] = useState([]);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        const token = getAccessToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await axios.get(`${API}/styles/list`, { headers });
+        if (response.data) {
+          setProfiles(response.data);
+          if (response.data.length > 0) {
+            setSelectedProfile(response.data[0].id);
+          }
+        }
+      } catch (error) {
+        // Style profiles may not exist yet
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfiles();
+  }, [getAccessToken]);
+
+  const handleRefreshStyle = async () => {
+    if (!selectedProfile) {
+      toast.error("Lütfen bir stil profili seçin");
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const token = getAccessToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.post(
+        `${API}/styles/${selectedProfile}/refresh`,
+        {},
+        { headers }
+      );
+      
+      if (response.data.success) {
+        toast.success(`Stil profili güncellendi! ${response.data.tweets_analyzed} tweet analiz edildi.`);
+      } else {
+        toast.error("Stil profili güncellenemedi");
+      }
+    } catch (error) {
+      console.error('Refresh error:', error);
+      toast.error(error.response?.data?.detail || "Stil profili güncellenemedi");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium">Stil Profili</label>
+      
+      {loading ? (
+        <div className="text-xs text-muted-foreground">Yükleniyor...</div>
+      ) : profiles.length === 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Henüz bir stil profili oluşturmadınız. Style Lab'dan yeni bir profil oluşturun.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNavigateToStyleLab}
+            className="w-full gap-2"
+            data-testid="create-style-btn"
+          >
+            <Palette className="h-4 w-4" />
+            Stil Profili Oluştur
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <select
+            value={selectedProfile || ''}
+            onChange={(e) => setSelectedProfile(e.target.value)}
+            className="w-full p-2 text-sm rounded-md border border-border bg-background"
+            data-testid="style-profile-select"
+          >
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name} ({profile.style_summary?.tweet_count || 0} tweet)
+              </option>
+            ))}
+          </select>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshStyle}
+              disabled={refreshing || !selectedProfile}
+              className="flex-1 gap-2"
+              data-testid="refresh-style-btn"
+            >
+              {refreshing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Güncelleniyor...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Yenile
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNavigateToStyleLab}
+              className="gap-2"
+              data-testid="manage-style-btn"
+            >
+              <Palette className="h-4 w-4" />
+              Düzenle
+            </Button>
+          </div>
+          
+          <p className="text-xs text-muted-foreground">
+            "Yenile" ile tweet'ler tekrar çekilir ve stil analizi güncellenir. (Ayda max 3)
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const navItems = [
   { 
@@ -77,7 +219,7 @@ const navItems = [
   },
   { 
     path: "/dashboard/linkshare", 
-    label: "LinkShareAI", 
+    label: "LinkedIn AI", 
     icon: Linkedin,
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
@@ -90,6 +232,38 @@ const navItems = [
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
     borderColor: "border-orange-500/30"
+  },
+  { 
+    path: "/dashboard/style-lab", 
+    label: "Style Lab", 
+    icon: Dna,
+    color: "text-purple-400",
+    bgColor: "bg-gradient-to-r from-purple-500/10 to-pink-500/10",
+    borderColor: "border-purple-500/30"
+  },
+  { 
+    path: "/dashboard/trends", 
+    label: "🔥 Trendler", 
+    icon: TrendingUp,
+    color: "text-orange-500",
+    bgColor: "bg-gradient-to-r from-orange-500/10 to-red-500/10",
+    borderColor: "border-orange-500/30"
+  },
+  { 
+    path: "/dashboard/account-analysis", 
+    label: "Hesap Analizi", 
+    icon: BarChart3,
+    color: "text-blue-400",
+    bgColor: "bg-gradient-to-r from-blue-500/10 to-purple-500/10",
+    borderColor: "border-blue-500/30"
+  },
+  { 
+    path: "/dashboard/coach", 
+    label: "AI Coach", 
+    icon: Sparkles,
+    color: "text-emerald-400",
+    bgColor: "bg-gradient-to-r from-emerald-500/10 to-cyan-500/10",
+    borderColor: "border-emerald-500/30"
   },
 ];
 
@@ -224,6 +398,11 @@ export default function DashboardLayout() {
             </NavLink>
           </div>
         </nav>
+
+        {/* Profile Switcher */}
+        <div className="mt-auto border-t border-border pt-3 px-2">
+          <ProfileSwitcher />
+        </div>
 
         {/* User Profile Section */}
         <div className="border-t border-border p-4">
@@ -366,6 +545,15 @@ export default function DashboardLayout() {
                 </div>
               </div>
             )}
+
+            {/* Style Profile Update */}
+            <StyleProfileSettings 
+              onNavigateToStyleLab={() => {
+                setSettingsOpen(false);
+                navigate('/dashboard/style-lab');
+              }}
+              getAccessToken={getAccessToken}
+            />
           </div>
         </DialogContent>
       </Dialog>

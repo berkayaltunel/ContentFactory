@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Twitter,
   Sparkles,
@@ -10,10 +11,13 @@ import {
   RefreshCw,
   Link,
   Image,
+  Upload,
   Repeat2,
   CircleHelp,
   Settings2,
   Lightbulb,
+  X,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,40 +35,50 @@ import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
+import StyleSelector from "@/components/StyleSelector";
+import { useProfile } from "@/contexts/ProfileContext";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
-// Persona options
+// xpatla-style Persona options
 const personas = [
-  { id: "expert", label: "Expert", desc: "Konuyu iyi bilen uzman gibi yazar" },
-  { id: "leaked", label: "Leaked", desc: "Perde arkası bilgi paylaşır gibi yazar" },
-  { id: "coach", label: "Coach", desc: "Hem öğretir hem motive eder" },
-  { id: "news", label: "News", desc: "Tarafsız haber muhabiri gibi yazar" },
-  { id: "meme", label: "Meme", desc: "Komik ve viral internet diliyle yazar" },
-  { id: "against", label: "Against", desc: "Herkesin tersini savunarak dikkat çeker" },
+  { id: "saf", label: "Saf", desc: "Karakter yok, sadece sen" },
+  { id: "otorite", label: "Otorite", desc: "Insider perspective, kesin" },
+  { id: "insider", label: "Insider", desc: "Exclusive bilgi vibe" },
+  { id: "mentalist", label: "Mentalist", desc: "Teknik + motivasyon" },
+  { id: "haber", label: "Haber", desc: "Haber formatı" },
 ];
 
-// Tone options
+// xpatla-style Tone options
 const tones = [
-  { id: "casual", label: "Casual", desc: "Arkadaşınla sohbet eder gibi yazar" },
-  { id: "unfiltered", label: "Unfiltered", desc: "Aklına geleni filtresiz yazar" },
-  { id: "structured", label: "Structured", desc: "Düzenli ve mantıklı bir akışla yazar" },
-  { id: "absurd", label: "Absurd", desc: "Beklenmedik ve şaşırtıcı bir dille yazar" },
+  { id: "natural", label: "Natural", desc: "Sıfır yapı, doğal akış" },
+  { id: "raw", label: "Raw", desc: "Ham düşünce akışı" },
+  { id: "polished", label: "Polished", desc: "Thesis→Evidence→Insight" },
+  { id: "unhinged", label: "Unhinged", desc: "Shock→Escalate→Twist" },
 ];
 
-// Length options for different tabs
+// Knowledge options (NEW!)
+const knowledgeModes = [
+  { id: null, label: "Yok", desc: "Ekstra bilgi modu yok" },
+  { id: "insider", label: "insider", desc: "Perde arkası bilgi" },
+  { id: "contrarian", label: "contrarian", desc: "Herkesin tersini savun" },
+  { id: "hidden", label: "hidden", desc: "Gizli, az bilinen bilgi" },
+  { id: "expert", label: "expert", desc: "Derin uzmanlık bilgisi" },
+];
+
+// xpatla-style Length options for different tabs
 const tweetLengths = [
   { id: "micro", label: "Micro", range: "50-100" },
-  { id: "short", label: "Short", range: "140-280" },
-  { id: "medium", label: "Medium", range: "400-600" },
-  { id: "rush", label: "Rush", range: "700-1K" },
-  { id: "thread", label: "Thread", range: "1K+" },
+  { id: "punch", label: "Punch", range: "140-280" },
+  { id: "spark", label: "Spark", range: "400-600" },
+  { id: "storm", label: "Storm", range: "700-1K" },
+  { id: "thread", label: "Thread", range: "3-7 tweet" },
 ];
 
 const replyLengths = [
   { id: "micro", label: "Micro", range: "50-100" },
-  { id: "short", label: "Short", range: "140-280" },
-  { id: "medium", label: "Medium", range: "400-600" },
+  { id: "punch", label: "Punch", range: "140-280" },
+  { id: "spark", label: "Spark", range: "400-600" },
 ];
 
 const articleLengths = [
@@ -99,18 +113,19 @@ const languages = [
 ];
 
 // Chip selector component
-function ChipSelector({ options, value, onChange }) {
+function ChipSelector({ options, value, onChange, size = "default" }) {
   const selected = options.find(o => o.id === value);
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
-            key={option.id}
+            key={option.id || "none"}
             type="button"
             onClick={() => onChange(option.id)}
             className={cn(
               "chip",
+              size === "small" && "text-xs px-2 py-1",
               value === option.id && "active"
             )}
             data-testid={`chip-${option.id}`}
@@ -126,6 +141,37 @@ function ChipSelector({ options, value, onChange }) {
   );
 }
 
+// Knowledge selector component (pill style like xpatla)
+function KnowledgeSelector({ value, onChange }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {knowledgeModes.slice(1).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onChange(value === option.id ? null : option.id)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
+              value === option.id
+                ? "bg-sky-500 text-white border-sky-500"
+                : "bg-secondary text-muted-foreground border-transparent hover:bg-secondary/80"
+            )}
+            data-testid={`knowledge-${option.id}`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {value && (
+        <p className="text-xs text-muted-foreground">
+          {knowledgeModes.find(k => k.id === value)?.desc}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // Length selector component
 function LengthSelector({ options, value, onChange }) {
   const selected = options.find(o => o.id === value);
@@ -134,25 +180,24 @@ function LengthSelector({ options, value, onChange }) {
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => onChange(option.id)}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-all border",
-              value === option.id 
-                ? "bg-foreground text-background border-foreground"
-                : "bg-secondary text-muted-foreground border-transparent hover:bg-secondary/80"
-            )}
-            data-testid={`length-${option.id}`}
-          >
-            {option.label}
-          </button>
+          <div key={option.id} className="flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => onChange(option.id)}
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all border",
+                value === option.id 
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-secondary text-muted-foreground border-transparent hover:bg-secondary/80"
+              )}
+              data-testid={`length-${option.id}`}
+            >
+              {option.label}
+            </button>
+            <span className="text-xs text-muted-foreground mt-1">{option.range} kar.</span>
+          </div>
         ))}
       </div>
-      {selected && (
-        <p className="text-sm text-muted-foreground">{selected.range} karakter</p>
-      )}
     </div>
   );
 }
@@ -186,18 +231,89 @@ function VariantCounter({ value, onChange, max = 5 }) {
   );
 }
 
+// Image upload component (NEW!)
+function ImageUpload({ imageUrl, onImageChange, onImageRemove, onBase64Change }) {
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Görsel 5MB'dan küçük olmalı");
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      onImageChange(url);
+      
+      // Convert to base64 for API
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (onBase64Change) onBase64Change(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div 
+      className="relative border-2 border-dashed border-border rounded-lg p-4 hover:border-muted-foreground/50 transition-colors cursor-pointer"
+      onClick={() => !imageUrl && fileInputRef.current?.click()}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      
+      {imageUrl ? (
+        <div className="relative">
+          <img 
+            src={imageUrl} 
+            alt="Uploaded" 
+            className="max-h-32 rounded-lg mx-auto"
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onImageRemove();
+            }}
+            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Upload className="h-8 w-8" />
+          <div className="text-center">
+            <p className="text-sm font-medium">Görsel ekle (opsiyonel)</p>
+            <p className="text-xs">Max 5MB - JPG, PNG, WebP</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Tweet Tab Content
-function TweetTab({ jobs, onAddJob, onDismissJob }) {
-  const [topic, setTopic] = useState("");
+function TweetTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
+  const { activeProfileId, activeProfile } = useProfile();
+  const [topic, setTopic] = useState(initialTopic || "");
   const [mode, setMode] = useState("classic");
-  const [length, setLength] = useState("short");
+  const [length, setLength] = useState("punch");
   const [variants, setVariants] = useState(3);
-  const [persona, setPersona] = useState("expert");
-  const [tone, setTone] = useState("casual");
+  const [persona, setPersona] = useState("otorite");
+  const [tone, setTone] = useState("natural");
+  const [knowledge, setKnowledge] = useState(null);
   const [language, setLanguage] = useState("auto");
   const [additionalContext, setAdditionalContext] = useState("");
   const [showContext, setShowContext] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
 
   const hasActiveJob = jobs.some((j) => j.status === "generating");
 
@@ -215,13 +331,21 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
       variants,
       persona,
       tone,
+      knowledge,
       language,
       additionalContext: showContext ? additionalContext : null,
       personaLabel: personas.find((p) => p.id === persona)?.label || persona,
       toneLabel: tones.find((t) => t.id === tone)?.label || tone,
       lengthLabel: tweetLengths.find((l) => l.id === length)?.label || length,
+      knowledgeLabel: knowledge ? knowledgeModes.find((k) => k.id === knowledge)?.label : null,
+      style_profile_id: activeProfileId,
+      image_url: imageUrl,
+      image_base64: imageBase64,
     });
   };
+
+  // Get summary text for collapsed advanced settings
+  const advancedSummary = `${personas.find(p => p.id === persona)?.label} · ${tones.find(t => t.id === tone)?.label}${knowledge ? ` · ${knowledge}` : ''}`;
 
   return (
     <div className="space-y-6">
@@ -242,29 +366,29 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
         </button>
         <button
           type="button"
-          onClick={() => setMode("ultra")}
+          onClick={() => setMode("apex")}
           className={cn(
             "px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1",
-            mode === "ultra"
+            mode === "apex"
               ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
               : "bg-secondary text-muted-foreground hover:bg-secondary/80"
           )}
-          data-testid="mode-ultra"
+          data-testid="mode-apex"
         >
           <Zap className="h-4 w-4" />
-          ULTRA
+          APEX
         </button>
       </div>
 
       {/* Main Input */}
-      <div className={mode === "ultra" ? "gradient-border-wrapper" : ""}>
+      <div className={mode === "apex" ? "gradient-border-wrapper" : ""}>
         <Textarea
-          placeholder={mode === "ultra" ? "ULTRA modunda viral içerik üret..." : "Ne hakkında tweet üreteyim?"}
+          placeholder={mode === "apex" ? "APEX modunda viral içerik üret..." : "Konu yaz, haber linki veya tweet URL'si yapıştır..."}
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           className={cn(
             "min-h-[120px] text-base resize-none pr-16",
-            mode !== "ultra" && "border-border"
+            mode !== "apex" && "border-border"
           )}
           data-testid="tweet-input"
         />
@@ -274,6 +398,14 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
           {topic.length}/280
         </span>
       </div>
+
+      {/* Image Upload (NEW!) */}
+      <ImageUpload 
+        imageUrl={imageUrl}
+        onImageChange={setImageUrl}
+        onImageRemove={() => { setImageUrl(null); setImageBase64(null); }}
+        onBase64Change={setImageBase64}
+      />
 
       {/* Length Selector */}
       <div className="space-y-2">
@@ -291,6 +423,14 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
         <VariantCounter value={variants} onChange={setVariants} />
       </div>
 
+      {/* Active Profile Info */}
+      {activeProfile && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-sm text-purple-400">
+          <span>🧬</span>
+          <span>{activeProfile.name} stili uygulanacak</span>
+        </div>
+      )}
+
       {/* Advanced Settings */}
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <CollapsibleTrigger asChild>
@@ -300,9 +440,9 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
             data-testid="advanced-toggle"
           >
             <Settings2 className="h-4 w-4" />
-            <span>GELİŞMİŞ AYARLAR</span>
+            <span>Gelişmiş Ayarlar</span>
             <span className="text-xs ml-2 text-muted-foreground">
-              ({personas.find(p => p.id === persona)?.label}, {tones.find(t => t.id === tone)?.label})
+              • {advancedSummary}
             </span>
             {advancedOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
           </button>
@@ -310,19 +450,25 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
         <CollapsibleContent className="space-y-4 pt-4">
           {/* Persona */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">KARAKTER</label>
+            <label className="text-sm font-medium">Karakter</label>
             <ChipSelector options={personas} value={persona} onChange={setPersona} />
           </div>
 
           {/* Tone */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">TON</label>
+            <label className="text-sm font-medium">Ton</label>
             <ChipSelector options={tones} value={tone} onChange={setTone} />
+          </div>
+
+          {/* Knowledge (NEW!) */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Knowledge</label>
+            <KnowledgeSelector value={knowledge} onChange={setKnowledge} />
           </div>
 
           {/* Language */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">DİL</label>
+            <label className="text-sm font-medium">Dil</label>
             <ChipSelector options={languages} value={language} onChange={setLanguage} />
           </div>
         </CollapsibleContent>
@@ -393,15 +539,64 @@ function TweetTab({ jobs, onAddJob, onDismissJob }) {
   );
 }
 
+// Tweet Preview Card Component
+function TweetPreviewCard({ tweet }) {
+  if (!tweet) return null;
+  
+  const formatNumber = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num?.toString() || '0';
+  };
+
+  return (
+    <Card className="bg-secondary/50 border-border overflow-hidden" data-testid="tweet-preview">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          {tweet.author?.avatar && (
+            <img 
+              src={tweet.author.avatar.replace('_normal', '_bigger')} 
+              alt={tweet.author.name}
+              className="w-10 h-10 rounded-full"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm truncate">{tweet.author?.name}</span>
+              <span className="text-muted-foreground text-xs truncate">@{tweet.author?.username}</span>
+            </div>
+            <p className="text-sm mt-1 whitespace-pre-wrap">{tweet.text}</p>
+            {tweet.media?.length > 0 && (
+              <div className="mt-2 rounded-lg overflow-hidden">
+                {tweet.media.filter(m => m.type === 'photo').slice(0, 1).map((m, i) => (
+                  <img key={i} src={m.url} alt="" className="max-h-48 rounded-lg" />
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+              <span>💬 {formatNumber(tweet.metrics?.replies)}</span>
+              <span>🔁 {formatNumber(tweet.metrics?.retweets)}</span>
+              <span>❤️ {formatNumber(tweet.metrics?.likes)}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Quote Tab Content
 function QuoteTab({ jobs, onAddJob, onDismissJob }) {
   const [tweetUrl, setTweetUrl] = useState("");
   const [tweetContent, setTweetContent] = useState("");
+  const [tweetData, setTweetData] = useState(null);
   const [fetched, setFetched] = useState(false);
-  const [length, setLength] = useState("short");
+  const [fetching, setFetching] = useState(false);
+  const [length, setLength] = useState("punch");
   const [variants, setVariants] = useState(3);
-  const [persona, setPersona] = useState("expert");
-  const [tone, setTone] = useState("casual");
+  const [persona, setPersona] = useState("otorite");
+  const [tone, setTone] = useState("natural");
+  const [knowledge, setKnowledge] = useState(null);
   const [language, setLanguage] = useState("auto");
   const [additionalContext, setAdditionalContext] = useState("");
   const [showContext, setShowContext] = useState(false);
@@ -409,14 +604,27 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
 
   const hasActiveJob = jobs.some((j) => j.status === "generating");
 
-  const handleFetch = () => {
+  const handleFetch = async () => {
     if (!tweetUrl.trim()) {
       toast.error("Lütfen bir tweet linki girin");
       return;
     }
-    setTweetContent("Bu örnek bir tweet içeriğidir. Gerçek uygulamada tweet URL'den çekilecektir.");
-    setFetched(true);
-    toast.success("Tweet çekildi!");
+    setFetching(true);
+    try {
+      const response = await axios.get(`${API}/tweet/fetch`, { params: { url: tweetUrl } });
+      if (response.data.success) {
+        setTweetData(response.data.tweet);
+        setTweetContent(response.data.tweet.text);
+        setFetched(true);
+        toast.success("Tweet çekildi!");
+      } else {
+        toast.error("Tweet çekilemedi");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Tweet çekilemedi");
+    } finally {
+      setFetching(false);
+    }
   };
 
   const handleGenerate = () => {
@@ -434,6 +642,7 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
       variants,
       persona,
       tone,
+      knowledge,
       language,
       additionalContext: showContext ? additionalContext : null,
       personaLabel: personas.find((p) => p.id === persona)?.label || persona,
@@ -441,6 +650,8 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
       lengthLabel: tweetLengths.find((l) => l.id === length)?.label || length,
     });
   };
+
+  const advancedSummary = `${personas.find(p => p.id === persona)?.label} · ${tones.find(t => t.id === tone)?.label}${knowledge ? ` · ${knowledge}` : ''}`;
 
   return (
     <div className="space-y-6">
@@ -455,21 +666,15 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
             className="flex-1"
             data-testid="quote-url-input"
           />
-          <Button onClick={handleFetch} variant="secondary" data-testid="fetch-btn">
-            <Link className="h-4 w-4 mr-2" />
-            Çek
+          <Button onClick={handleFetch} variant="secondary" disabled={fetching} data-testid="fetch-btn">
+            {fetching ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Link className="h-4 w-4 mr-2" />}
+            {fetching ? "Çekiliyor..." : "Çek"}
           </Button>
         </div>
       </div>
 
       {/* Tweet Preview */}
-      {fetched && (
-        <Card className="bg-secondary/50 border-border" data-testid="tweet-preview">
-          <CardContent className="p-4">
-            <p className="text-sm">{tweetContent}</p>
-          </CardContent>
-        </Card>
-      )}
+      {fetched && <TweetPreviewCard tweet={tweetData} />}
 
       {/* Length Selector */}
       <div className="space-y-2">
@@ -495,21 +700,26 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
           >
             <Settings2 className="h-4 w-4" />
-            <span>GELİŞMİŞ AYARLAR</span>
+            <span>Gelişmiş Ayarlar</span>
+            <span className="text-xs ml-2 text-muted-foreground">• {advancedSummary}</span>
             {advancedOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">KARAKTER</label>
+            <label className="text-sm font-medium">Karakter</label>
             <ChipSelector options={personas} value={persona} onChange={setPersona} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">TON</label>
+            <label className="text-sm font-medium">Ton</label>
             <ChipSelector options={tones} value={tone} onChange={setTone} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">DİL</label>
+            <label className="text-sm font-medium">Knowledge</label>
+            <KnowledgeSelector value={knowledge} onChange={setKnowledge} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Dil</label>
             <ChipSelector options={languages} value={language} onChange={setLanguage} />
           </div>
         </CollapsibleContent>
@@ -571,12 +781,15 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
 function ReplyTab({ jobs, onAddJob, onDismissJob }) {
   const [tweetUrl, setTweetUrl] = useState("");
   const [tweetContent, setTweetContent] = useState("");
+  const [tweetData, setTweetData] = useState(null);
   const [fetched, setFetched] = useState(false);
-  const [length, setLength] = useState("short");
+  const [fetching, setFetching] = useState(false);
+  const [length, setLength] = useState("punch");
   const [replyMode, setReplyMode] = useState("support");
   const [variants, setVariants] = useState(3);
-  const [persona, setPersona] = useState("expert");
-  const [tone, setTone] = useState("casual");
+  const [persona, setPersona] = useState("otorite");
+  const [tone, setTone] = useState("natural");
+  const [knowledge, setKnowledge] = useState(null);
   const [language, setLanguage] = useState("auto");
   const [additionalContext, setAdditionalContext] = useState("");
   const [showContext, setShowContext] = useState(false);
@@ -584,14 +797,27 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
 
   const hasActiveJob = jobs.some((j) => j.status === "generating");
 
-  const handleFetch = () => {
+  const handleFetch = async () => {
     if (!tweetUrl.trim()) {
       toast.error("Lütfen bir tweet linki girin");
       return;
     }
-    setTweetContent("Bu örnek bir tweet içeriğidir. Gerçek uygulamada tweet URL'den çekilecektir.");
-    setFetched(true);
-    toast.success("Tweet çekildi!");
+    setFetching(true);
+    try {
+      const response = await axios.get(`${API}/tweet/fetch`, { params: { url: tweetUrl } });
+      if (response.data.success) {
+        setTweetData(response.data.tweet);
+        setTweetContent(response.data.tweet.text);
+        setFetched(true);
+        toast.success("Tweet çekildi!");
+      } else {
+        toast.error("Tweet çekilemedi");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Tweet çekilemedi");
+    } finally {
+      setFetching(false);
+    }
   };
 
   const handleGenerate = () => {
@@ -610,6 +836,7 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
       variants,
       persona,
       tone,
+      knowledge,
       language,
       additionalContext: showContext ? additionalContext : null,
       personaLabel: personas.find((p) => p.id === persona)?.label || persona,
@@ -617,6 +844,8 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
       lengthLabel: replyLengths.find((l) => l.id === length)?.label || length,
     });
   };
+
+  const advancedSummary = `${personas.find(p => p.id === persona)?.label} · ${tones.find(t => t.id === tone)?.label}${knowledge ? ` · ${knowledge}` : ''}`;
 
   return (
     <div className="space-y-6">
@@ -631,21 +860,15 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
             className="flex-1"
             data-testid="reply-url-input"
           />
-          <Button onClick={handleFetch} variant="secondary" data-testid="reply-fetch-btn">
-            <Link className="h-4 w-4 mr-2" />
-            Çek
+          <Button onClick={handleFetch} variant="secondary" disabled={fetching} data-testid="reply-fetch-btn">
+            {fetching ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Link className="h-4 w-4 mr-2" />}
+            {fetching ? "Çekiliyor..." : "Çek"}
           </Button>
         </div>
       </div>
 
       {/* Tweet Preview */}
-      {fetched && (
-        <Card className="bg-secondary/50 border-border" data-testid="reply-tweet-preview">
-          <CardContent className="p-4">
-            <p className="text-sm">{tweetContent}</p>
-          </CardContent>
-        </Card>
-      )}
+      {fetched && <TweetPreviewCard tweet={tweetData} />}
 
       {/* Length Selector */}
       <div className="space-y-2">
@@ -659,7 +882,7 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
 
       {/* Reply Mode Selector */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">REPLY MODU</label>
+        <label className="text-sm font-medium">Reply Modu</label>
         <ChipSelector options={replyModes} value={replyMode} onChange={setReplyMode} />
       </div>
 
@@ -677,21 +900,26 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
           >
             <Settings2 className="h-4 w-4" />
-            <span>GELİŞMİŞ AYARLAR</span>
+            <span>Gelişmiş Ayarlar</span>
+            <span className="text-xs ml-2 text-muted-foreground">• {advancedSummary}</span>
             {advancedOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">KARAKTER</label>
+            <label className="text-sm font-medium">Karakter</label>
             <ChipSelector options={personas} value={persona} onChange={setPersona} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">TON</label>
+            <label className="text-sm font-medium">Ton</label>
             <ChipSelector options={tones} value={tone} onChange={setTone} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">DİL</label>
+            <label className="text-sm font-medium">Knowledge</label>
+            <KnowledgeSelector value={knowledge} onChange={setKnowledge} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Dil</label>
             <ChipSelector options={languages} value={language} onChange={setLanguage} />
           </div>
         </CollapsibleContent>
@@ -788,7 +1016,7 @@ function ArticleTab({ jobs, onAddJob, onDismissJob }) {
       style,
       language,
       variants: 1,
-      persona: "expert",
+      persona: "otorite",
       referenceLinks: referenceLinks.filter((l) => l.trim()),
       additionalContext: additionalContext || null,
       personaLabel: "Article",
@@ -842,13 +1070,13 @@ function ArticleTab({ jobs, onAddJob, onDismissJob }) {
 
       {/* Style Selector */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">STİL</label>
+        <label className="text-sm font-medium">Stil</label>
         <ChipSelector options={articleStyles} value={style} onChange={setStyle} />
       </div>
 
       {/* Language Selector */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">DİL</label>
+        <label className="text-sm font-medium">Dil</label>
         <ChipSelector options={languages} value={language} onChange={setLanguage} />
       </div>
 
@@ -860,7 +1088,7 @@ function ArticleTab({ jobs, onAddJob, onDismissJob }) {
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
           >
             <Settings2 className="h-4 w-4" />
-            <span>GELİŞMİŞ AYARLAR</span>
+            <span>Gelişmiş Ayarlar</span>
             {showAdvanced ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
           </button>
         </CollapsibleTrigger>
@@ -943,6 +1171,8 @@ let jobIdCounter = 0;
 export default function XAIModule() {
   const [jobs, setJobs] = useState([]);
   const { getAccessToken } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialTopic = searchParams.get("topic") || "";
 
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) =>
@@ -967,6 +1197,7 @@ export default function XAIModule() {
         personaLabel: params.personaLabel,
         toneLabel: params.toneLabel,
         lengthLabel: params.lengthLabel,
+        knowledgeLabel: params.knowledgeLabel,
         variantCount: params.variants,
         variants: null,
       };
@@ -985,8 +1216,12 @@ export default function XAIModule() {
             variants: params.variants,
             persona: params.persona,
             tone: params.tone,
+            knowledge: params.knowledge || null,
             language: params.language,
             additional_context: params.additionalContext,
+            style_profile_id: params.style_profile_id || null,
+            image_url: params.image_url || null,
+            image_base64: params.image_base64 || null,
           };
         } else if (params.type === "quote") {
           body = {
@@ -996,6 +1231,7 @@ export default function XAIModule() {
             variants: params.variants,
             persona: params.persona,
             tone: params.tone,
+            knowledge: params.knowledge || null,
             language: params.language,
             additional_context: params.additionalContext,
           };
@@ -1008,6 +1244,7 @@ export default function XAIModule() {
             variants: params.variants,
             persona: params.persona,
             tone: params.tone,
+            knowledge: params.knowledge || null,
             language: params.language,
             additional_context: params.additionalContext,
           };
@@ -1053,7 +1290,7 @@ export default function XAIModule() {
           Viral Thread Engine
         </h1>
         <p className="text-muted-foreground">
-          Dijital içerik strateji ve üretim merkezi.
+          AI senin tarzında viral içerik üretsin.
         </p>
       </div>
 
@@ -1064,13 +1301,13 @@ export default function XAIModule() {
           <Tabs defaultValue="tweet" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6" data-testid="x-ai-tabs">
               <TabsTrigger value="tweet" data-testid="tab-tweet">Tweet</TabsTrigger>
-              <TabsTrigger value="quote" data-testid="tab-quote">Quote</TabsTrigger>
-              <TabsTrigger value="reply" data-testid="tab-reply">Reply</TabsTrigger>
-              <TabsTrigger value="article" data-testid="tab-article">Article</TabsTrigger>
+              <TabsTrigger value="quote" data-testid="tab-quote">Alıntı</TabsTrigger>
+              <TabsTrigger value="reply" data-testid="tab-reply">Yanıt</TabsTrigger>
+              <TabsTrigger value="article" data-testid="tab-article">Makale</TabsTrigger>
             </TabsList>
 
             <TabsContent value="tweet">
-              <TweetTab jobs={jobs.filter(j => j.type === "tweet")} onAddJob={addJob} onDismissJob={dismissJob} />
+              <TweetTab jobs={jobs.filter(j => j.type === "tweet")} onAddJob={addJob} onDismissJob={dismissJob} initialTopic={initialTopic} />
             </TabsContent>
 
             <TabsContent value="quote">

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute, PublicRoute } from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
@@ -16,6 +17,10 @@ import LinkShareModule from "@/pages/LinkShareModule";
 import BlogArchitectModule from "@/pages/BlogArchitectModule";
 import HistoryPage from "@/pages/HistoryPage";
 import FavoritesPage from "@/pages/FavoritesPage";
+import StyleLabPage from "@/pages/StyleLabPage";
+import CoachPage from "@/pages/CoachPage";
+import TrendDashboardPage from "@/pages/TrendDashboardPage";
+import AccountAnalysisPage from "@/pages/AccountAnalysisPage";
 
 function App() {
   return (
@@ -35,7 +40,7 @@ function App() {
 
               {/* Protected dashboard routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<ProfileProvider><DashboardLayout /></ProfileProvider>}>
                   <Route index element={<Navigate to="/dashboard/x-ai" replace />} />
                   <Route path="x-ai" element={<XAIModule />} />
                   <Route path="youtube" element={<YouTubeModule />} />
@@ -45,6 +50,10 @@ function App() {
                   <Route path="blog" element={<BlogArchitectModule />} />
                   <Route path="history" element={<HistoryPage />} />
                   <Route path="favorites" element={<FavoritesPage />} />
+                  <Route path="style-lab" element={<StyleLabPage />} />
+                  <Route path="coach" element={<CoachPage />} />
+                  <Route path="trends" element={<TrendDashboardPage />} />
+                  <Route path="account-analysis" element={<AccountAnalysisPage />} />
                 </Route>
               </Route>
 
