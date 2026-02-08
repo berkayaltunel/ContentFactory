@@ -419,7 +419,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             style_prompt=style_prompt
         )
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id if user else None)
+        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
 
         variants = []
         for i, content in enumerate(contents):
@@ -432,7 +432,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         # Log to database
         supabase.table("generations").insert({
             "type": "tweet",
-            "user_id": user.id if user else None,
+            "user_id": user.id,
             "topic": request.topic,
             "mode": request.mode,
             "length": request.length,
@@ -479,7 +479,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
             additional_context=request.additional_context
         )
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id if user else None)
+        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
 
         variants = []
         for i, content in enumerate(contents):
@@ -491,7 +491,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
 
         supabase.table("generations").insert({
             "type": "quote",
-            "user_id": user.id if user else None,
+            "user_id": user.id,
             "tweet_url": request.tweet_url,
             "tweet_content": request.tweet_content,
             "length": request.length,
@@ -538,7 +538,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
             additional_context=request.additional_context
         )
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id if user else None)
+        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
 
         variants = []
         for i, content in enumerate(contents):
@@ -550,7 +550,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
 
         supabase.table("generations").insert({
             "type": "reply",
-            "user_id": user.id if user else None,
+            "user_id": user.id,
             "tweet_url": request.tweet_url,
             "tweet_content": request.tweet_content,
             "reply_mode": request.reply_mode,
@@ -595,7 +595,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
             additional_context=request.additional_context
         )
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "Makaleyi yaz.", 1, user_id=user.id if user else None)
+        contents, tokens_used = await generate_with_openai(system_prompt, "Makaleyi yaz.", 1, user_id=user.id)
 
         variants = []
         for i, content in enumerate(contents):
@@ -607,7 +607,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
 
         supabase.table("generations").insert({
             "type": "article",
-            "user_id": user.id if user else None,
+            "user_id": user.id,
             "topic": request.topic,
             "title": request.title,
             "length": request.length,
@@ -631,9 +631,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
 @api_router.get("/generations/history")
 async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth)):
     """Get generation history"""
-    query = supabase.table("generations").select("*").order("created_at", desc=True).limit(limit)
-    if user:
-        query = query.eq("user_id", user.id)
+    query = supabase.table("generations").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit)
     if content_type:
         query = query.eq("type", content_type)
     result = query.execute()
@@ -643,14 +641,9 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
 async def get_user_stats(user=Depends(require_auth)):
     """Get user statistics"""
     try:
-        gen_query = supabase.table("generations").select("id", count="exact")
-        tweet_query = supabase.table("generations").select("id", count="exact").eq("type", "tweet")
-        fav_query = supabase.table("favorites").select("id", count="exact")
-
-        if user:
-            gen_query = gen_query.eq("user_id", user.id)
-            tweet_query = tweet_query.eq("user_id", user.id)
-            fav_query = fav_query.eq("user_id", user.id)
+        gen_query = supabase.table("generations").select("id", count="exact").eq("user_id", user.id)
+        tweet_query = supabase.table("generations").select("id", count="exact").eq("type", "tweet").eq("user_id", user.id)
+        fav_query = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id)
 
         return {
             "generations": gen_query.execute().count or 0,
@@ -664,9 +657,7 @@ async def get_user_stats(user=Depends(require_auth)):
 async def get_favorites(limit: int = 50, user=Depends(require_auth)):
     """Get user favorites"""
     try:
-        query = supabase.table("favorites").select("*").order("created_at", desc=True).limit(limit)
-        if user:
-            query = query.eq("user_id", user.id)
+        query = supabase.table("favorites").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit)
         result = query.execute()
         return result.data
     except Exception:
@@ -677,7 +668,7 @@ async def add_favorite(content: dict, user=Depends(require_auth)):
     """Add content to favorites"""
     favorite_doc = {
         "id": str(uuid.uuid4()),
-        "user_id": user.id if user else None,
+        "user_id": user.id,
         "content": content.get("content", ""),
         "type": content.get("type", "tweet"),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -688,10 +679,7 @@ async def add_favorite(content: dict, user=Depends(require_auth)):
 @api_router.delete("/favorites/{favorite_id}")
 async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
     """Remove content from favorites"""
-    query = supabase.table("favorites").delete().eq("id", favorite_id)
-    if user:
-        query = query.eq("user_id", user.id)
-    query.execute()
+    supabase.table("favorites").delete().eq("id", favorite_id).eq("user_id", user.id).execute()
     return {"success": True}
 
 # Include sources router

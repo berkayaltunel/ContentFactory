@@ -36,6 +36,12 @@ def get_supabase():
 async def create_style_profile(request: CreateProfileRequest, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Create a style profile from multiple sources"""
     
+    # Verify all source_ids belong to the user
+    for source_id in request.source_ids:
+        check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
+        if not check.data:
+            raise HTTPException(status_code=403, detail="Bu kaynak size ait değil")
+    
     # Fetch all tweets from sources
     all_tweets = []
     for source_id in request.source_ids:
@@ -53,6 +59,7 @@ async def create_style_profile(request: CreateProfileRequest, user=Depends(requi
     profile_id = str(uuid.uuid4())
     profile_data = {
         "id": profile_id,
+        "user_id": user.id,
         "name": request.name,
         "source_ids": request.source_ids,
         "style_fingerprint": fingerprint,
@@ -79,8 +86,8 @@ async def create_style_profile(request: CreateProfileRequest, user=Depends(requi
 
 @router.get("/list", response_model=List[ProfileResponse])
 async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """List all style profiles"""
-    result = supabase.table("style_profiles").select("*").order("created_at", desc=True).execute()
+    """List all style profiles for this user"""
+    result = supabase.table("style_profiles").select("*").eq("user_id", user.id).order("created_at", desc=True).execute()
     
     profiles = []
     for row in result.data:
@@ -104,22 +111,22 @@ async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabas
 
 @router.get("/{profile_id}")
 async def get_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Get full profile with fingerprint"""
-    result = supabase.table("style_profiles").select("*").eq("id", profile_id).execute()
+    """Get full profile with fingerprint (user-scoped)"""
+    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).execute()
     
     if not result.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        raise HTTPException(status_code=404, detail="Profil bulunamadı")
     
     return result.data[0]
 
 
 @router.get("/{profile_id}/prompt")
 async def get_style_prompt(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Get the style prompt for generation"""
-    result = supabase.table("style_profiles").select("*").eq("id", profile_id).execute()
+    """Get the style prompt for generation (user-scoped)"""
+    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).execute()
     
     if not result.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        raise HTTPException(status_code=404, detail="Profil bulunamadı")
     
     fingerprint = result.data[0].get('style_fingerprint', {})
     prompt = analyzer.generate_style_prompt(fingerprint)
@@ -133,22 +140,22 @@ async def get_style_prompt(profile_id: str, user=Depends(require_auth), supabase
 
 @router.delete("/{profile_id}")
 async def delete_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Delete a style profile"""
-    supabase.table("style_profiles").delete().eq("id", profile_id).execute()
+    """Delete a style profile (user-scoped)"""
+    result = supabase.table("style_profiles").delete().eq("id", profile_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Profil bulunamadı")
     return {"success": True}
 
 
 @router.post("/{profile_id}/refresh")
 async def refresh_style_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """
-    Refresh a style profile by re-scraping tweets (100 tweet) and AI-powered deep analysis.
-    """
+    """Refresh a style profile by re-scraping tweets and AI-powered deep analysis (user-scoped)."""
     from services.twitter_scraper import scraper
     
-    # Get existing profile
-    result = supabase.table("style_profiles").select("*").eq("id", profile_id).execute()
+    # Get existing profile - verify belongs to user
+    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).execute()
     if not result.data:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        raise HTTPException(status_code=404, detail="Profil bulunamadı")
     
     profile = result.data[0]
     source_ids = profile.get('source_ids', [])
@@ -156,12 +163,18 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
     if not source_ids:
         raise HTTPException(status_code=400, detail="No sources linked to this profile")
     
+    # Verify all sources belong to user
+    for source_id in source_ids:
+        src_check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
+        if not src_check.data:
+            raise HTTPException(status_code=403, detail="Bu kaynak size ait değil")
+    
     # Get sources and re-scrape
     all_tweets = []
     errors = []
     
     for source_id in source_ids:
-        source_result = supabase.table("style_sources").select("*").eq("id", source_id).execute()
+        source_result = supabase.table("style_sources").select("*").eq("id", source_id).eq("user_id", user.id).execute()
         if not source_result.data:
             errors.append(f"Source {source_id} not found")
             continue
@@ -174,15 +187,12 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
             continue
         
         try:
-            # 100 tweet çek (Bird CLI batch halinde çeker)
             logger.info(f"Scraping 100 tweets from @{username}")
             tweets = scraper.get_user_tweets(username, count=100)
             
             if tweets:
-                # Eski tweet'leri sil
                 supabase.table("source_tweets").delete().eq("source_id", source_id).execute()
                 
-                # Yeni tweet'leri kaydet (batch insert)
                 tweet_records = []
                 for tweet in tweets:
                     tweet_records.append({
@@ -196,7 +206,6 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
                         "created_at": tweet.get('tweet_created_at', datetime.now(timezone.utc).isoformat())
                     })
                 
-                # Batch insert (50'şerli)
                 for i in range(0, len(tweet_records), 50):
                     batch = tweet_records[i:i+50]
                     supabase.table("source_tweets").insert(batch).execute()
@@ -239,7 +248,7 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
         "style_fingerprint": fingerprint,
         "example_tweets": fingerprint.get('example_tweets', []),
     }
-    supabase.table("style_profiles").update(update_data).eq("id", profile_id).execute()
+    supabase.table("style_profiles").update(update_data).eq("id", profile_id).eq("user_id", user.id).execute()
     
     return {
         "success": True,
@@ -260,7 +269,12 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
 
 @router.post("/analyze-source/{source_id}")
 async def analyze_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Analyze a single source without creating a profile"""
+    """Analyze a single source without creating a profile (verify ownership)"""
+    # Verify source belongs to user
+    source_check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
+    if not source_check.data:
+        raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
+    
     result = supabase.table("source_tweets").select("*").eq("source_id", source_id).execute()
     
     if not result.data:

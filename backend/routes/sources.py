@@ -45,8 +45,8 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
     """Add a Twitter user as style source and fetch their tweets"""
     username = request.twitter_username.lstrip('@')
     
-    # Check if already exists
-    existing = supabase.table("style_sources").select("*").eq("twitter_username", username).execute()
+    # Check if already exists FOR THIS USER
+    existing = supabase.table("style_sources").select("*").eq("twitter_username", username).eq("user_id", user.id).execute()
     if existing.data:
         raise HTTPException(status_code=400, detail=f"@{username} zaten ekli")
     
@@ -61,6 +61,7 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
     source_id = str(uuid.uuid4())
     source_data = {
         "id": source_id,
+        "user_id": user.id,
         "twitter_username": username,
         "twitter_user_id": user_info.get('user_id'),
         "twitter_display_name": user_info.get('name'),
@@ -118,8 +119,8 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
 
 @router.get("/list", response_model=List[SourceResponse])
 async def list_sources(user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """List all style sources"""
-    result = supabase.table("style_sources").select("*").order("created_at", desc=True).execute()
+    """List all style sources for this user"""
+    result = supabase.table("style_sources").select("*").eq("user_id", user.id).order("created_at", desc=True).execute()
     
     sources = []
     for row in result.data:
@@ -136,7 +137,12 @@ async def list_sources(user=Depends(require_auth), supabase=Depends(get_supabase
 
 @router.get("/{source_id}/tweets", response_model=List[TweetResponse])
 async def get_source_tweets(source_id: str, limit: int = 50, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Get tweets from a source"""
+    """Get tweets from a source (verify ownership first)"""
+    # Verify source belongs to user
+    source_check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
+    if not source_check.data:
+        raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
+    
     result = supabase.table("source_tweets").select("*").eq("source_id", source_id).order("likes", desc=True).limit(limit).execute()
     
     tweets = []
@@ -156,18 +162,20 @@ async def get_source_tweets(source_id: str, limit: int = 50, user=Depends(requir
 
 @router.delete("/{source_id}")
 async def delete_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Delete a style source and its tweets"""
-    # Tweets will be deleted via CASCADE
-    supabase.table("style_sources").delete().eq("id", source_id).execute()
+    """Delete a style source and its tweets (user-scoped)"""
+    # Only delete if belongs to user
+    result = supabase.table("style_sources").delete().eq("id", source_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
     return {"success": True}
 
 @router.post("/{source_id}/refresh")
 async def refresh_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Re-fetch tweets for a source"""
-    # Get source
-    result = supabase.table("style_sources").select("*").eq("id", source_id).execute()
+    """Re-fetch tweets for a source (verify ownership)"""
+    # Get source - verify belongs to user
+    result = supabase.table("style_sources").select("*").eq("id", source_id).eq("user_id", user.id).execute()
     if not result.data:
-        raise HTTPException(status_code=404, detail="Source not found")
+        raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
     
     source = result.data[0]
     username = source['twitter_username']

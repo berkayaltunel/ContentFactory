@@ -2,7 +2,7 @@
 GET /api/coach/insights - Kullanıcının üretim geçmişi analizi + öneriler
 GET /api/coach/weekly-plan - Haftalık içerik planı önerisi
 """
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends
 from middleware.auth import require_auth
 from typing import Optional, List
 from collections import Counter
@@ -18,18 +18,6 @@ def get_supabase():
     return supabase
 
 
-async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.replace("Bearer ", "")
-    try:
-        sb = get_supabase()
-        user_response = sb.auth.get_user(token)
-        return user_response.user.id
-    except Exception:
-        return None
-
-
 @router.get("/insights")
 async def get_insights(user=Depends(require_auth)):
     """Kullanıcının üretim geçmişini analiz et ve öneriler sun"""
@@ -38,9 +26,7 @@ async def get_insights(user=Depends(require_auth)):
         from server import openai_client
 
         # Son 100 üretimi çek
-        query = sb.table("generations").select("*").order("created_at", desc=True).limit(100)
-        if user:
-            query = query.eq("user_id", user.id)
+        query = sb.table("generations").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(100)
         result = query.execute()
         generations = result.data or []
 
@@ -61,9 +47,7 @@ async def get_insights(user=Depends(require_auth)):
         mode_counts = Counter("apex" if g.get("is_ultra") else "classic" for g in generations)
 
         # Favori oranı
-        fav_query = sb.table("favorites").select("id", count="exact")
-        if user:
-            fav_query = fav_query.eq("user_id", user.id)
+        fav_query = sb.table("favorites").select("id", count="exact").eq("user_id", user.id)
         fav_count = fav_query.execute().count or 0
 
         stats = {

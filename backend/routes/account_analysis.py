@@ -94,6 +94,7 @@ Son tweet'ler:
         # Veritabanına kaydet
         record = {
             "id": str(uuid.uuid4()),
+            "user_id": user.id,
             "twitter_username": username,
             "display_name": user_info.get('name', ''),
             "bio": user_info.get('bio', ''),
@@ -135,7 +136,7 @@ async def get_analysis_history(limit: int = Query(20, le=100), user=Depends(requ
     """Geçmiş analizleri getir"""
     try:
         sb = get_supabase()
-        result = sb.table("account_analyses").select("*").order("created_at", desc=True).limit(limit).execute()
+        result = sb.table("account_analyses").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit).execute()
         return result.data
     except Exception as e:
         logger.error(f"Analysis history error: {e}")
