@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signInWithGoogle } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -46,7 +47,8 @@ export default function LoginPage() {
             <CardTitle className="font-outfit text-2xl">Hoş Geldiniz</CardTitle>
             <CardDescription>Devam etmek için giriş yapın</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Google Auth */}
             <Button
               variant="outline"
               className="w-full h-12 text-base"
@@ -65,6 +67,42 @@ export default function LoginPage() {
               )}
               {loading ? 'Yönlendiriliyor...' : 'Google ile Giriş Yap'}
             </Button>
+
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">veya</span>
+              </div>
+            </div>
+
+            {/* Email/Password - disabled, yakında aktif */}
+            <div className="space-y-3 opacity-50 pointer-events-none select-none">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder="ornek@email.com"
+                  className="pl-10"
+                  disabled
+                />
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10"
+                  disabled
+                />
+              </div>
+              <Button className="w-full h-11" disabled>
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Email ile Giriş Yap
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">Yakında aktif olacak</p>
+            </div>
           </CardContent>
         </Card>
       </div>
