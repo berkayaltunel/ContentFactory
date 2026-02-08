@@ -1665,7 +1665,7 @@ function GuideAccordion() {
       >
         <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
         <span className="text-sm font-medium text-foreground/90 flex-1 text-left">
-          Sıfırdan mı başlıyorsun? Önce beğendiğin birinin hesabını ekle, onun tarzında başla
+          ✨ Yeni misin? 30 günde kendi stilini oluşturmanın en hızlı yolunu göster
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {open ? (
@@ -1684,29 +1684,34 @@ function GuideAccordion() {
 
       {open && (
         <div className="mt-3 px-5 py-5 rounded-2xl bg-card/50 border border-border/50 animate-in slide-in-from-top-2 fade-in duration-200">
-          <p className="text-sm text-muted-foreground mb-4">
-            AI seni taklit etmek için geçmiş tweetlerine bakıyor. Yeni hesapta yeterli içerik yok, ama bir çözüm var:
+          <p className="text-sm text-foreground/90 mb-1 font-medium">
+            Henüz yeterli içeriğin yok mu? Sorun değil.
+          </p>
+          <p className="text-sm text-muted-foreground mb-5">
+            Type Hype, beğendiğin hesapların yazım DNA'sını analiz eder ve sana özel içerikler üretir. İşte 30 günde kendi stilini oluşturmanın yol haritası:
           </p>
 
           <ol className="space-y-3 mb-5">
             {[
-              "Taklit etmek istediğin bir hesap bul (alanında başarılı biri)",
-              "O hesabı Type Hype'a ekle (stil analizi için)",
-              "Onun stilinde, senin istediğin konularda tweet üret",
-              "Bu tweetleri kendi hesabından paylaş",
-              "20-30 tweet sonra kendi hesabını Type Hype'a ekle",
-              "Artık sistem SENİN stilini öğrenmiş olur",
+              { emoji: "🔍", text: "İlham aldığın bir hesap bul (alanında fark yaratan biri)" },
+              { emoji: "🧬", text: "O hesabı Style Lab'a ekle, AI yazım stilini çözsün" },
+              { emoji: "✍️", text: "O stilde, senin konularında içerik üret" },
+              { emoji: "🚀", text: "Üretilen içerikleri kendi hesabından paylaş" },
+              { emoji: "📊", text: "20-30 paylaşım sonra kendi hesabını Style Lab'a ekle" },
+              { emoji: "🎯", text: "Artık AI senin özgün stilini biliyor, sana özel üretiyor" },
             ].map((step, i) => (
               <li key={i} className="flex items-start gap-3">
-                <span className="text-sm font-semibold text-amber-500/70 shrink-0 w-6">{i + 1}.</span>
-                <span className="text-sm text-foreground/80">{step}</span>
+                <span className="text-base shrink-0 w-7">{step.emoji}</span>
+                <div>
+                  <span className="text-sm text-foreground/80">{step.text}</span>
+                </div>
               </li>
             ))}
           </ol>
 
           <div className="pt-4 border-t border-border/30">
-            <p className="text-xs text-amber-500/60 italic">
-              Kısaca: AI'ı güzel örneklerle besle, o seni taklit etmeyi öğrensin.
+            <p className="text-xs text-amber-500/70">
+              💡 Kısaca: AI'a en iyilerden öğret, sonra sana özel üretsin. İlk tweet'ten itibaren profesyonel görün.
             </p>
           </div>
         </div>
