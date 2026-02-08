@@ -327,3 +327,161 @@ input[type="url"]:focus {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ===== Bento Grid Home ===== */
+
+@keyframes bento-rise {
+  from { opacity: 0; transform: translateY(32px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes bento-glow {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes count-pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes streak-fire {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  25%      { transform: scale(1.15) rotate(-3deg); filter: brightness(1.3); }
+  75%      { transform: scale(1.1) rotate(3deg); filter: brightness(1.2); }
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+@keyframes gradient-border-spin {
+  0%   { --border-angle: 0deg; }
+  100% { --border-angle: 360deg; }
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.bento-card {
+  animation: bento-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--bento-i, 0) * 80ms);
+}
+
+.bento-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    var(--border-angle, 135deg),
+    rgba(168, 85, 247, 0.15),
+    transparent 40%,
+    transparent 60%,
+    rgba(99, 102, 241, 0.15)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.bento-card:hover::before {
+  opacity: 1;
+  animation: gradient-border-spin 3s linear infinite;
+}
+
+.bento-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(168, 85, 247, 0.08);
+}
+
+:root:not(.dark) .bento-card:hover {
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(168, 85, 247, 0.12);
+}
+
+.bento-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-streak-fire {
+  animation: streak-fire 1.5s ease-in-out infinite;
+}
+
+.animate-orbit {
+  animation: orbit 20s linear infinite;
+}
+
+.animate-count-pulse {
+  animation: count-pulse 0.5s ease-out;
+}
+
+/* Bento glow orbs */
+.bento-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: bento-glow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Weekly bar chart animation */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+.bar-animate {
+  transform-origin: bottom;
+  animation: bar-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--bar-i, 0) * 60ms);
+}
+
+/* Tool card hover shine */
+@keyframes tool-shine {
+  0%   { left: -75%; }
+  100% { left: 125%; }
+}
+
+.tool-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: skewX(-25deg);
+  transition: none;
+  pointer-events: none;
+}
+
+.tool-card:hover::after {
+  animation: tool-shine 0.6s ease-out;
+}
+
+:root:not(.dark) .tool-card:hover::after {
+  background: linear-gradient(90deg, transparent, rgba(168,85,247,0.06), transparent);
+}
