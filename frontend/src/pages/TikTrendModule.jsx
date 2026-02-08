@@ -339,19 +339,6 @@ export default function TikTrendModule() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-cyan-950/30 to-pink-950/20 border-cyan-500/20 overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Music2 className="h-6 w-6 text-cyan-400" />
-            <h2 className="font-outfit text-2xl font-bold text-cyan-400">TikTrend Pulse AI</h2>
-          </div>
-          <p className="text-muted-foreground mb-4">Saniye saniye video senaryoları ve trend adaptasyon fikirleri.</p>
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
-            <Lightbulb className="h-4 w-4 text-cyan-400 mt-0.5" />
-            <p className="text-sm text-cyan-200">İpucu: İlk 3 saniyedeki hook, videonun tamamlanma oranını %70'e kadar etkiler.</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

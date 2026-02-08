@@ -350,19 +350,6 @@ export default function YouTubeModule() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-red-950/30 to-card border-red-500/20 overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Youtube className="h-6 w-6 text-red-500" />
-            <h2 className="font-outfit text-2xl font-bold text-red-500">YouTube AI</h2>
-          </div>
-          <p className="text-muted-foreground mb-4">Videonuz fikir aşamasındayken başarısını garantileyin.</p>
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <Lightbulb className="h-4 w-4 text-red-400 mt-0.5" />
-            <p className="text-sm text-red-200">İpucu: Script + Thumbnail konseptini birlikte kullanarak tutarlı içerik stratejisi oluşturun.</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

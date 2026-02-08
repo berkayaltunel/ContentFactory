@@ -453,19 +453,6 @@ export default function InstaFlowModule() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-purple-950/20 via-pink-950/20 to-orange-950/20 border-pink-500/20 overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Instagram className="h-6 w-6 text-pink-500" />
-            <h2 className="font-outfit text-2xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">InstaFlow AI</h2>
-          </div>
-          <p className="text-muted-foreground mb-4">Viral reels, hook'lu caption'lar ve akıllı hashtag setleri.</p>
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-pink-500/10 border border-pink-500/20">
-            <Lightbulb className="h-4 w-4 text-pink-400 mt-0.5" />
-            <p className="text-sm text-pink-200">İpucu: Reel script'lerinizi hook → content → CTA formatında yazarak izleyici tutma oranını artırın.</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

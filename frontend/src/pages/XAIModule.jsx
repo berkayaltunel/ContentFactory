@@ -1815,44 +1815,6 @@ export default function XAIModule() {
         </CardContent>
       </Card>
 
-      {/* Feature Card */}
-      <Card className="bg-card border-border overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Twitter className="h-6 w-6" />
-            <h2 className="font-outfit text-2xl font-bold">Thread Architect</h2>
-          </div>
-          <p className="text-muted-foreground mb-6">
-            Düşüncelerinizi viral zincirlere (threads) dönüştürün.
-          </p>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
-              <Repeat2 className="h-5 w-5 text-sky-400 mt-0.5" />
-              <span className="text-sm">Uzun Metinleri Thread'e Dönüştürme</span>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
-              <CircleHelp className="h-5 w-5 text-sky-400 mt-0.5" />
-              <span className="text-sm">Zıt Görüş (Contrarian) Kanca Üretici</span>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
-              <Settings2 className="h-5 w-5 text-sky-400 mt-0.5" />
-              <span className="text-sm">Karakter Sınırlı Akıllı Editör</span>
-            </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/50">
-              <Image className="h-5 w-5 text-sky-400 mt-0.5" />
-              <span className="text-sm">Görsel İpucu (Visual Cue) Önerileri</span>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-sky-500/10 border border-sky-500/20">
-            <Lightbulb className="h-4 w-4 text-sky-400 mt-0.5" />
-            <p className="text-sm text-sky-200">
-              İpucu: Blog yazılarınızı veya YouTube metinlerinizi "Repurpose" modu ile saniyeler içinde Tweet serisine çevirin.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
