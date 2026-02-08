@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { 
+import {
   Sun, Moon, Settings, Layers, LogOut, User, History, Heart,
-  ChevronDown, Sparkles, Dna, TrendingUp, BarChart3, FileText
+  ChevronDown, Sparkles, Dna, TrendingUp, BarChart3, FileText,
+  Home, MoreHorizontal, Search
 } from "lucide-react";
 import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
 import { HiDocumentText } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,47 +22,74 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 
-/* Brand icon wrappers (react-icons → Lucide-compatible className) */
-const BrandIcon = ({ Icon, className = "" }) => (
+/* ── Brand Icon Wrappers ─────────────────────────── */
+
+const BI = ({ Icon, className = "" }) => (
   <Icon className={className} style={{ width: "1em", height: "1em" }} />
 );
-const XIcon = (props) => <BrandIcon Icon={FaXTwitter} {...props} />;
-const YTIcon = (props) => <BrandIcon Icon={FaYoutube} {...props} />;
-const IGIcon = (props) => <BrandIcon Icon={FaInstagram} {...props} />;
-const TTIcon = (props) => <BrandIcon Icon={FaTiktok} {...props} />;
-const LIIcon = (props) => <BrandIcon Icon={FaLinkedinIn} {...props} />;
-const BlogIcon = (props) => <BrandIcon Icon={HiDocumentText} {...props} />;
 
-const moduleItems = [
-  { path: "/dashboard/x-ai", label: "X", icon: XIcon, color: "text-foreground" },
-  { path: "/dashboard/youtube", label: "YouTube", icon: YTIcon, color: "text-red-500" },
-  { path: "/dashboard/instaflow", label: "Instagram", icon: IGIcon, color: "text-pink-500" },
-  { path: "/dashboard/tiktrend", label: "TikTok", icon: TTIcon, color: "text-foreground" },
-  { path: "/dashboard/linkshare", label: "LinkedIn", icon: LIIcon, color: "text-[#0A66C2]" },
-  { path: "/dashboard/blog", label: "Blog", icon: BlogIcon, color: "text-orange-500" },
+/* ── Navigation Config ───────────────────────────── */
+
+const navItems = [
+  { path: "/dashboard", label: "Home", icon: Home, exact: true },
+  { path: "/dashboard/x-ai", label: "X", icon: (p) => <BI Icon={FaXTwitter} {...p} /> },
+  { path: "/dashboard/youtube", label: "YouTube", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
+  { path: "/dashboard/instaflow", label: "Instagram", icon: (p) => <BI Icon={FaInstagram} {...p} /> },
+  { path: "/dashboard/tiktrend", label: "TikTok", icon: (p) => <BI Icon={FaTiktok} {...p} /> },
+  { path: "/dashboard/linkshare", label: "LinkedIn", icon: (p) => <BI Icon={FaLinkedinIn} {...p} /> },
+  { path: "/dashboard/blog", label: "Blog", icon: (p) => <BI Icon={HiDocumentText} {...p} /> },
 ];
 
-const toolItems = [
-  { path: "/dashboard/style-lab", label: "Style Lab", icon: Dna, color: "text-purple-400" },
-  { path: "/dashboard/trends", label: "Trendler", icon: TrendingUp, color: "text-orange-500" },
-  { path: "/dashboard/account-analysis", label: "Hesap Analizi", icon: BarChart3, color: "text-blue-400" },
-  { path: "/dashboard/coach", label: "AI Coach", icon: Sparkles, color: "text-emerald-400" },
+const moreItems = [
+  { path: "/dashboard/style-lab", label: "Style Lab", icon: Dna },
+  { path: "/dashboard/trends", label: "Trendler", icon: TrendingUp },
+  { path: "/dashboard/account-analysis", label: "Hesap Analizi", icon: BarChart3 },
+  { path: "/dashboard/coach", label: "AI Coach", icon: Sparkles },
 ];
 
-function MiniSparkline() {
+const profileMenuItems = [
+  { path: "/dashboard/history", label: "Geçmiş", icon: History },
+  { path: "/dashboard/favorites", label: "Favoriler", icon: Heart },
+];
+
+/* ── Pill Nav Item ───────────────────────────────── */
+
+function PillNavItem({ item, isActive }) {
+  const Icon = item.icon;
+
   return (
-    <svg width="80" height="24" viewBox="0 0 80 24" fill="none" className="text-purple-500">
-      <polyline
-        points="0,20 10,16 20,18 30,10 40,14 50,6 60,8 70,4 80,2"
-        stroke="currentColor"
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <NavLink
+      to={item.path}
+      end={item.exact}
+      className={cn(
+        "relative flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 ease-out shrink-0",
+        "hover:bg-white/10",
+        isActive
+          ? "bg-white/15 backdrop-blur-sm"
+          : "text-white/60 hover:text-white/90"
+      )}
+    >
+      <Icon
+        className={cn(
+          "h-[18px] w-[18px] transition-all duration-300 shrink-0",
+          isActive ? "text-white" : "text-white/60"
+        )}
       />
-    </svg>
+      <span
+        className={cn(
+          "text-sm font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
+          isActive
+            ? "max-w-[80px] opacity-100 text-white"
+            : "max-w-0 opacity-0"
+        )}
+      >
+        {item.label}
+      </span>
+    </NavLink>
   );
 }
+
+/* ── Main Layout ─────────────────────────────────── */
 
 export default function DashboardLayout() {
   const { theme, setTheme } = useTheme();
@@ -70,17 +97,6 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [stats, setStats] = useState({ generations: 0, tweets: 0, favorites: 0 });
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get(`${API}/user/stats`);
-        if (response.data) setStats(response.data);
-      } catch (error) { /* ignore */ }
-    };
-    if (isAuthenticated) fetchStats();
-  }, [isAuthenticated, location.pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -92,195 +108,207 @@ export default function DashboardLayout() {
     }
   };
 
-  const isActive = (path) => {
-    if (path === "/dashboard" && location.pathname === "/dashboard") return true;
-    if (path !== "/dashboard") return location.pathname.includes(path.split('/').pop());
-    return false;
+  const isActive = (item) => {
+    if (item.exact) return location.pathname === item.path;
+    return location.pathname.startsWith(item.path);
   };
 
-  // Animated counter for sidebar stats
-  function useSidebarCounter(target, duration = 800) {
-    const [val, setVal] = useState(0);
-    useEffect(() => {
-      if (!target) return;
-      let start = 0;
-      const step = target / (duration / 16);
-      const timer = setInterval(() => {
-        start += step;
-        if (start >= target) { setVal(target); clearInterval(timer); }
-        else setVal(Math.floor(start));
-      }, 16);
-      return () => clearInterval(timer);
-    }, [target, duration]);
-    return val;
-  }
-
-  const animatedGenerations = useSidebarCounter(stats.generations);
-
-  const NavItem = ({ item, badge }) => {
-    const active = isActive(item.path);
-    const Icon = item.icon;
-    return (
-      <NavLink
-        to={item.path}
-        data-testid={`nav-${item.path.split('/').pop()}`}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group relative",
-          "text-muted-foreground hover:text-foreground hover:bg-secondary/50 hover:translate-x-1",
-          active && "bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium border-l-[3px] border-purple-500 ml-0 pl-[9px]"
-        )}
-      >
-        <Icon className={cn("h-[18px] w-[18px] transition-colors duration-200", active ? "text-purple-500" : item.color)} />
-        <span className="text-sm flex-1">{item.label}</span>
-        {badge !== undefined && badge > 0 && (
-          <Badge variant="secondary" className="h-5 min-w-[20px] px-1.5 text-[10px] font-semibold bg-purple-500/15 text-purple-600 dark:text-purple-400">
-            {badge}
-          </Badge>
-        )}
-      </NavLink>
-    );
-  };
+  // Check if any "more" item is active
+  const moreIsActive = moreItems.some((item) => location.pathname.startsWith(item.path));
+  const profileIsActive = profileMenuItems.some((item) => location.pathname.startsWith(item.path));
 
   return (
-    <div className="flex min-h-screen bg-[#F7F7F8] dark:bg-background">
-      {/* Floating Sidebar */}
-      <aside
-        className="fixed left-0 top-0 z-40 h-screen w-[280px] p-3 pr-0 animate-fade-in"
-        data-testid="sidebar"
-      >
-        <div className="h-full w-full bg-card rounded-3xl shadow-xl border border-border/50 flex flex-col overflow-hidden">
-          {/* Gradient accent line */}
-          <div className="h-[3px] w-full rounded-t-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />
-          {/* User Profile */}
-          {isAuthenticated && user ? (
-            <div className="px-5 pt-5 pb-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-3 w-full p-2 rounded-xl hover:bg-secondary/50 transition-colors" data-testid="user-menu-trigger">
-                    <Avatar className="h-11 w-11 ring-2 ring-purple-500/20">
-                      <AvatarImage src={user.avatar_url} alt={user.name} />
-                      <AvatarFallback className="bg-purple-500 text-white font-semibold">
-                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 text-left min-w-0">
-                      <p className="text-sm font-semibold truncate">{user.name}</p>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium border-purple-500/30 text-purple-600 dark:text-purple-400">
-                        Free Plan
-                      </Badge>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/dashboard/profile')}>
-                    <User className="h-4 w-4 mr-2" /> Profil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                    <Settings className="h-4 w-4 mr-2" /> Ayarlar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
-                    <LogOut className="h-4 w-4 mr-2" /> Çıkış Yap
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : (
-            <div className="px-5 pt-5 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500">
-                  <Layers className="h-5 w-5 text-white" />
-                </div>
-                <span className="font-outfit text-lg font-bold">Type Hype</span>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#F7F7F8] dark:bg-background">
+      {/* ── Floating Top Nav Bar ── */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-4 pointer-events-none">
+        <nav
+          className={cn(
+            "flex items-center gap-1 px-2 py-1.5 rounded-full pointer-events-auto",
+            "bg-[#1A1A1A] dark:bg-[#1A1A1A] border border-white/[0.08]",
+            "shadow-2xl shadow-black/20",
+            "backdrop-blur-xl"
           )}
+        >
+          {/* Logo */}
+          <NavLink
+            to="/dashboard"
+            className="flex items-center gap-2 px-3 py-1.5 mr-1"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+              <Layers className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-outfit text-sm font-bold text-white hidden sm:inline">
+              Type<span className="text-purple-400">Hype</span>
+            </span>
+          </NavLink>
 
-          {/* Stats Card */}
-          {isAuthenticated && (
-            <div className="mx-4 mb-3 p-4 rounded-2xl bg-gradient-to-br from-purple-500/10 via-indigo-500/5 to-transparent border border-purple-500/10">
-              <div className="flex items-end justify-between mb-2">
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Toplam Üretim</p>
-                  <p className="text-3xl font-outfit font-bold tracking-tight">{animatedGenerations.toLocaleString()}</p>
-                </div>
-                <MiniSparkline />
-              </div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Heart className="h-3 w-3" />
-                  <span>{stats.favorites} favori</span>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-9 text-sm font-medium shimmer-btn"
-                onClick={() => navigate('/dashboard/x-ai')}
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 mx-1" />
+
+          {/* Nav Items */}
+          {navItems.map((item) => (
+            <PillNavItem
+              key={item.path}
+              item={item}
+              isActive={isActive(item)}
+            />
+          ))}
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 mx-1" />
+
+          {/* More Menu (Tools) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300",
+                  "hover:bg-white/10",
+                  moreIsActive
+                    ? "bg-white/15 text-white"
+                    : "text-white/60 hover:text-white/90"
+                )}
               >
-                <Sparkles className="h-4 w-4 mr-1.5" />
-                Yeni İçerik Üret
-              </Button>
-            </div>
+                <MoreHorizontal className="h-[18px] w-[18px]" />
+                <span
+                  className={cn(
+                    "text-sm font-medium transition-all duration-300 overflow-hidden",
+                    moreIsActive ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0"
+                  )}
+                >
+                  Araçlar
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="center"
+              sideOffset={12}
+              className="w-52 rounded-xl bg-[#1A1A1A] border-white/10 text-white shadow-2xl"
+            >
+              {moreItems.map((item) => {
+                const Icon = item.icon;
+                const active = location.pathname.startsWith(item.path);
+                return (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer",
+                      "text-white/70 hover:text-white hover:bg-white/10",
+                      "focus:bg-white/10 focus:text-white",
+                      active && "bg-white/10 text-white"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-sm">{item.label}</span>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 mx-1" />
+
+          {/* User Avatar & Menu */}
+          {isAuthenticated && user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all duration-300">
+                  <Avatar className="h-7 w-7 ring-1 ring-white/20">
+                    <AvatarImage src={user.avatar_url} alt={user.name} />
+                    <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
+                      {user.name?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-white/70 font-medium hidden md:inline max-w-[100px] truncate">
+                    {user.name?.split(" ")[0]}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={12}
+                className="w-56 rounded-xl bg-[#1A1A1A] border-white/10 text-white shadow-2xl"
+              >
+                {/* User info */}
+                <div className="px-3 py-2.5 border-b border-white/10">
+                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-xs text-white/50 truncate">{user.email}</p>
+                </div>
+
+                {profileMenuItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="text-sm">{item.label}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+
+                <DropdownMenuSeparator className="bg-white/10" />
+
+                <DropdownMenuItem
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                >
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  <span className="text-sm">{theme === "dark" ? "Aydınlık Mod" : "Karanlık Mod"}</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setSettingsOpen(true)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="text-sm">Ayarlar</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-white/10" />
+
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="text-sm">Çıkış Yap</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-1.5 rounded-full bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-colors"
+            >
+              Giriş Yap
+            </button>
           )}
 
-          {/* Navigation */}
-          <nav className="flex-1 px-3 overflow-y-auto space-y-1 pb-2" data-testid="sidebar-nav">
-            {/* Modules */}
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 pt-3 pb-1">Modüller</p>
-            {moduleItems.map((item) => (
-              <NavItem key={item.path} item={item} />
-            ))}
+          {/* Settings Gear */}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="p-2 rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition-all duration-300"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+        </nav>
+      </header>
 
-            {/* Tools */}
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 pt-4 pb-1">Araçlar</p>
-            {toolItems.map((item) => (
-              <NavItem key={item.path} item={item} />
-            ))}
-
-            {/* Profile Section */}
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 pt-4 pb-1">Profilim</p>
-            <NavItem
-              item={{ path: "/dashboard/history", label: "Geçmiş", icon: History, color: "text-slate-400" }}
-              badge={stats.generations}
-            />
-            <NavItem
-              item={{ path: "/dashboard/favorites", label: "Favoriler", icon: Heart, color: "text-rose-400" }}
-              badge={stats.favorites}
-            />
-          </nav>
-
-          {/* Bottom: Theme Toggle + Settings */}
-          <div className="p-4 border-t border-border/50 flex items-center justify-between">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              data-testid="theme-toggle"
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span className="text-xs">{theme === "dark" ? "Aydınlık" : "Karanlık"}</span>
-            </button>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              data-testid="settings-btn"
-              className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 ml-[280px]">
-        <div className="p-8">
+      {/* ── Main Content ── */}
+      <main className="pt-[72px] pb-8 px-4 md:px-8">
+        <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>
       </main>
 
-      {/* Settings Dialog */}
+      {/* ── Settings Dialog ── */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-md" data-testid="settings-modal">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-outfit">Ayarlar</DialogTitle>
             <DialogDescription>Uygulama ayarlarını yapılandırın</DialogDescription>
@@ -289,10 +317,10 @@ export default function DashboardLayout() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Tema</label>
               <div className="flex gap-2">
-                <Button variant={theme === "dark" ? "default" : "outline"} size="sm" onClick={() => setTheme("dark")} data-testid="theme-dark-btn">
+                <Button variant={theme === "dark" ? "default" : "outline"} size="sm" onClick={() => setTheme("dark")}>
                   <Moon className="h-4 w-4 mr-2" /> Karanlık
                 </Button>
-                <Button variant={theme === "light" ? "default" : "outline"} size="sm" onClick={() => setTheme("light")} data-testid="theme-light-btn">
+                <Button variant={theme === "light" ? "default" : "outline"} size="sm" onClick={() => setTheme("light")}>
                   <Sun className="h-4 w-4 mr-2" /> Aydınlık
                 </Button>
               </div>
@@ -300,7 +328,7 @@ export default function DashboardLayout() {
             <div className="space-y-2">
               <label className="text-sm font-medium">API Durumu</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <div className="h-2 w-2 rounded-full bg-green-500" />
                 OpenAI Bağlı
               </div>
             </div>

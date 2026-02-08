@@ -1837,7 +1837,7 @@ export default function XAIModule() {
   );
 
   return (
-    <div className="max-w-3xl" data-testid="x-ai-module">
+    <div className="max-w-4xl mx-auto" data-testid="x-ai-module">
       {/* Hero Header */}
       <div className="mb-8 text-center">
         <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
