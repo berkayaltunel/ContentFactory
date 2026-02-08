@@ -240,18 +240,19 @@ async def health_check():
     return {"status": "ok"}
 
 @api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
+async def create_status_check(input: StatusCheckCreate, user=Depends(require_auth)):
     status_obj = StatusCheck(client_name=input.client_name)
     supabase.table("status_checks").insert({
         "id": status_obj.id,
         "client_name": status_obj.client_name,
-        "timestamp": status_obj.timestamp.isoformat()
+        "timestamp": status_obj.timestamp.isoformat(),
+        "user_id": user.id
     }).execute()
     return status_obj
 
 @api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    result = supabase.table("status_checks").select("*").limit(1000).execute()
+async def get_status_checks(user=Depends(require_auth)):
+    result = supabase.table("status_checks").select("*").eq("user_id", user.id).limit(100).execute()
     return result.data
 
 # ==================== METADATA ROUTES ====================
@@ -384,11 +385,11 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         # Input sanitization
         sanitize_generation_request(request)
 
-        # Fetch style prompt if style_profile_id provided
+        # Fetch style prompt if style_profile_id provided (scoped to current user)
         style_prompt = None
         if request.style_profile_id:
             from services.style_analyzer import analyzer
-            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).execute()
+            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
             if result.data:
                 fingerprint = result.data[0].get('style_fingerprint', {})
                 style_prompt = analyzer.generate_style_prompt(fingerprint)

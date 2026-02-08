@@ -92,8 +92,8 @@ async def get_posting_heatmap(user=Depends(require_auth)):
     try:
         sb = get_supabase()
 
-        # Get user's favorited content timestamps
-        favs = sb.table("favorites").select("created_at").execute()
+        # Get user's favorited content timestamps (scoped to current user)
+        favs = sb.table("favorites").select("created_at").eq("user_id", user.id).execute()
         fav_hours = defaultdict(int)
         for f in (favs.data or []):
             try:
