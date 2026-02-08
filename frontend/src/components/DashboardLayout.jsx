@@ -136,7 +136,7 @@ export default function DashboardLayout() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [stats, setStats] = useState({ generations: 0, tweets: 0, favorites: 0 });
 
-  // Fetch user stats
+  // Fetch user stats on mount, route change, and periodically
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -152,7 +152,7 @@ export default function DashboardLayout() {
     if (isAuthenticated) {
       fetchStats();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, location.pathname]);
 
   const handleSignOut = async () => {
     try {
