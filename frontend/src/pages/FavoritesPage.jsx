@@ -12,9 +12,8 @@ import {
   HeartOff
 } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 export default function FavoritesPage() {
   const { getAccessToken } = useAuth();
@@ -29,7 +28,7 @@ export default function FavoritesPage() {
     try {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API}/favorites`, { headers });
+      const response = await api.get(`${API}/favorites`, { headers });
       setFavorites(response.data || []);
     } catch (error) {
       console.error('Favorites fetch error:', error);
@@ -54,7 +53,7 @@ export default function FavoritesPage() {
     try {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.delete(`${API}/favorites/${id}`, { headers });
+      await api.delete(`${API}/favorites/${id}`, { headers });
       setFavorites(favorites.filter(f => f.id !== id));
       toast.success("Favorilerden kaldırıldı");
     } catch (error) {

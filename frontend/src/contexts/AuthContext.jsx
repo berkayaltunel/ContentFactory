@@ -60,6 +60,11 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Fixed redirect URLs - no dynamic origin
+  const REDIRECT_URL = process.env.NODE_ENV === 'production'
+    ? 'https://typehype.io/dashboard'
+    : 'http://localhost:3457/dashboard';
+
   const signUp = async (email, password, name) => {
     if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.auth.signUp({
@@ -67,7 +72,7 @@ export function AuthProvider({ children }) {
       password,
       options: {
         data: { name },
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: REDIRECT_URL,
       },
     });
     if (error) throw error;
@@ -89,7 +94,7 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: REDIRECT_URL,
       },
     });
     if (error) throw error;

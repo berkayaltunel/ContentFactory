@@ -22,12 +22,11 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 let jobIdCounter = 0;
 
@@ -229,7 +228,7 @@ function CarouselTab({ personas, jobs, onAddJob, onDismissJob }) {
     if (!topic.trim()) return toast.error("Konu gerekli");
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/generate/linkedin/carousel`, {
+      const res = await api.post(`${API}/generate/linkedin/carousel`, {
         topic: topic.trim(),
         slide_count: parseInt(slideCount),
         persona,
@@ -342,7 +341,7 @@ function HookLabTab({ personas, formats, onUseHook }) {
     if (!topic.trim()) return toast.error("Konu gerekli");
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/generate/linkedin/hooks`, {
+      const res = await api.post(`${API}/generate/linkedin/hooks`, {
         topic: topic.trim(),
         persona,
         format,
@@ -517,7 +516,7 @@ function AnalizTab() {
     if (!content.trim()) return toast.error("İçerik yapıştırın");
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/generate/linkedin/analyze`, {
+      const res = await api.post(`${API}/generate/linkedin/analyze`, {
         content: content.trim(),
         language: "tr",
       });
@@ -697,7 +696,7 @@ function ImagePromptDialog({ open, onOpenChange, topic, content }) {
   const generate = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/generate/linkedin/image-prompt`, {
+      const res = await api.post(`${API}/generate/linkedin/image-prompt`, {
         topic,
         content,
         style,
@@ -822,7 +821,7 @@ export default function LinkShareModule() {
     setJobs((prev) => [newJob, ...prev]);
 
     try {
-      const res = await axios.post(`${API}${endpoint}`, body);
+      const res = await api.post(`${API}${endpoint}`, body);
       const variants = res.data.variants || [];
       setJobs((prev) =>
         prev.map((j) =>

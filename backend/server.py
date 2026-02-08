@@ -16,6 +16,13 @@ from openai import OpenAI
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# ==================== SECURITY: .env validation ====================
+import sys
+
+if not os.environ.get('COOKIE_ENCRYPTION_KEY'):
+    print("FATAL: COOKIE_ENCRYPTION_KEY is not set in .env. Server cannot start.", file=sys.stderr)
+    sys.exit(1)
+
 # Supabase connection
 supabase_url = os.environ['SUPABASE_URL']
 supabase_key = os.environ['SUPABASE_SERVICE_KEY']
@@ -28,7 +35,7 @@ if openai_api_key:
     openai_client = OpenAI(api_key=openai_api_key)
 
 # Create the main app
-app = FastAPI()
+app = FastAPI(docs_url=None if not os.environ.get("DEBUG") else "/docs", redoc_url=None)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -55,6 +62,8 @@ from prompts.builder import (
 # ==================== AUTH ====================
 from middleware.auth import require_auth, optional_auth
 from middleware.rate_limit import rate_limit
+from middleware.input_sanitizer import sanitize_generation_request
+from middleware.token_tracker import check_token_budget, record_token_usage
 
 # ==================== MODELS ====================
 
@@ -159,12 +168,17 @@ async def analyze_image_with_vision(image_base64: str) -> str:
         logger.error(f"Vision analysis error: {str(e)}")
         return ""
 
-async def generate_with_openai(system_prompt: str, user_prompt: str, variants: int = 1) -> List[str]:
-    """Generate content using OpenAI API"""
+async def generate_with_openai(system_prompt: str, user_prompt: str, variants: int = 1, user_id: str = None) -> tuple[List[str], int]:
+    """Generate content using OpenAI API. Returns (results, total_tokens_used)."""
     if not openai_client:
         raise HTTPException(status_code=500, detail="OpenAI API key not configured")
 
+    # Check token budget if user_id provided
+    if user_id:
+        check_token_budget(user_id)
+
     results = []
+    total_tokens = 0
 
     for i in range(variants):
         try:
@@ -185,24 +199,32 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": variant_prompt}
                 ],
-                temperature=0.85 + (i * 0.05),  # Increase temperature for more variety
+                temperature=0.85 + (i * 0.05),
                 max_tokens=3000
             )
 
             content = response.choices[0].message.content.strip()
             results.append(content)
 
-        except Exception as e:
-            logger.error(f"OpenAI API error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
+            # Track token usage
+            if response.usage:
+                total_tokens += response.usage.total_tokens
 
-    return results
+        except Exception as e:
+            logger.error(f"OpenAI API error (internal)")
+            raise HTTPException(status_code=500, detail="AI üretimi başarısız oldu")
+
+    # Record token usage
+    if user_id and total_tokens > 0:
+        record_token_usage(user_id, total_tokens)
+
+    return results, total_tokens
 
 # ==================== ROUTES ====================
 
 @api_router.get("/")
 async def root():
-    return {"message": "ContentFactory API"}
+    return {"status": "ok"}
 
 @api_router.get("/auth/check")
 async def auth_check(user=Depends(require_auth)):
@@ -215,10 +237,7 @@ async def auth_check(user=Depends(require_auth)):
 
 @api_router.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "openai_configured": openai_client is not None
-    }
+    return {"status": "ok"}
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -354,7 +373,7 @@ async def fetch_tweet(url: str):
         raise
     except Exception as e:
         logger.error(f"Tweet fetch error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Tweet çekilemedi: {str(e)}")
+        raise HTTPException(status_code=500, detail="Tweet çekilemedi. Lütfen tekrar deneyin.")
 
 # ==================== CONTENT GENERATION ROUTES ====================
 
@@ -362,6 +381,9 @@ async def fetch_tweet(url: str):
 async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet content"""
     try:
+        # Input sanitization
+        sanitize_generation_request(request)
+
         # Fetch style prompt if style_profile_id provided
         style_prompt = None
         if request.style_profile_id:
@@ -397,7 +419,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             style_prompt=style_prompt
         )
 
-        contents = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants)
+        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id if user else None)
 
         variants = []
         for i, content in enumerate(contents):
@@ -431,12 +453,14 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         raise
     except Exception as e:
         logger.error(f"Tweet generation error: {str(e)}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/quote", response_model=GenerationResponse)
 async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate quote tweet content"""
     try:
+        sanitize_generation_request(request)
+
         if not request.tweet_content:
             return GenerationResponse(
                 success=False,
@@ -455,7 +479,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
             additional_context=request.additional_context
         )
 
-        contents = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants)
+        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id if user else None)
 
         variants = []
         for i, content in enumerate(contents):
@@ -487,12 +511,14 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
         raise
     except Exception as e:
         logger.error(f"Quote generation error: {str(e)}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/reply", response_model=GenerationResponse)
 async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate reply content"""
     try:
+        sanitize_generation_request(request)
+
         if not request.tweet_content:
             return GenerationResponse(
                 success=False,
@@ -512,7 +538,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
             additional_context=request.additional_context
         )
 
-        contents = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants)
+        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id if user else None)
 
         variants = []
         for i, content in enumerate(contents):
@@ -545,12 +571,14 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
         raise
     except Exception as e:
         logger.error(f"Reply generation error: {str(e)}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/article", response_model=GenerationResponse)
 async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate X article content"""
     try:
+        sanitize_generation_request(request)
+
         topic = request.topic
         if request.title:
             topic = f"Başlık: {request.title}\n\nKonu: {topic}"
@@ -567,7 +595,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
             additional_context=request.additional_context
         )
 
-        contents = await generate_with_openai(system_prompt, "Makaleyi yaz.", 1)
+        contents, tokens_used = await generate_with_openai(system_prompt, "Makaleyi yaz.", 1, user_id=user.id if user else None)
 
         variants = []
         for i, content in enumerate(contents):
@@ -598,7 +626,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
         raise
     except Exception as e:
         logger.error(f"Article generation error: {str(e)}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.get("/generations/history")
 async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth)):
@@ -728,13 +756,40 @@ api_router.include_router(posting_times_router)
 from routes.cookies import router as cookies_router
 api_router.include_router(cookies_router)
 
+# Include admin router
+from routes.admin import router as admin_router
+api_router.include_router(admin_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
+# ==================== MIDDLEWARE (order matters: last added = first executed) ====================
+from middleware.security import SecurityMiddleware, ALLOWED_ORIGINS as SEC_ORIGINS
+from middleware.request_size import RequestSizeLimitMiddleware
+from middleware.replay_protection import ReplayProtectionMiddleware
+from middleware.audit_log import AuditLogMiddleware
+
+# CORS - use security middleware's origin list (no wildcard!)
+_cors_origins = list(SEC_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"https://frontend-.*\.vercel\.app",
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-TH-Client", "X-Requested-With", "X-Admin-Key", "X-TH-Timestamp", "X-TH-Nonce"],
 )
+
+# Middleware stack (last added = first executed)
+# Order: AuditLog -> Security -> ReplayProtection -> RequestSize -> CORS
+app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(ReplayProtectionMiddleware)
+app.add_middleware(SecurityMiddleware)
+app.add_middleware(AuditLogMiddleware)
+
+# ==================== STARTUP: DB Cleanup Task ====================
+from middleware.db_cleanup import start_cleanup_task
+
+@app.on_event("startup")
+async def startup_event():
+    start_cleanup_task(supabase)

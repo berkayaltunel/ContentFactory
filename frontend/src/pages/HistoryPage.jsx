@@ -14,9 +14,8 @@ import {
   FileText
 } from "lucide-react";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 export default function HistoryPage() {
   const { getAccessToken, isAuthenticated } = useAuth();
@@ -31,7 +30,7 @@ export default function HistoryPage() {
     try {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API}/generations/history?limit=50`, { headers });
+      const response = await api.get(`${API}/generations/history?limit=50`, { headers });
       setGenerations(response.data || []);
     } catch (error) {
       console.error('History fetch error:', error);

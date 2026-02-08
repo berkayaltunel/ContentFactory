@@ -43,10 +43,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 // Style Profile Settings Component
 function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
@@ -60,7 +59,7 @@ function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
       try {
         const token = getAccessToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get(`${API}/styles/list`, { headers });
+        const response = await api.get(`${API}/styles/list`, { headers });
         if (response.data) {
           setProfiles(response.data);
           if (response.data.length > 0) {
@@ -86,7 +85,7 @@ function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
     try {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.post(
+      const response = await api.post(
         `${API}/styles/${selectedProfile}/refresh`,
         {},
         { headers }
@@ -281,7 +280,7 @@ export default function DashboardLayout() {
       try {
         const token = getAccessToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get(`${API}/user/stats`, { headers });
+        const response = await api.get(`${API}/user/stats`, { headers });
         if (response.data) {
           setStats(response.data);
         }

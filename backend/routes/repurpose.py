@@ -88,4 +88,4 @@ async def convert_to_video_script(request: VideoScriptRequest, _=Depends(rate_li
         return VideoScriptResponse(success=False, error="Script parse hatası")
     except Exception as e:
         logger.error(f"Video script error: {e}")
-        return VideoScriptResponse(success=False, error=str(e))
+        return VideoScriptResponse(success=False, error="Bir hata oluştu. Lütfen tekrar deneyin.")

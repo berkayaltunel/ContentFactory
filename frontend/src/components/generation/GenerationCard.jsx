@@ -11,11 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import SkeletonTweetRow from "./SkeletonTweetRow";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 const PERSONA_COLORS = {
   expert: "#F97316",
@@ -46,7 +45,7 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/repurpose/video-script`, {
+      const res = await api.post(`${API}/repurpose/video-script`, {
         content,
         duration,
         platform,
@@ -200,7 +199,7 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/media/generate-image-prompt`, {
+      const res = await api.post(`${API}/media/generate-image-prompt`, {
         content,
         platform: "twitter",
         style,
@@ -338,7 +337,7 @@ export default function GenerationCard({ job }) {
     if (next.has(index)) {
       const favId = next.get(index);
       try {
-        await axios.delete(`${API}/favorites/${favId}`, { headers });
+        await api.delete(`${API}/favorites/${favId}`, { headers });
         next.delete(index);
         toast.success("Favorilerden kaldırıldı");
       } catch {
@@ -346,7 +345,7 @@ export default function GenerationCard({ job }) {
       }
     } else {
       try {
-        const res = await axios.post(`${API}/favorites`, {
+        const res = await api.post(`${API}/favorites`, {
           content: variant.content,
           type: job.type || "tweet",
         }, { headers });

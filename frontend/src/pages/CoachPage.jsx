@@ -10,10 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 const insightIcons = {
   tip: Lightbulb,
@@ -182,7 +181,7 @@ export default function CoachPage() {
     try {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`${API}/coach/insights`, { headers });
+      const res = await api.get(`${API}/coach/insights`, { headers });
       setInsights(res.data);
     } catch (e) {
       toast.error("Coach verileri yüklenemedi");
@@ -197,8 +196,8 @@ export default function CoachPage() {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const [heatmapRes, bestNowRes] = await Promise.all([
-        axios.get(`${API}/posting-times/heatmap`, { headers }),
-        axios.get(`${API}/posting-times/best-now`, { headers }),
+        api.get(`${API}/posting-times/heatmap`, { headers }),
+        api.get(`${API}/posting-times/best-now`, { headers }),
       ]);
       setPostingData(heatmapRes.data);
       setBestNow(bestNowRes.data);
@@ -214,7 +213,7 @@ export default function CoachPage() {
     try {
       const token = getAccessToken();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.get(`${API}/coach/weekly-plan?niche=tech`, { headers });
+      const res = await api.get(`${API}/coach/weekly-plan?niche=tech`, { headers });
       setWeeklyPlan(res.data);
     } catch (e) {
       toast.error("Haftalık plan oluşturulamadı");

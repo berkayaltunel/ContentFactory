@@ -147,7 +147,7 @@ async def generate_blog_outline(request: BlogOutlineRequest, _=Depends(rate_limi
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"Blog outline error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/blog/full", response_model=GenerationResponse)
@@ -191,7 +191,7 @@ async def generate_blog_full(request: BlogFullRequest, _=Depends(rate_limit), us
         return GenerationResponse(success=True, variants=variants, metadata={"readability": readability})
     except Exception as e:
         logger.error(f"Blog full error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/blog/seo-optimize", response_model=GenerationResponse)
@@ -227,7 +227,7 @@ async def generate_blog_seo(request: BlogSEORequest, _=Depends(rate_limit), user
         })
     except Exception as e:
         logger.error(f"Blog SEO error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/blog/cover-image", response_model=GenerationResponse)
@@ -263,7 +263,7 @@ async def generate_blog_cover_image(request: BlogCoverImageRequest, _=Depends(ra
         return GenerationResponse(success=True, variants=variants, metadata={"image_prompts": image_data})
     except Exception as e:
         logger.error(f"Blog cover image error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/blog/repurpose", response_model=GenerationResponse)
@@ -284,7 +284,7 @@ async def generate_blog_repurpose(request: BlogRepurposeRequest, _=Depends(rate_
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"Blog repurpose error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 # ==================== META ROUTES ====================

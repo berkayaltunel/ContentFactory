@@ -1,8 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { toast } from "sonner";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 const ProfileContext = createContext(null);
 
 export function ProfileProvider({ children }) {
@@ -19,8 +18,8 @@ export function ProfileProvider({ children }) {
   // Fetch profiles and settings on mount
   useEffect(() => {
     Promise.all([
-      axios.get(`${API}/styles/list`).then(r => r.data).catch(() => []),
-      axios.get(`${API}/settings`).then(r => r.data).catch(() => ({})),
+      api.get(`${API}/styles/list`).then(r => r.data).catch(() => []),
+      api.get(`${API}/settings`).then(r => r.data).catch(() => ({})),
     ]).then(([profileList, settingsData]) => {
       setProfiles(profileList);
       if (settingsData.active_profile_id) {
@@ -39,7 +38,7 @@ export function ProfileProvider({ children }) {
 
   const setActiveProfile = useCallback(async (profileId) => {
     try {
-      await axios.patch(`${API}/settings`, { active_profile_id: profileId || "" });
+      await api.patch(`${API}/settings`, { active_profile_id: profileId || "" });
       setActiveProfileId(profileId);
       if (profileId) {
         localStorage.setItem("cf_active_profile_id", profileId);
@@ -55,7 +54,7 @@ export function ProfileProvider({ children }) {
 
   const refreshProfiles = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/styles/list`);
+      const res = await api.get(`${API}/styles/list`);
       setProfiles(res.data || []);
     } catch (e) {
       console.error("Failed to refresh profiles", e);

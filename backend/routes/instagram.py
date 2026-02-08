@@ -74,7 +74,7 @@ async def generate_instagram_caption(request: InstagramCaptionRequest, _=Depends
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"Instagram caption error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/instagram/reel-script", response_model=GenerationResponse)
@@ -95,7 +95,7 @@ async def generate_instagram_reel(request: InstagramReelRequest, _=Depends(rate_
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"Instagram reel error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/instagram/hashtags", response_model=GenerationResponse)
@@ -113,7 +113,7 @@ async def generate_instagram_hashtags(request: InstagramHashtagRequest, _=Depend
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"Instagram hashtag error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/instagram/story-ideas", response_model=GenerationResponse)
@@ -133,7 +133,7 @@ async def generate_instagram_stories(request: InstagramStoryRequest, _=Depends(r
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"Instagram story error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.get("/meta/instagram/formats")

@@ -22,12 +22,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 const scriptDurations = [
   { id: "5", label: "5 dk" },
@@ -308,7 +307,7 @@ export default function YouTubeModule() {
         body = { topic: params.topic, variants: params.variants };
       }
 
-      const response = await axios.post(endpoint, body, { headers });
+      const response = await api.post(endpoint, body, { headers });
 
       if (response.data.success) {
         updateJob(jobId, { status: "completed", variants: response.data.variants });

@@ -22,21 +22,13 @@ class CookieStore:
         self.cookie_path = Path(cookie_path) if cookie_path else DEFAULT_COOKIE_PATH
         self.cookie_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Encryption key from env
+        # Encryption key from env (REQUIRED - server.py validates this at startup)
         key = os.environ.get("COOKIE_ENCRYPTION_KEY")
         if not key:
-            # Auto-generate and warn
-            key = Fernet.generate_key().decode()
-            logger.warning(
-                "COOKIE_ENCRYPTION_KEY not set! Generated temporary key. "
-                "Set it in .env for persistence across restarts."
+            raise RuntimeError(
+                "COOKIE_ENCRYPTION_KEY not set! Server cannot start without it. "
+                "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
             )
-            # Write to .env if possible
-            env_path = Path(__file__).parent.parent / ".env"
-            if env_path.exists():
-                with open(env_path, "a") as f:
-                    f.write(f"\nCOOKIE_ENCRYPTION_KEY={key}\n")
-                logger.info(f"Auto-saved encryption key to {env_path}")
 
         self.fernet = Fernet(key.encode() if isinstance(key, str) else key)
 

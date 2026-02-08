@@ -61,7 +61,7 @@ async def list_trends(
         return result.data
     except Exception as e:
         logger.error(f"Trends list error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
 @router.post("/refresh")
@@ -124,7 +124,7 @@ Her trend için JSON formatında döndür:
 
     except Exception as e:
         logger.error(f"Trends refresh error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
 @router.get("/categories")
@@ -146,7 +146,7 @@ async def get_trend(trend_id: str, user=Depends(require_auth)):
         raise
     except Exception as e:
         logger.error(f"Trend detail error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
 @router.post("/{trend_id}/generate", response_model=GenerationResponse)
@@ -204,4 +204,4 @@ Emoji kullanma. AI template kalıpları kullanma. Doğal ve özgün yaz.
         raise
     except Exception as e:
         logger.error(f"Trend generate error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")

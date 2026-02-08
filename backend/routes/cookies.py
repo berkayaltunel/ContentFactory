@@ -2,15 +2,18 @@
 Cookie management API endpoints.
 Admin-only endpoints for viewing and updating Twitter cookies.
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
 from typing import Optional
 import os
+import hmac
+import hashlib
 import logging
 import re
 
 from services.cookie_store import cookie_store
 from services.cookie_monitor import run_health_check
+from middleware.auth import require_auth
 
 router = APIRouter(prefix="/cookies", tags=["cookies"])
 logger = logging.getLogger(__name__)
@@ -18,17 +21,32 @@ logger = logging.getLogger(__name__)
 # Admin auth: simple API key or Telegram chat_id check
 ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
 ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "8128240790")
+TELEGRAM_HMAC_SECRET = os.environ.get("TELEGRAM_HMAC_SECRET", "")
+
+# Admin email list
+ADMIN_EMAILS = set(
+    e.strip().lower()
+    for e in os.environ.get("ADMIN_EMAILS", "").split(",")
+    if e.strip()
+)
 
 
 def verify_admin(request: Request):
     """Verify admin access via API key header."""
     api_key = request.headers.get("X-Admin-Key")
     if not ADMIN_API_KEY:
-        # If no admin key configured, block all external updates
-        # (only internal/Telegram updates allowed)
         raise HTTPException(status_code=403, detail="Admin API key not configured")
     if api_key != ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid admin key")
+
+
+def verify_admin_role(user):
+    """Check if user has admin role (email in ADMIN_EMAILS)."""
+    if not ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Admin emails not configured")
+    user_email = (user.email or "").lower()
+    if user_email not in ADMIN_EMAILS:
+        raise HTTPException(status_code=403, detail="Admin yetkisi gerekli")
 
 
 class CookieUpdateRequest(BaseModel):
@@ -40,18 +58,20 @@ class TelegramCookieUpdate(BaseModel):
     """Parse cookie update from Telegram message."""
     chat_id: str
     text: str
+    signature: Optional[str] = None  # HMAC signature for verification
 
 
 @router.get("/status")
-async def cookie_status():
-    """Get current cookie status (no sensitive data exposed)."""
+async def cookie_status(user=Depends(require_auth)):
+    """Get current cookie status (no sensitive data exposed). Requires auth."""
     return cookie_store.get_status()
 
 
 @router.post("/update")
-async def update_cookies(request: Request, body: CookieUpdateRequest):
-    """Update Twitter cookies (admin only)."""
+async def update_cookies(request: Request, body: CookieUpdateRequest, user=Depends(require_auth)):
+    """Update Twitter cookies (admin + auth required)."""
     verify_admin(request)
+    verify_admin_role(user)
 
     if not body.auth_token or not body.ct0:
         raise HTTPException(status_code=400, detail="Both auth_token and ct0 required")
@@ -80,10 +100,23 @@ async def telegram_cookie_update(body: TelegramCookieUpdate):
     """
     Update cookies via Telegram bot message.
     Expected format: /cookie auth_token=XXX ct0=YYY
-    Only accepts from allowed chat_id.
+    Only accepts from allowed chat_id with HMAC signature.
     """
     if body.chat_id != ALLOWED_CHAT_ID:
         raise HTTPException(status_code=403, detail="Unauthorized chat")
+
+    # HMAC signature verification (REQUIRED - no secret = endpoint disabled)
+    if not TELEGRAM_HMAC_SECRET:
+        raise HTTPException(status_code=403, detail="Endpoint disabled: HMAC secret not configured")
+    if not body.signature:
+        raise HTTPException(status_code=403, detail="Signature required")
+    expected = hmac.new(
+        TELEGRAM_HMAC_SECRET.encode(),
+        f"{body.chat_id}:{body.text}".encode(),
+        hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(body.signature, expected):
+        raise HTTPException(status_code=403, detail="Invalid signature")
 
     text = body.text.strip()
 
@@ -113,7 +146,7 @@ async def telegram_cookie_update(body: TelegramCookieUpdate):
 
 
 @router.get("/health")
-async def cookie_health():
-    """Run a live health check on cookies."""
+async def cookie_health(user=Depends(require_auth)):
+    """Run a live health check on cookies. Requires auth."""
     result = await run_health_check()
     return result

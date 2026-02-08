@@ -63,7 +63,7 @@ async def generate_tiktok_script(request: TikTokScriptRequest, _=Depends(rate_li
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"TikTok script error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/tiktok/caption", response_model=GenerationResponse)
@@ -83,7 +83,7 @@ async def generate_tiktok_caption(request: TikTokCaptionRequest, _=Depends(rate_
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"TikTok caption error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.get("/meta/tiktok/formats")

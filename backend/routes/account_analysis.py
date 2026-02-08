@@ -127,7 +127,7 @@ Son tweet'ler:
         raise
     except Exception as e:
         logger.error(f"Account analysis error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
 @router.get("/history")

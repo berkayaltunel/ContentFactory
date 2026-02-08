@@ -144,7 +144,7 @@ async def generate_linkedin_post(request: LinkedInGenerateRequest, _=Depends(rat
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"LinkedIn generation error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/linkedin/carousel", response_model=GenerationResponse)
@@ -177,7 +177,7 @@ async def generate_linkedin_carousel(request: LinkedInCarouselRequest, _=Depends
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"LinkedIn carousel error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/linkedin/hooks", response_model=GenerationResponse)
@@ -223,7 +223,7 @@ Sadece hook'ları yaz, açıklama ekleme."""
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"LinkedIn hooks error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/linkedin/analyze", response_model=GenerationResponse)
@@ -299,7 +299,7 @@ Sadece JSON döndür. {lang}"""
         )
     except Exception as e:
         logger.error(f"LinkedIn analyze error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/linkedin/image-prompt", response_model=GenerationResponse)
@@ -351,7 +351,7 @@ Sadece JSON döndür."""
         return GenerationResponse(success=True, variants=variants, metadata={"image_prompt": image_data})
     except Exception as e:
         logger.error(f"LinkedIn image prompt error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 # ==================== META ROUTES ====================

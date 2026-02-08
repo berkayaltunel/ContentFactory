@@ -11,9 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 export default function StyleSelector({ value, onChange }) {
   const [profiles, setProfiles] = useState([]);
@@ -36,7 +35,7 @@ export default function StyleSelector({ value, onChange }) {
 
   const fetchProfiles = async () => {
     try {
-      const response = await axios.get(`${API}/styles/list`);
+      const response = await api.get(`${API}/styles/list`);
       setProfiles(response.data || []);
     } catch (error) {
       console.error("Failed to fetch profiles:", error);

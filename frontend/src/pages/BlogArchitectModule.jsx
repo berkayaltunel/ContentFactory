@@ -20,12 +20,11 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 let jobIdCounter = 0;
 
@@ -520,9 +519,9 @@ export default function BlogArchitectModule() {
         const token = await getAccessToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const [fw, st, lv] = await Promise.all([
-          axios.get(`${API}/meta/blog/frameworks`, { headers }),
-          axios.get(`${API}/meta/blog/styles`, { headers }),
-          axios.get(`${API}/meta/blog/levels`, { headers }),
+          api.get(`${API}/meta/blog/frameworks`, { headers }),
+          api.get(`${API}/meta/blog/styles`, { headers }),
+          api.get(`${API}/meta/blog/levels`, { headers }),
         ]);
         setFrameworks(fw.data || []);
         setStyles(st.data || []);
@@ -586,7 +585,7 @@ export default function BlogArchitectModule() {
       try {
         const token = await getAccessToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.post(`${API}${params.endpoint}`, params.body, { headers });
+        const res = await api.post(`${API}${params.endpoint}`, params.body, { headers });
         const data = res.data;
 
         // Backend success: false kontrolü

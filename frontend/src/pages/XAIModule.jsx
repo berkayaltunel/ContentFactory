@@ -31,14 +31,13 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 import StyleSelector from "@/components/StyleSelector";
 import { useProfile } from "@/contexts/ProfileContext";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 // xpatla-style Persona options
 const personas = [
@@ -611,7 +610,7 @@ function QuoteTab({ jobs, onAddJob, onDismissJob }) {
     }
     setFetching(true);
     try {
-      const response = await axios.get(`${API}/tweet/fetch`, { params: { url: tweetUrl } });
+      const response = await api.get(`${API}/tweet/fetch`, { params: { url: tweetUrl } });
       if (response.data.success) {
         setTweetData(response.data.tweet);
         setTweetContent(response.data.tweet.text);
@@ -804,7 +803,7 @@ function ReplyTab({ jobs, onAddJob, onDismissJob }) {
     }
     setFetching(true);
     try {
-      const response = await axios.get(`${API}/tweet/fetch`, { params: { url: tweetUrl } });
+      const response = await api.get(`${API}/tweet/fetch`, { params: { url: tweetUrl } });
       if (response.data.success) {
         setTweetData(response.data.tweet);
         setTweetContent(response.data.tweet.text);
@@ -1262,7 +1261,7 @@ export default function XAIModule() {
 
         const token = getAccessToken();
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.post(endpoint, body, { headers });
+        const response = await api.post(endpoint, body, { headers });
 
         if (response.data.success) {
           updateJob(jobId, {

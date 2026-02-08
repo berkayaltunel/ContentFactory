@@ -1,35 +1,128 @@
 """
-In-memory rate limiter - IP bazlı istek sınırlama.
+Rate limiter - user_id + IP bazlı istek sınırlama.
+Burst koruması, günlük limit, dakikalık limit.
 """
 import time
+import os
 from collections import defaultdict
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
+from middleware.auth import optional_auth
+
+# ---- Storage ----
+# user_id -> [timestamp listesi]
+_user_requests: dict[str, list[float]] = defaultdict(list)
+# IP -> [timestamp listesi] (fallback for unauthenticated)
+_ip_requests: dict[str, list[float]] = defaultdict(list)
+# user_id -> daily count tracking {date_str: count}
+_daily_counts: dict[str, dict[str, int]] = defaultdict(dict)
+# IP/user_id -> ban expiry timestamp
+_bans: dict[str, float] = {}
+
+# ---- Config ----
+MAX_REQUESTS_PER_MINUTE = 10
+WINDOW_SECONDS = 60
+DAILY_LIMIT = 100  # per user per day
+BURST_WINDOW = 3  # seconds
+BURST_MAX = 5  # max requests in burst window
+BAN_DURATION = 300  # 5 minutes
+
+# Trusted proxy IPs (add your infra IPs here)
+TRUSTED_PROXIES = set(
+    os.environ.get("TRUSTED_PROXIES", "127.0.0.1").split(",")
+)
 
 
-# IP -> [timestamp listesi]
-_requests: dict[str, list[float]] = defaultdict(list)
+def _get_client_ip(request: Request) -> str:
+    """Get real client IP, with X-Forwarded-For spoof protection."""
+    client_ip = request.client.host if request.client else "unknown"
 
-# Ayarlar
-MAX_REQUESTS = 10  # Dakikada max istek
-WINDOW_SECONDS = 60  # Pencere süresi
+    # Only trust X-Forwarded-For from trusted proxies
+    if client_ip in TRUSTED_PROXIES:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded:
+            # Take the rightmost untrusted IP
+            ips = [ip.strip() for ip in forwarded.split(",")]
+            for ip in reversed(ips):
+                if ip not in TRUSTED_PROXIES:
+                    return ip
+    return client_ip
+
+
+def _get_today() -> str:
+    return time.strftime("%Y-%m-%d", time.gmtime())
 
 
 async def rate_limit(request: Request):
     """
-    Generate endpoint'leri için dakikada 10 istek limiti.
-    IP bazlı kontrol yapar, aşılırsa 429 döner.
+    Rate limiter dependency for generate endpoints.
+    - User-based if authenticated, IP-based fallback
+    - 10/min, 100/day, burst protection (5 in 3s -> 5min ban)
     """
-    client_ip = request.client.host if request.client else "unknown"
+    # Try to get user from auth header (lightweight, no error)
+    user = None
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            from middleware.auth import _get_supabase
+            token = auth_header.replace("Bearer ", "")
+            sb = _get_supabase()
+            user_response = sb.auth.get_user(token)
+            user = user_response.user
+        except Exception:
+            pass
+
+    client_ip = _get_client_ip(request)
+    identifier = f"user:{user.id}" if user else f"ip:{client_ip}"
     now = time.time()
-    cutoff = now - WINDOW_SECONDS
 
-    # Eski kayıtları temizle
-    _requests[client_ip] = [t for t in _requests[client_ip] if t > cutoff]
-
-    if len(_requests[client_ip]) >= MAX_REQUESTS:
+    # --- Check ban ---
+    ban_until = _bans.get(identifier, 0)
+    if now < ban_until:
+        remaining = int(ban_until - now)
         raise HTTPException(
             status_code=429,
-            detail=f"Çok fazla istek. Dakikada en fazla {MAX_REQUESTS} üretim yapabilirsiniz."
+            detail=f"Geçici olarak engellendiniz. {remaining} saniye sonra tekrar deneyin."
         )
 
-    _requests[client_ip].append(now)
+    # --- Get request history ---
+    requests_list = _user_requests[identifier]
+
+    # --- Burst detection: 5+ requests in 3 seconds -> ban ---
+    burst_cutoff = now - BURST_WINDOW
+    recent_burst = [t for t in requests_list if t > burst_cutoff]
+    if len(recent_burst) >= BURST_MAX:
+        _bans[identifier] = now + BAN_DURATION
+        raise HTTPException(
+            status_code=429,
+            detail=f"Çok hızlı istek gönderiyorsunuz. {BAN_DURATION // 60} dakika beklemeniz gerekiyor."
+        )
+
+    # --- Per-minute limit ---
+    minute_cutoff = now - WINDOW_SECONDS
+    requests_list[:] = [t for t in requests_list if t > minute_cutoff]
+
+    if len(requests_list) >= MAX_REQUESTS_PER_MINUTE:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Çok fazla istek. Dakikada en fazla {MAX_REQUESTS_PER_MINUTE} üretim yapabilirsiniz."
+        )
+
+    # --- Daily limit (only for authenticated users) ---
+    if user:
+        today = _get_today()
+        user_daily = _daily_counts[user.id]
+        # Clean old dates
+        for old_date in list(user_daily.keys()):
+            if old_date != today:
+                del user_daily[old_date]
+
+        daily_count = user_daily.get(today, 0)
+        if daily_count >= DAILY_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Günlük üretim limitine ulaştınız ({DAILY_LIMIT}/gün). Yarın tekrar deneyin."
+            )
+        user_daily[today] = daily_count + 1
+
+    # Record request
+    requests_list.append(now)

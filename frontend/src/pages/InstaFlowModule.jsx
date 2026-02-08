@@ -29,12 +29,11 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 const captionLengths = [
   { id: "kisa", label: "Kısa", desc: "1-2 satır hook" },
@@ -408,7 +407,7 @@ export default function InstaFlowModule() {
         body = { ...body, day_count: params.dayCount };
       }
 
-      const response = await axios.post(endpoint, body, { headers });
+      const response = await api.post(endpoint, body, { headers });
 
       if (response.data.success) {
         updateJob(jobId, { status: "completed", variants: response.data.variants });

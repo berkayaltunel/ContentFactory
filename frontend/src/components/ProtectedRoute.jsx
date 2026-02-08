@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ShieldX } from 'lucide-react';
-import axios from 'axios';
+import api, { API } from '@/lib/api';
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 export function ProtectedRoute() {
   const { isAuthenticated, loading, getAccessToken, signOut } = useAuth();
@@ -19,7 +18,7 @@ export function ProtectedRoute() {
       setChecking(true);
       try {
         const token = getAccessToken();
-        const res = await axios.get(`${API}/auth/check`, {
+        const res = await api.get(`${API}/auth/check`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (res.data?.authorized) {

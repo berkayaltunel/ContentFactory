@@ -124,7 +124,7 @@ JSON formatında döndür:
 
     except Exception as e:
         logger.error(f"Coach insights error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
 @router.get("/weekly-plan")
@@ -172,4 +172,4 @@ JSON formatında döndür:
 
     except Exception as e:
         logger.error(f"Coach weekly plan error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")

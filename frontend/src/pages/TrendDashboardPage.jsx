@@ -4,9 +4,8 @@ import { TrendingUp, RefreshCw, ExternalLink, ChevronDown, ChevronUp, Flame, Zap
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 const CATEGORIES = ["Tümü", "AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"];
 
@@ -174,7 +173,7 @@ export default function TrendDashboardPage() {
     try {
       const params = { limit: 30 };
       if (category && category !== "Tümü") params.category = category;
-      const res = await axios.get(`${API}/trends`, { params });
+      const res = await api.get(`${API}/trends`, { params });
       setTrends(res.data.trends || []);
       if (res.data.trends?.length > 0) {
         setLastUpdated(res.data.trends[0].updated_at || res.data.trends[0].created_at);
@@ -193,7 +192,7 @@ export default function TrendDashboardPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const res = await axios.post(`${API}/trends/refresh`);
+      const res = await api.post(`${API}/trends/refresh`);
       if (res.data.success) {
         toast.success(`🔥 ${res.data.trends_analyzed || 0} trend analiz edildi!`);
         await fetchTrends(selectedCategory);

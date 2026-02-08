@@ -3,13 +3,12 @@ import { User, Search, BarChart3, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, C
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip
 } from "recharts";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 function DimensionRadar({ dimensions }) {
   if (!dimensions) return null;
@@ -170,7 +169,7 @@ export default function AccountAnalysisPage() {
 
   const fetchHistory = async () => {
     try {
-      const res = await axios.get(`${API}/analyze/history`);
+      const res = await api.get(`${API}/analyze/history`);
       setHistory(res.data.analyses || []);
     } catch (err) {
       // ignore
@@ -190,7 +189,7 @@ export default function AccountAnalysisPage() {
       setTimeout(() => setLoadingStep("AI analiz ediliyor..."), 8000);
       setTimeout(() => setLoadingStep("Rapor hazırlanıyor..."), 15000);
 
-      const res = await axios.post(`${API}/analyze/account`, {
+      const res = await api.post(`${API}/analyze/account`, {
         username: username.replace("@", ""),
       });
 

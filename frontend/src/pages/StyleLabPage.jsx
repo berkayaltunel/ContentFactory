@@ -35,9 +35,8 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import axios from "axios";
+import api, { API } from "@/lib/api";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || ""}/api`;
 
 // Animated gradient background for cards
 function GradientOrb({ className }) {
@@ -63,7 +62,7 @@ function SourceCard({ source, onDelete, onRefresh, onAnalyze }) {
 
   const fetchTweets = async () => {
     try {
-      const response = await axios.get(`${API}/sources/${source.id}/tweets?limit=5`);
+      const response = await api.get(`${API}/sources/${source.id}/tweets?limit=5`);
       setTweets(response.data || []);
     } catch (error) {
       console.error("Failed to fetch tweets:", error);
@@ -748,8 +747,8 @@ export default function StyleLabPage() {
     setLoading(true);
     try {
       const [sourcesRes, profilesRes] = await Promise.all([
-        axios.get(`${API}/sources/list`),
-        axios.get(`${API}/styles/list`),
+        api.get(`${API}/sources/list`),
+        api.get(`${API}/styles/list`),
       ]);
       setSources(sourcesRes.data || []);
       setProfiles(profilesRes.data || []);
@@ -761,27 +760,27 @@ export default function StyleLabPage() {
   };
 
   const handleAddSource = async (username) => {
-    const response = await axios.post(`${API}/sources/add`, {
+    const response = await api.post(`${API}/sources/add`, {
       twitter_username: username,
     });
     setSources([response.data, ...sources]);
   };
 
   const handleDeleteSource = async (sourceId) => {
-    await axios.delete(`${API}/sources/${sourceId}`);
+    await api.delete(`${API}/sources/${sourceId}`);
     setSources(sources.filter((s) => s.id !== sourceId));
     toast.success("Kaynak silindi");
   };
 
   const handleRefreshSource = async (sourceId) => {
-    await axios.post(`${API}/sources/${sourceId}/refresh`);
+    await api.post(`${API}/sources/${sourceId}/refresh`);
     fetchData();
   };
 
   const handleAnalyze = async (source) => {
     setSelectedSource(source);
     try {
-      const response = await axios.post(`${API}/styles/analyze-source/${source.id}`);
+      const response = await api.post(`${API}/styles/analyze-source/${source.id}`);
       setAnalysis(response.data);
       setAnalysisDialogOpen(true);
     } catch (error) {
@@ -790,7 +789,7 @@ export default function StyleLabPage() {
   };
 
   const handleCreateProfile = async (name, sourceIds) => {
-    const response = await axios.post(`${API}/styles/create`, {
+    const response = await api.post(`${API}/styles/create`, {
       name,
       source_ids: sourceIds,
     });
@@ -798,15 +797,15 @@ export default function StyleLabPage() {
   };
 
   const handleDeleteProfile = async (profileId) => {
-    await axios.delete(`${API}/styles/${profileId}`);
+    await api.delete(`${API}/styles/${profileId}`);
     setProfiles(profiles.filter((p) => p.id !== profileId));
     toast.success("Profil silindi");
   };
 
   const handleRefreshProfile = async (profileId) => {
-    const response = await axios.post(`${API}/styles/${profileId}/refresh`);
+    const response = await api.post(`${API}/styles/${profileId}/refresh`);
     // Refresh the profiles list to get updated data
-    const profilesRes = await axios.get(`${API}/styles/list`);
+    const profilesRes = await api.get(`${API}/styles/list`);
     setProfiles(profilesRes.data || []);
     return response.data;
   };
@@ -814,8 +813,8 @@ export default function StyleLabPage() {
   const handleViewAnalysis = async (profileId) => {
     try {
       const [profileRes, promptRes] = await Promise.all([
-        axios.get(`${API}/styles/${profileId}`),
-        axios.get(`${API}/styles/${profileId}/prompt`),
+        api.get(`${API}/styles/${profileId}`),
+        api.get(`${API}/styles/${profileId}/prompt`),
       ]);
       setSelectedProfileData({
         ...profileRes.data,

@@ -109,4 +109,4 @@ Bu içeriğe uygun görsel promptu üret."""
         )
     except Exception as e:
         logger.error(f"Image prompt generation error: {str(e)}")
-        return ImagePromptResponse(success=False, error=str(e))
+        return ImagePromptResponse(success=False, error="Bir hata oluştu. Lütfen tekrar deneyin.")

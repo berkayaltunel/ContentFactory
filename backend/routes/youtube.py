@@ -76,7 +76,7 @@ async def generate_youtube_idea(request: YouTubeIdeaRequest, _=Depends(rate_limi
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"YouTube idea error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/youtube/script", response_model=GenerationResponse)
@@ -94,7 +94,7 @@ async def generate_youtube_script(request: YouTubeScriptRequest, _=Depends(rate_
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"YouTube script error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/youtube/title", response_model=GenerationResponse)
@@ -111,7 +111,7 @@ async def generate_youtube_title(request: YouTubeTitleRequest, _=Depends(rate_li
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"YouTube title error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.post("/generate/youtube/description", response_model=GenerationResponse)
@@ -131,7 +131,7 @@ async def generate_youtube_description(request: YouTubeDescriptionRequest, _=Dep
         return GenerationResponse(success=True, variants=variants)
     except Exception as e:
         logger.error(f"YouTube description error: {e}")
-        return GenerationResponse(success=False, variants=[], error=str(e))
+        return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 
 @router.get("/meta/youtube/formats")
