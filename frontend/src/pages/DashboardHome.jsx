@@ -230,7 +230,7 @@ export default function DashboardHome() {
               return (
                 <Card
                   key={gen.id || i}
-                  className="rounded-2xl border-border/50 shadow-sm hover-lift group overflow-hidden animate-stagger"
+                  className="rounded-2xl border-border/50 shadow-lg shadow-black/[0.03] dark:shadow-black/20 hover-lift group overflow-hidden animate-stagger"
                   style={{ "--i": i + 5 }}
                 >
                   {/* Gradient top border */}
@@ -316,7 +316,7 @@ export default function DashboardHome() {
               return (
                 <Card
                   key={profile.id || i}
-                  className="p-5 rounded-2xl border-border/50 shadow-sm hover-lift animate-stagger"
+                  className="p-5 rounded-2xl border-border/50 shadow-lg shadow-black/[0.03] dark:shadow-black/20 hover-lift animate-stagger"
                   style={{ "--i": i + 9 }}
                 >
                   <div className="flex items-center gap-3 mb-3">

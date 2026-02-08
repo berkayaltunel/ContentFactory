@@ -328,7 +328,7 @@ export default function YouTubeModule() {
         </p>
       </div>
 
-      <Card className="bg-card border-border mb-8">
+      <Card className="bg-card border-border/50 rounded-2xl shadow-lg shadow-black/[0.03] dark:shadow-black/20 mb-8">
         <CardContent className="p-6">
           <Tabs defaultValue="fikir" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6" data-testid="youtube-tabs">

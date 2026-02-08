@@ -862,8 +862,8 @@ export default function LinkShareModule() {
       </div>
 
       {/* Tabs */}
-      <Card className="bg-card border-border/50 rounded-2xl shadow-sm">
-        <CardContent className="p-6">
+      <Card className="bg-card border-border/50 rounded-2xl shadow-lg shadow-black/[0.03] dark:shadow-black/20">
+        <CardContent className="p-8">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-5 w-full mb-6">
           <TabsTrigger value="post" className="text-xs sm:text-sm">📝 Post</TabsTrigger>

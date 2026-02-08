@@ -278,7 +278,7 @@ export default function ContentCalendar() {
     currentMonth === new Date().getMonth() + 1;
 
   return (
-    <Card className="rounded-3xl border-border/50 overflow-hidden shadow-sm">
+    <Card className="rounded-3xl border-border/50 overflow-hidden shadow-lg shadow-black/[0.03] dark:shadow-black/20">
       {/* Gradient top accent */}
       <div className="h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />
 

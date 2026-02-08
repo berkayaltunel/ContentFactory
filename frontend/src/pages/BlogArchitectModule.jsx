@@ -648,8 +648,8 @@ export default function BlogArchitectModule() {
       </div>
 
       {/* Tabs */}
-      <Card className="bg-card border-border/50 rounded-2xl shadow-sm">
-        <CardContent className="p-6">
+      <Card className="bg-card border-border/50 rounded-2xl shadow-lg shadow-black/[0.03] dark:shadow-black/20">
+        <CardContent className="p-8">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-5 h-auto mb-6">
           <TabsTrigger value="full" className="text-xs sm:text-sm py-2">
