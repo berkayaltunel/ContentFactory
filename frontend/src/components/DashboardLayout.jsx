@@ -86,6 +86,25 @@ export default function DashboardLayout() {
     return false;
   };
 
+  // Animated counter for sidebar stats
+  function useSidebarCounter(target, duration = 800) {
+    const [val, setVal] = useState(0);
+    useEffect(() => {
+      if (!target) return;
+      let start = 0;
+      const step = target / (duration / 16);
+      const timer = setInterval(() => {
+        start += step;
+        if (start >= target) { setVal(target); clearInterval(timer); }
+        else setVal(Math.floor(start));
+      }, 16);
+      return () => clearInterval(timer);
+    }, [target, duration]);
+    return val;
+  }
+
+  const animatedGenerations = useSidebarCounter(stats.generations);
+
   const NavItem = ({ item, badge }) => {
     const active = isActive(item.path);
     const Icon = item.icon;
@@ -94,12 +113,12 @@ export default function DashboardLayout() {
         to={item.path}
         data-testid={`nav-${item.path.split('/').pop()}`}
         className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative",
-          "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group relative",
+          "text-muted-foreground hover:text-foreground hover:bg-secondary/50 hover:translate-x-1",
           active && "bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium border-l-[3px] border-purple-500 ml-0 pl-[9px]"
         )}
       >
-        <Icon className={cn("h-[18px] w-[18px]", active ? "text-purple-500" : item.color)} />
+        <Icon className={cn("h-[18px] w-[18px] transition-colors duration-200", active ? "text-purple-500" : item.color)} />
         <span className="text-sm flex-1">{item.label}</span>
         {badge !== undefined && badge > 0 && (
           <Badge variant="secondary" className="h-5 min-w-[20px] px-1.5 text-[10px] font-semibold bg-purple-500/15 text-purple-600 dark:text-purple-400">
@@ -114,10 +133,12 @@ export default function DashboardLayout() {
     <div className="flex min-h-screen bg-[#F7F7F8] dark:bg-background">
       {/* Floating Sidebar */}
       <aside
-        className="fixed left-0 top-0 z-40 h-screen w-[280px] p-3 pr-0"
+        className="fixed left-0 top-0 z-40 h-screen w-[280px] p-3 pr-0 animate-fade-in"
         data-testid="sidebar"
       >
         <div className="h-full w-full bg-card rounded-3xl shadow-xl border border-border/50 flex flex-col overflow-hidden">
+          {/* Gradient accent line */}
+          <div className="h-[3px] w-full rounded-t-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />
           {/* User Profile */}
           {isAuthenticated && user ? (
             <div className="px-5 pt-5 pb-3">
@@ -170,7 +191,7 @@ export default function DashboardLayout() {
               <div className="flex items-end justify-between mb-2">
                 <div>
                   <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Toplam Üretim</p>
-                  <p className="text-3xl font-outfit font-bold tracking-tight">{stats.generations.toLocaleString()}</p>
+                  <p className="text-3xl font-outfit font-bold tracking-tight">{animatedGenerations.toLocaleString()}</p>
                 </div>
                 <MiniSparkline />
               </div>
@@ -182,7 +203,7 @@ export default function DashboardLayout() {
               </div>
               <Button
                 size="sm"
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-9 text-sm font-medium"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-9 text-sm font-medium shimmer-btn"
                 onClick={() => navigate('/dashboard/x-ai')}
               >
                 <Sparkles className="h-4 w-4 mr-1.5" />
