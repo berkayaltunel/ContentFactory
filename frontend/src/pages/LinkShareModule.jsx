@@ -776,7 +776,7 @@ export default function LinkShareModule() {
 
   // Fetch meta
   useEffect(() => {
-    axios
+    api
       .get(`${API}/meta/linkedin/personas`)
       .then((r) => setPersonas(r.data))
       .catch(() =>
@@ -787,7 +787,7 @@ export default function LinkShareModule() {
           { id: "motivator", label: "Motivator" },
         ])
       );
-    axios
+    api
       .get(`${API}/meta/linkedin/formats`)
       .then((r) => setFormats(r.data))
       .catch(() =>
