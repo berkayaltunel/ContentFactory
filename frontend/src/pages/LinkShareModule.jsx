@@ -852,7 +852,7 @@ export default function LinkShareModule() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="text-center mb-2">
+      <div className="text-center mt-4 mb-10">
         <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
           Konu yaz, <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">viral postlar</span> üret
         </h1>
@@ -862,8 +862,10 @@ export default function LinkShareModule() {
       </div>
 
       {/* Tabs */}
+      <Card className="bg-card border-border/50 rounded-2xl shadow-sm">
+        <CardContent className="p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-5 w-full mb-6">
           <TabsTrigger value="post" className="text-xs sm:text-sm">📝 Post</TabsTrigger>
           <TabsTrigger value="carousel" className="text-xs sm:text-sm">📑 Carousel</TabsTrigger>
           <TabsTrigger value="hooklab" className="text-xs sm:text-sm">💡 Hook Lab</TabsTrigger>
@@ -914,6 +916,8 @@ export default function LinkShareModule() {
           <AnalizTab />
         </TabsContent>
       </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

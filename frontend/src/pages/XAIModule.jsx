@@ -1839,7 +1839,7 @@ export default function XAIModule() {
   return (
     <div className="max-w-4xl mx-auto" data-testid="x-ai-module">
       {/* Hero Header */}
-      <div className="mb-8 text-center">
+      <div className="mt-4 mb-10 text-center">
         <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
           Konu yaz, <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">viral tweetler</span> üret
         </h1>

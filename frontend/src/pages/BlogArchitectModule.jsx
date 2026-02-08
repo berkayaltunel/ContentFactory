@@ -638,7 +638,7 @@ export default function BlogArchitectModule() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Hero Header */}
-      <div className="text-center mb-2">
+      <div className="text-center mt-4 mb-10">
         <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
           Konu yaz, <span className="bg-gradient-to-r from-indigo-400 to-violet-500 bg-clip-text text-transparent">viral bloglar</span> üret
         </h1>
@@ -648,8 +648,10 @@ export default function BlogArchitectModule() {
       </div>
 
       {/* Tabs */}
+      <Card className="bg-card border-border/50 rounded-2xl shadow-sm">
+        <CardContent className="p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-5 h-auto mb-6">
           <TabsTrigger value="full" className="text-xs sm:text-sm py-2">
             <Sparkles className="h-3.5 w-3.5 mr-1 hidden sm:inline" /> Tam Yazı
           </TabsTrigger>
@@ -711,6 +713,8 @@ export default function BlogArchitectModule() {
           </TabsContent>
         </div>
       </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Floating Queue */}
       <FloatingQueue jobs={jobs} onDismiss={dismissJob} />

@@ -300,7 +300,7 @@ export default function DashboardLayout() {
       </header>
 
       {/* ── Main Content ── */}
-      <main className="pt-[72px] pb-8 px-4 md:px-8">
+      <main className="pt-20 pb-8 px-4 md:px-8">
         <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>

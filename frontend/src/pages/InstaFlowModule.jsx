@@ -418,7 +418,7 @@ export default function InstaFlowModule() {
 
   return (
     <div className="max-w-4xl mx-auto" data-testid="instaflow-module">
-      <div className="mb-8 text-center">
+      <div className="mt-4 mb-10 text-center">
         <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
           Konu yaz, <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">viral reeller</span> üret
         </h1>
