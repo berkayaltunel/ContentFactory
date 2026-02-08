@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Sparkles, Heart, Copy, ArrowRight, Twitter, FileText,
-  MessageSquare, Quote, Calendar, Search, Lightbulb, Dna,
-  BarChart3, TrendingUp, ExternalLink, Zap, Flame, Eye,
-  ChevronRight, Cpu, Clock, Star, Target, Rocket,
+  MessageSquare, Quote, Search, Lightbulb, Dna,
+  BarChart3, TrendingUp, ExternalLink, Zap, Flame,
+  ChevronRight, Rocket, Target, Compass, Brain,
 } from "lucide-react";
 import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
 import { HiDocumentText } from "react-icons/hi2";
@@ -22,10 +22,10 @@ import ContentCalendar from "@/components/dashboard/ContentCalendar";
    ═══════════════════════════════════════════════════ */
 
 const typeConfig = {
-  tweet:   { label: "Tweet",  color: "bg-sky-500/15 text-sky-500",     border: "from-sky-400 to-blue-500",    icon: Twitter },
-  quote:   { label: "Alıntı", color: "bg-purple-500/15 text-purple-500", border: "from-purple-400 to-pink-500", icon: Quote },
-  reply:   { label: "Yanıt",  color: "bg-emerald-500/15 text-emerald-500", border: "from-emerald-400 to-teal-500", icon: MessageSquare },
-  article: { label: "Makale", color: "bg-orange-500/15 text-orange-500", border: "from-orange-400 to-amber-500", icon: FileText },
+  tweet:   { label: "Tweet",  color: "bg-sky-500/15 text-sky-500",     icon: Twitter },
+  quote:   { label: "Alıntı", color: "bg-purple-500/15 text-purple-500", icon: Quote },
+  reply:   { label: "Yanıt",  color: "bg-emerald-500/15 text-emerald-500", icon: MessageSquare },
+  article: { label: "Makale", color: "bg-orange-500/15 text-orange-500", icon: FileText },
 };
 
 function getGreetingEmoji() {
@@ -65,10 +65,10 @@ function getDailyPrompt() {
 }
 
 /* ═══════════════════════════════════════════════════
-   ANIMATED COUNTER (with pulse on finish)
+   ANIMATED COUNTER
    ═══════════════════════════════════════════════════ */
 
-function AnimatedCounter({ value, duration = 900, className = "" }) {
+function AnimatedCounter({ value, duration = 900 }) {
   const [display, setDisplay] = useState(0);
   const [done, setDone] = useState(false);
 
@@ -91,29 +91,28 @@ function AnimatedCounter({ value, duration = 900, className = "" }) {
   }, [value, duration]);
 
   return (
-    <span className={cn(done && "animate-count-pulse", className)}>
+    <span className={cn(done && "animate-count-pulse")}>
       {display.toLocaleString()}
     </span>
   );
 }
 
 /* ═══════════════════════════════════════════════════
-   MINI WEEKLY BARS (CSS-only bar chart)
+   WEEKLY BARS
    ═══════════════════════════════════════════════════ */
 
 function WeeklyBars({ data = [] }) {
-  // data: array of 7 numbers (Mon-Sun generation counts)
   const max = Math.max(...data, 1);
   const days = ["P", "S", "Ç", "P", "C", "C", "P"];
 
   return (
-    <div className="flex items-end gap-1.5 h-16">
+    <div className="flex items-end gap-1.5 h-14">
       {days.map((d, i) => {
         const h = data[i] ? (data[i] / max) * 100 : 8;
         const isToday = i === ((new Date().getDay() + 6) % 7);
         return (
           <div key={i} className="flex flex-col items-center gap-1 flex-1">
-            <div className="w-full relative rounded-t-sm overflow-hidden" style={{ height: "48px" }}>
+            <div className="w-full relative rounded-t-sm overflow-hidden" style={{ height: "40px" }}>
               <div
                 className={cn(
                   "absolute bottom-0 w-full rounded-t-sm bar-animate",
@@ -140,45 +139,60 @@ function WeeklyBars({ data = [] }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   TOOL CARD
+   TOOL CARD (big, prominent)
    ═══════════════════════════════════════════════════ */
 
-function ToolCard({ icon: Icon, label, desc, path, gradient, delay }) {
+function ToolCardBig({ icon: Icon, label, desc, path, gradient, accentColor, delay }) {
   const navigate = useNavigate();
   return (
     <button
       onClick={() => navigate(path)}
-      className="tool-card relative overflow-hidden group flex items-center gap-3 p-3.5 rounded-2xl bg-card/60 border border-border/40 hover:border-purple-500/20 transition-all duration-300 text-left"
+      className="tool-card bento-card relative overflow-hidden group flex flex-col p-5 rounded-2xl bg-card/70 backdrop-blur-sm border border-border/40 hover:border-transparent transition-all duration-300 text-left"
       style={{ "--bento-i": delay }}
     >
+      {/* Glow orb on hover */}
       <div className={cn(
-        "shrink-0 h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-br",
+        "absolute -top-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500",
+        gradient.replace("from-", "bg-").split(" ")[0]
+      )} />
+
+      <div className={cn(
+        "shrink-0 h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br mb-4 group-hover:scale-110 transition-transform duration-300",
         gradient
       )}>
-        <Icon className="h-4.5 w-4.5 text-white" style={{ width: 18, height: 18 }} />
+        <Icon className="h-5 w-5 text-white" />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold truncate group-hover:text-purple-500 transition-colors">{label}</p>
-        <p className="text-[11px] text-muted-foreground truncate">{desc}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold mb-1 group-hover:text-purple-500 transition-colors">{label}</p>
+        <p className="text-[12px] text-muted-foreground leading-relaxed">{desc}</p>
       </div>
-      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-purple-500/60 group-hover:translate-x-0.5 transition-all shrink-0" />
+      <div className="flex items-center gap-1 mt-3 text-[11px] font-medium text-muted-foreground/50 group-hover:text-purple-500/70 transition-colors">
+        <span>Keşfet</span>
+        <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+      </div>
     </button>
   );
 }
 
 /* ═══════════════════════════════════════════════════
-   PLATFORM SHORTCUT
+   PLATFORM PILL (bigger, colorful)
    ═══════════════════════════════════════════════════ */
 
-function PlatformPill({ icon: Icon, label, path, color }) {
+function PlatformCard({ icon: Icon, label, path, gradient, delay }) {
   const navigate = useNavigate();
   return (
     <button
       onClick={() => navigate(path)}
-      className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-card/40 border border-border/30 hover:border-border/60 transition-all duration-200"
+      className="bento-card group flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-card/50 border border-border/30 hover:border-border/60 hover:bg-card/80 transition-all duration-300"
+      style={{ "--bento-i": delay }}
     >
-      <Icon className={cn("h-3.5 w-3.5 transition-colors", color)} />
-      <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{label}</span>
+      <div className={cn(
+        "h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-br group-hover:scale-110 transition-transform duration-300",
+        gradient
+      )}>
+        <Icon className="h-4 w-4 text-white" />
+      </div>
+      <span className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">{label}</span>
     </button>
   );
 }
@@ -214,7 +228,6 @@ export default function DashboardHome() {
           const data = stylesRes.value.data;
           setStyleProfiles(Array.isArray(data) ? data : (data.styles || []));
         }
-        // Build weekly data from calendar
         if (calRes.status === "fulfilled" && calRes.value.data?.days) {
           const days = calRes.value.data.days;
           const now = new Date();
@@ -254,37 +267,36 @@ export default function DashboardHome() {
     return gen.content || gen.text || "";
   };
 
-  /* Tools & platforms */
+  /* Tool definitions */
   const tools = [
-    { icon: Dna,         label: "Style Lab",      desc: "Yazım stilini analiz et",    path: "/dashboard/style-lab",        gradient: "from-purple-500 to-indigo-600" },
-    { icon: TrendingUp,  label: "Trendler",       desc: "Güncel trendleri keşfet",    path: "/dashboard/trends",           gradient: "from-emerald-500 to-teal-600" },
-    { icon: BarChart3,   label: "Hesap Analizi",  desc: "Hesabını analiz et",         path: "/dashboard/account-analysis", gradient: "from-sky-500 to-blue-600" },
-    { icon: Sparkles,    label: "AI Coach",       desc: "AI koçunla konuş",           path: "/dashboard/coach",            gradient: "from-amber-500 to-orange-600" },
+    { icon: Dna,         label: "Style Lab",      desc: "Yazım stilini analiz et, DNA'nı keşfet",   path: "/dashboard/style-lab",        gradient: "from-purple-500 to-indigo-600" },
+    { icon: TrendingUp,  label: "Trendler",       desc: "Güncel trendleri yakala, viral ol",         path: "/dashboard/trends",           gradient: "from-emerald-500 to-teal-600" },
+    { icon: BarChart3,   label: "Hesap Analizi",  desc: "X hesabını derinlemesine analiz et",        path: "/dashboard/account-analysis", gradient: "from-sky-500 to-blue-600" },
+    { icon: Brain,       label: "AI Coach",       desc: "Kişisel AI koçunla strateji belirle",       path: "/dashboard/coach",            gradient: "from-amber-500 to-orange-600" },
   ];
 
   const platforms = [
-    { icon: FaXTwitter,   label: "X",         path: "/dashboard/x-ai",      color: "group-hover:text-foreground" },
-    { icon: FaYoutube,    label: "YouTube",    path: "/dashboard/youtube",   color: "group-hover:text-red-500" },
-    { icon: FaInstagram,  label: "Instagram",  path: "/dashboard/instaflow", color: "group-hover:text-pink-500" },
-    { icon: FaTiktok,     label: "TikTok",     path: "/dashboard/tiktrend",  color: "group-hover:text-foreground" },
-    { icon: FaLinkedinIn, label: "LinkedIn",   path: "/dashboard/linkshare", color: "group-hover:text-blue-600" },
-    { icon: HiDocumentText, label: "Blog",     path: "/dashboard/blog",      color: "group-hover:text-orange-500" },
+    { icon: FaXTwitter,     label: "X",         path: "/dashboard/x-ai",      gradient: "from-neutral-700 to-neutral-900" },
+    { icon: FaYoutube,      label: "YouTube",    path: "/dashboard/youtube",   gradient: "from-red-500 to-red-700" },
+    { icon: FaInstagram,    label: "Instagram",  path: "/dashboard/instaflow", gradient: "from-pink-500 via-purple-500 to-orange-500" },
+    { icon: FaTiktok,       label: "TikTok",     path: "/dashboard/tiktrend",  gradient: "from-cyan-400 to-pink-500" },
+    { icon: FaLinkedinIn,   label: "LinkedIn",   path: "/dashboard/linkshare", gradient: "from-blue-600 to-blue-800" },
+    { icon: HiDocumentText, label: "Blog",       path: "/dashboard/blog",      gradient: "from-orange-500 to-amber-600" },
   ];
 
   return (
     <div className="max-w-6xl mx-auto px-1">
-
-      {/* ═══════════════════════════════════════════
-          BENTO GRID
-          ═══════════════════════════════════════════ */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-auto">
 
-        {/* ─── 1. GREETING + SEARCH (2 col) ─── */}
+        {/* ═══════════════════════════════════════
+            ROW 1: GREETING (2col) + STATS (1+1)
+            ═══════════════════════════════════════ */}
+
+        {/* 1. Greeting + Search */}
         <div
           className="bento-card relative md:col-span-2 rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 0 }}
         >
-          {/* Decorative orbs */}
           <div className="bento-orb w-32 h-32 bg-purple-500/15 top-[-20px] right-[-20px]" />
           <div className="bento-orb w-24 h-24 bg-indigo-500/10 bottom-[-10px] left-[-10px]" style={{ animationDelay: "2s" }} />
 
@@ -321,7 +333,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ─── 2. TOTAL GENERATIONS (1 col) ─── */}
+        {/* 2. Total Generations */}
         <div
           className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 1 }}
@@ -332,9 +344,7 @@ export default function DashboardHome() {
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500/15 to-indigo-500/15 flex items-center justify-center">
                 <Zap className="h-5 w-5 text-purple-500" />
               </div>
-              <Badge className="text-[10px] bg-purple-500/10 text-purple-500 border-0 rounded-lg">
-                Bu ay
-              </Badge>
+              <Badge className="text-[10px] bg-purple-500/10 text-purple-500 border-0 rounded-lg">Bu ay</Badge>
             </div>
             <p className="font-outfit text-3xl font-bold tracking-tight mb-0.5">
               <AnimatedCounter value={stats.generations || 0} />
@@ -343,7 +353,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ─── 3. FAVORITES (1 col) ─── */}
+        {/* 3. Favorites */}
         <div
           className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 2 }}
@@ -354,9 +364,7 @@ export default function DashboardHome() {
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500/15 to-pink-500/15 flex items-center justify-center">
                 <Heart className="h-5 w-5 text-rose-500" />
               </div>
-              <Badge className="text-[10px] bg-rose-500/10 text-rose-500 border-0 rounded-lg">
-                Koleksiyon
-              </Badge>
+              <Badge className="text-[10px] bg-rose-500/10 text-rose-500 border-0 rounded-lg">Koleksiyon</Badge>
             </div>
             <p className="font-outfit text-3xl font-bold tracking-tight mb-0.5">
               <AnimatedCounter value={stats.favorites || 0} />
@@ -365,20 +373,71 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ─── 4. CONTENT CALENDAR (2 col, 2 row) ─── */}
+        {/* ═══════════════════════════════════════
+            ROW 2: ARAÇLAR (full width, prominent!)
+            ═══════════════════════════════════════ */}
         <div
-          className="bento-card relative md:col-span-2 md:row-span-2 rounded-3xl overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative md:col-span-4 rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 3 }}
         >
-          <div className="h-full">
-            <ContentCalendar />
+          <div className="bento-orb w-40 h-40 bg-purple-500/8 bottom-[-30px] right-[10%]" />
+          <div className="bento-orb w-32 h-32 bg-indigo-500/8 top-[-20px] left-[5%]" style={{ animationDelay: "1.5s" }} />
+
+          <div className="relative z-10">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                  <Compass className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold">Araçlar & Platformlar</h2>
+                  <p className="text-[12px] text-muted-foreground">Tüm güçlü araçların tek bakışta</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tool cards - 4 column grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              {tools.map((t, i) => (
+                <ToolCardBig key={t.label} {...t} delay={4 + i} />
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-px flex-1 bg-border/40" />
+              <span className="text-[11px] text-muted-foreground/60 font-medium">İçerik Platformları</span>
+              <div className="h-px flex-1 bg-border/40" />
+            </div>
+
+            {/* Platform cards - 6 column grid */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              {platforms.map((p, i) => (
+                <PlatformCard key={p.label} {...p} delay={8 + i} />
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* ─── 5. STREAK & WEEKLY (1 col) ─── */}
+        {/* ═══════════════════════════════════════
+            ROW 3: CALENDAR (2col, 2row) + STREAK + STYLE + RECENT + ILHAM
+            ═══════════════════════════════════════ */}
+
+        {/* 4. Content Calendar (embedded, no double Card) */}
+        <div
+          className="bento-card relative md:col-span-2 md:row-span-2 rounded-3xl overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          style={{ "--bento-i": 9 }}
+        >
+          {/* Gradient top accent */}
+          <div className="h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />
+          <ContentCalendar embedded />
+        </div>
+
+        {/* 5. Streak & Weekly */}
         <div
           className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
-          style={{ "--bento-i": 4 }}
+          style={{ "--bento-i": 10 }}
         >
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-2">
@@ -398,7 +457,7 @@ export default function DashboardHome() {
               </span>
             </div>
 
-            <div className="mt-1 mb-3">
+            <div className="mt-1 mb-1">
               <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
                 <span>Bu hafta</span>
                 <span className="font-medium">{weekTotal} üretim</span>
@@ -408,10 +467,10 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ─── 6. STYLE PROFILE (1 col) ─── */}
+        {/* 6. Style Profile */}
         <div
           className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
-          style={{ "--bento-i": 5 }}
+          style={{ "--bento-i": 11 }}
         >
           <div className="bento-orb w-20 h-20 bg-indigo-500/10 bottom-[-10px] right-[-10px]" style={{ animationDelay: "1s" }} />
           <div className="relative z-10">
@@ -457,21 +516,21 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ─── 7. RECENT GENERATION PREVIEW (1 col) ─── */}
+        {/* 7. Recent Generation Preview */}
         <div
           className="bento-card relative rounded-3xl p-5 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
-          style={{ "--bento-i": 6 }}
+          style={{ "--bento-i": 12 }}
         >
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold">Son Üretim</span>
+              <span className="text-sm font-semibold">Son Üretimler</span>
               <Link to="/dashboard/history" className="text-[10px] text-purple-500 hover:text-purple-400 flex items-center gap-0.5 transition-colors">
                 Tümü <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
 
             {recentGenerations.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {recentGenerations.slice(0, 3).map((gen, i) => {
                   const type = typeConfig[gen.type] || typeConfig.tweet;
                   const content = getContent(gen);
@@ -504,16 +563,16 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* ─── 8. BUGÜNÜN İLHAMI (1 col) ─── */}
+        {/* 8. Bugünün İlhamı */}
         <div
           className="bento-card relative rounded-3xl p-6 overflow-hidden bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.05] border border-amber-500/10"
-          style={{ "--bento-i": 7 }}
+          style={{ "--bento-i": 13 }}
         >
           <div className="bento-orb w-24 h-24 bg-amber-500/10 top-[-15px] left-[-15px]" style={{ animationDelay: "3s" }} />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-                <Lightbulb className="h-4.5 w-4.5 text-amber-500" style={{ width: 18, height: 18 }} />
+                <Lightbulb className="h-[18px] w-[18px] text-amber-500" />
               </div>
               <span className="text-sm font-semibold">Bugünün İlhamı</span>
             </div>
@@ -527,41 +586,6 @@ export default function DashboardHome() {
             >
               <Sparkles className="h-3.5 w-3.5 mr-1" /> Bu Konuda Üret
             </Button>
-          </div>
-        </div>
-
-        {/* ─── 9. ARAÇLAR & PLATFORMLAR (full width) ─── */}
-        <div
-          className="bento-card relative md:col-span-4 rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
-          style={{ "--bento-i": 8 }}
-        >
-          <div className="bento-orb w-40 h-40 bg-purple-500/5 bottom-[-30px] right-[-30px]" />
-          <div className="relative z-10">
-            {/* Section header */}
-            <div className="flex items-center gap-2 mb-5">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-purple-500/15 to-indigo-500/15 flex items-center justify-center">
-                <Rocket className="h-4.5 w-4.5 text-purple-500" style={{ width: 18, height: 18 }} />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold">Araçlar & Platformlar</h3>
-                <p className="text-[11px] text-muted-foreground">Tüm güçlü araçların tek bakışta</p>
-              </div>
-            </div>
-
-            {/* Tools grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-              {tools.map((t, i) => (
-                <ToolCard key={t.label} {...t} delay={9 + i} />
-              ))}
-            </div>
-
-            {/* Platform pills */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] text-muted-foreground/60 mr-1">Platformlar:</span>
-              {platforms.map((p) => (
-                <PlatformPill key={p.label} {...p} />
-              ))}
-            </div>
           </div>
         </div>
 

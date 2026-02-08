@@ -204,7 +204,7 @@ function GenerationPreviewCard({ gen, index }) {
 
 /* ── Main Calendar Component ────────────────────── */
 
-export default function ContentCalendar() {
+export default function ContentCalendar({ embedded = false }) {
   const navigate = useNavigate();
   const scrollRef = useRef(null);
   const todayStr = getToday();
@@ -277,12 +277,17 @@ export default function ContentCalendar() {
     currentYear === new Date().getFullYear() &&
     currentMonth === new Date().getMonth() + 1;
 
-  return (
-    <Card className="rounded-3xl border-border/50 overflow-hidden shadow-lg shadow-black/[0.03] dark:shadow-black/20">
-      {/* Gradient top accent */}
-      <div className="h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />
+  const Wrapper = embedded ? "div" : Card;
+  const wrapperClass = embedded
+    ? "h-full"
+    : "rounded-3xl border-border/50 overflow-hidden shadow-lg shadow-black/[0.03] dark:shadow-black/20";
 
-      <div className="p-6">
+  return (
+    <Wrapper className={wrapperClass}>
+      {/* Gradient top accent */}
+      {!embedded && <div className="h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500" />}
+
+      <div className={embedded ? "p-5" : "p-6"}>
         {/* ── Header: Month nav + Stats ── */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -327,7 +332,7 @@ export default function ContentCalendar() {
                     setCurrentMonth(now.getMonth() + 1);
                     setSelectedDate(todayStr);
                   }}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium hover:bg-secondary transition-colors text-purple-500"
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-purple-500/10 hover:bg-purple-500/20 transition-colors text-purple-500 border border-purple-500/20"
                 >
                   Bugün
                 </button>
@@ -345,9 +350,9 @@ export default function ContentCalendar() {
         {/* ── Stories Date Roller ── */}
         <div className="relative mb-6">
           {/* Left fade */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-card to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-[hsl(var(--card))] to-transparent z-10 pointer-events-none rounded-l-xl" />
           {/* Right fade */}
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[hsl(var(--card))] to-transparent z-10 pointer-events-none rounded-r-xl" />
 
           <div
             ref={scrollRef}
@@ -474,6 +479,6 @@ export default function ContentCalendar() {
           </div>
         )}
       </div>
-    </Card>
+    </Wrapper>
   );
 }
