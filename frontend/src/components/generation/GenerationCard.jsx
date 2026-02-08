@@ -329,26 +329,22 @@ export default function GenerationCard({ job }) {
 
   const handleFavorite = async (index, variant) => {
     const next = new Map(favorites);
-    if (next.has(index)) {
-      const favId = next.get(index);
-      try {
-        await api.delete(`${API}/favorites/${favId}`);
+    try {
+      const res = await api.post(`${API}/favorites/toggle`, {
+        content: variant.content,
+        type: job.type || "tweet",
+        generation_id: job.generationId || null,
+        variant_index: index,
+      });
+      if (res.data.action === "added") {
+        next.set(index, res.data.favorite_id);
+        toast.success("Favorilere eklendi!");
+      } else {
         next.delete(index);
         toast.success("Favorilerden kaldırıldı");
-      } catch {
-        toast.error("Favori kaldırılamadı");
       }
-    } else {
-      try {
-        const res = await api.post(`${API}/favorites`, {
-          content: variant.content,
-          type: job.type || "tweet",
-        });
-        next.set(index, res.data.id);
-        toast.success("Favorilere eklendi!");
-      } catch {
-        toast.error("Favori eklenemedi");
-      }
+    } catch {
+      toast.error("Favori işlemi başarısız");
     }
     setFavorites(next);
   };

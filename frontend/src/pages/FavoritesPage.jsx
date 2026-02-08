@@ -5,14 +5,23 @@ import { Button } from "@/components/ui/button";
 import { 
   Heart, 
   Copy, 
-  Twitter, 
+  Send, 
   Trash2,
   Loader2,
-  HeartOff
+  HeartOff,
+  Calendar,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 
+
+const TYPE_CONFIG = {
+  tweet: { label: "Tweet", color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
+  quote: { label: "Alıntı", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  reply: { label: "Yanıt", color: "bg-green-500/10 text-green-400 border-green-500/20" },
+  article: { label: "Makale", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+};
 
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState([]);
@@ -27,8 +36,7 @@ export default function FavoritesPage() {
       const response = await api.get(`${API}/favorites`);
       setFavorites(response.data || []);
     } catch (error) {
-      console.error('Favorites fetch error:', error);
-      // Mock data for demo
+      console.error("Favorites fetch error:", error);
       setFavorites([]);
     } finally {
       setLoading(false);
@@ -42,13 +50,13 @@ export default function FavoritesPage() {
 
   const handleTweet = (content) => {
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
-    window.open(tweetUrl, '_blank');
+    window.open(tweetUrl, "_blank");
   };
 
   const handleRemoveFavorite = async (id) => {
     try {
       await api.delete(`${API}/favorites/${id}`);
-      setFavorites(favorites.filter(f => f.id !== id));
+      setFavorites(favorites.filter((f) => f.id !== id));
       toast.success("Favorilerden kaldırıldı");
     } catch (error) {
       toast.error("Kaldırılamadı");
@@ -71,7 +79,7 @@ export default function FavoritesPage() {
           Favoriler
         </h1>
         <p className="text-muted-foreground">
-          Beğendiğiniz ve kaydettiğiniz içerikler.
+          Beğendiğiniz ve kaydettiğiniz içerikler ({favorites.length}).
         </p>
       </div>
 
@@ -81,55 +89,80 @@ export default function FavoritesPage() {
             <HeartOff className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-outfit text-xl font-semibold mb-2">Henüz favori yok</h3>
             <p className="text-muted-foreground">
-              Üretilen içeriklerde kalp ikonuna tıklayarak favorilere ekleyebilirsiniz.
+              Üretilen içeriklerde veya geçmişte kalp ikonuna tıklayarak favorilere ekleyebilirsiniz.
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {favorites.map((fav, index) => (
-            <Card key={fav.id || index} className="bg-card border-border hover:border-primary/20 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <Badge variant="secondary">{fav.type || 'Tweet'}</Badge>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleCopy(fav.content)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-sky-400 hover:text-sky-300"
-                      onClick={() => handleTweet(fav.content)}
-                    >
-                      <Twitter className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-400 hover:text-red-300"
-                      onClick={() => handleRemoveFavorite(fav.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+          {favorites.map((fav, index) => {
+            const typeConfig = TYPE_CONFIG[fav.type] || { label: fav.type || "Tweet", color: "bg-secondary text-muted-foreground" };
+            return (
+              <Card key={fav.id || index} className="bg-card border-border hover:border-primary/20 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-2">
+                      <Badge className={typeConfig.color}>
+                        {typeConfig.label}
+                      </Badge>
+                      {fav.variant_index != null && fav.variant_index > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          Varyant {fav.variant_index + 1}
+                        </Badge>
+                      )}
+                      {fav.created_at && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(fav.created_at).toLocaleDateString("tr-TR", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1.5"
+                        onClick={() => handleCopy(fav.content)}
+                      >
+                        <Copy className="h-4 w-4" />
+                        <span className="hidden sm:inline">Kopyala</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1.5 text-sky-400 hover:text-sky-300"
+                        onClick={() => handleTweet(fav.content)}
+                      >
+                        <Send className="h-4 w-4" />
+                        <span className="hidden sm:inline">Tweetle</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        onClick={() => handleRemoveFavorite(fav.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                
-                <p className="text-sm whitespace-pre-wrap">{fav.content}</p>
-                
-                <div className="flex items-center gap-2 mt-3">
-                  <Badge variant="outline" className="text-xs">
-                    {fav.content?.length || 0} karakter
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  
+                  <p className="text-sm whitespace-pre-wrap">{fav.content}</p>
+                  
+                  <div className="flex items-center gap-2 mt-3">
+                    <Badge variant="secondary" className="text-xs">
+                      {fav.content?.length || 0} karakter
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

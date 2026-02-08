@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
@@ -8,19 +8,203 @@ import {
   Heart, 
   Copy, 
   Twitter, 
-  Trash2, 
   Calendar,
   Loader2,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  Filter,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 
+
+const TYPE_CONFIG = {
+  tweet: { label: "Tweet", color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
+  quote: { label: "Alıntı", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  reply: { label: "Yanıt", color: "bg-green-500/10 text-green-400 border-green-500/20" },
+  article: { label: "Makale", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+};
+
+function HistoryCard({ gen, onFavoriteChange }) {
+  const [expanded, setExpanded] = useState(false);
+  const [favoritedVariants, setFavoritedVariants] = useState(gen.favorited_variants || {});
+  const variants = gen.variants || [];
+  const typeConfig = TYPE_CONFIG[gen.type] || { label: gen.type, color: "bg-secondary text-muted-foreground" };
+
+  const handleCopy = (content) => {
+    navigator.clipboard.writeText(content);
+    toast.success("Kopyalandı!");
+  };
+
+  const handleTweet = (content) => {
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
+    window.open(tweetUrl, "_blank");
+  };
+
+  const handleToggleFavorite = async (variantIndex, variant) => {
+    try {
+      const res = await api.post(`${API}/favorites/toggle`, {
+        content: variant.content,
+        type: gen.type || "tweet",
+        generation_id: gen.id,
+        variant_index: variantIndex,
+      });
+
+      const next = { ...favoritedVariants };
+      if (res.data.action === "added") {
+        next[variantIndex] = res.data.favorite_id;
+        toast.success("Favorilere eklendi!");
+      } else {
+        delete next[variantIndex];
+        toast.success("Favorilerden kaldırıldı");
+      }
+      setFavoritedVariants(next);
+      if (onFavoriteChange) onFavoriteChange(gen.id, next);
+    } catch {
+      toast.error("Favori işlemi başarısız");
+    }
+  };
+
+  const isFavorited = (variantIndex) => !!favoritedVariants[variantIndex];
+  const favCount = Object.keys(favoritedVariants).length;
+  const visibleVariants = expanded ? variants : variants.slice(0, 1);
+
+  return (
+    <Card className="bg-card border-border hover:border-primary/20 transition-colors">
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge className={typeConfig.color}>
+              {typeConfig.label}
+            </Badge>
+            {gen.persona && (
+              <Badge variant="outline" className="text-xs">
+                {gen.persona}
+              </Badge>
+            )}
+            {favCount > 0 && (
+              <Badge variant="secondary" className="text-xs gap-1 text-red-400">
+                <Heart className="h-3 w-3 fill-current" />
+                {favCount}
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {new Date(gen.created_at).toLocaleDateString("tr-TR", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+        </div>
+
+        {/* Topic */}
+        {gen.topic && (
+          <p className="text-xs text-muted-foreground mb-3 truncate">
+            Konu: {gen.topic}
+          </p>
+        )}
+
+        {/* Variants */}
+        <div className="space-y-3">
+          {visibleVariants.map((variant, idx) => {
+            const variantIndex = variant.variant_index ?? idx;
+            return (
+              <div
+                key={variant.id || idx}
+                className="rounded-lg border border-border p-3 space-y-2"
+              >
+                <p className="text-sm whitespace-pre-wrap">{variant.content}</p>
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {variant.character_count || variant.content?.length || 0} karakter
+                    </Badge>
+                    {variants.length > 1 && (
+                      <Badge variant="outline" className="text-xs">
+                        Varyant {variantIndex + 1}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopy(variant.content)}
+                      className="gap-1.5 h-8"
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span className="hidden sm:inline">Kopyala</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleFavorite(variantIndex, variant)}
+                      className={cn(
+                        "gap-1.5 h-8",
+                        isFavorited(variantIndex) && "text-red-500"
+                      )}
+                    >
+                      <Heart
+                        className={cn(
+                          "h-4 w-4",
+                          isFavorited(variantIndex) && "fill-current"
+                        )}
+                      />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTweet(variant.content)}
+                      className="gap-1.5 h-8 text-sky-400 hover:text-sky-300"
+                    >
+                      <Send className="h-4 w-4" />
+                      <span className="hidden sm:inline">Tweetle</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Expand/collapse */}
+        {variants.length > 1 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full mt-2 text-muted-foreground gap-1"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                Sadece ilkini göster
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Tüm {variants.length} varyantı göster
+              </>
+            )}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function HistoryPage() {
   const { isAuthenticated } = useAuth();
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     if (isAuthenticated) fetchHistory();
@@ -31,41 +215,20 @@ export default function HistoryPage() {
       const response = await api.get(`${API}/generations/history?limit=50`);
       setGenerations(response.data || []);
     } catch (error) {
-      console.error('History fetch error:', error);
+      console.error("History fetch error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCopy = (content) => {
-    navigator.clipboard.writeText(content);
-    toast.success("Kopyalandı!");
-  };
+  const filteredGenerations = filter === "all"
+    ? generations
+    : generations.filter((g) => g.type === filter);
 
-  const handleTweet = (content) => {
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
-    window.open(tweetUrl, '_blank');
-  };
-
-  const getTypeLabel = (type) => {
-    const types = {
-      tweet: 'Tweet',
-      quote: 'Quote',
-      reply: 'Reply',
-      article: 'Article'
-    };
-    return types[type] || type;
-  };
-
-  const getTypeColor = (type) => {
-    const colors = {
-      tweet: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
-      quote: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-      reply: 'bg-green-500/10 text-green-400 border-green-500/20',
-      article: 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-    };
-    return colors[type] || 'bg-secondary text-muted-foreground';
-  };
+  const typeCounts = generations.reduce((acc, g) => {
+    acc[g.type] = (acc[g.type] || 0) + 1;
+    return acc;
+  }, {});
 
   if (loading) {
     return (
@@ -83,7 +246,7 @@ export default function HistoryPage() {
           Üretim Geçmişi
         </h1>
         <p className="text-muted-foreground">
-          Daha önce ürettiğiniz tüm içerikler burada listelenir.
+          Daha önce ürettiğiniz tüm içerikler. Beğendiklerinizi favorilere ekleyin.
         </p>
       </div>
 
@@ -98,68 +261,47 @@ export default function HistoryPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {generations.map((gen, index) => (
-            <Card key={gen.id || index} className="bg-card border-border hover:border-primary/20 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge className={getTypeColor(gen.type)}>
-                      {getTypeLabel(gen.type)}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(gen.created_at).toLocaleDateString('tr-TR', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleCopy(gen.variants?.[0]?.content || '')}
-                      data-testid={`copy-${index}`}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-sky-400 hover:text-sky-300"
-                      onClick={() => handleTweet(gen.variants?.[0]?.content || '')}
-                      data-testid={`tweet-${index}`}
-                    >
-                      <Twitter className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                {gen.variants?.slice(0, 1).map((variant, vIndex) => (
-                  <div key={vIndex}>
-                    <p className="text-sm whitespace-pre-wrap line-clamp-4">
-                      {variant.content}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {variant.character_count} karakter
-                      </Badge>
-                      {gen.variants.length > 1 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{gen.variants.length - 1} varyant
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          {/* Filter tabs */}
+          <div className="flex items-center gap-2 mb-6 flex-wrap">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <button
+              onClick={() => setFilter("all")}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                filter === "all"
+                  ? "bg-foreground text-background"
+                  : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+              )}
+            >
+              Tümü ({generations.length})
+            </button>
+            {Object.entries(typeCounts).map(([type, count]) => {
+              const cfg = TYPE_CONFIG[type] || {};
+              return (
+                <button
+                  key={type}
+                  onClick={() => setFilter(type)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                    filter === type
+                      ? "bg-foreground text-background"
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  )}
+                >
+                  {cfg.label || type} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Generation list */}
+          <div className="space-y-4">
+            {filteredGenerations.map((gen, index) => (
+              <HistoryCard key={gen.id || index} gen={gen} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

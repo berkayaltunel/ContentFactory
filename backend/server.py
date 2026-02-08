@@ -134,6 +134,7 @@ class GeneratedContent(BaseModel):
 class GenerationResponse(BaseModel):
     success: bool
     variants: List[GeneratedContent]
+    generation_id: Optional[str] = None
     error: Optional[str] = None
 
 # ==================== HELPER FUNCTIONS ====================
@@ -431,7 +432,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             ))
 
         # Log to database
-        supabase.table("generations").insert({
+        gen_result = supabase.table("generations").insert({
             "type": "tweet",
             "user_id": user.id,
             "topic": request.topic,
@@ -447,8 +448,9 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             "variants": [v.model_dump(mode="json") for v in variants],
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
+        gen_id = gen_result.data[0]["id"] if gen_result.data else None
 
-        return GenerationResponse(success=True, variants=variants)
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
 
     except HTTPException:
         raise
@@ -490,7 +492,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
                 character_count=len(content)
             ))
 
-        supabase.table("generations").insert({
+        gen_result = supabase.table("generations").insert({
             "type": "quote",
             "user_id": user.id,
             "tweet_url": request.tweet_url,
@@ -505,8 +507,9 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
             "variants": [v.model_dump(mode="json") for v in variants],
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
+        gen_id = gen_result.data[0]["id"] if gen_result.data else None
 
-        return GenerationResponse(success=True, variants=variants)
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
 
     except HTTPException:
         raise
@@ -549,7 +552,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
                 character_count=len(content)
             ))
 
-        supabase.table("generations").insert({
+        gen_result = supabase.table("generations").insert({
             "type": "reply",
             "user_id": user.id,
             "tweet_url": request.tweet_url,
@@ -565,8 +568,9 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
             "variants": [v.model_dump(mode="json") for v in variants],
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
+        gen_id = gen_result.data[0]["id"] if gen_result.data else None
 
-        return GenerationResponse(success=True, variants=variants)
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
 
     except HTTPException:
         raise
@@ -606,7 +610,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
                 character_count=len(content)
             ))
 
-        supabase.table("generations").insert({
+        gen_result = supabase.table("generations").insert({
             "type": "article",
             "user_id": user.id,
             "topic": request.topic,
@@ -620,8 +624,9 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
             "variants": [v.model_dump(mode="json") for v in variants],
             "created_at": datetime.now(timezone.utc).isoformat()
         }).execute()
+        gen_id = gen_result.data[0]["id"] if gen_result.data else None
 
-        return GenerationResponse(success=True, variants=variants)
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
 
     except HTTPException:
         raise
@@ -631,12 +636,32 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
 
 @api_router.get("/generations/history")
 async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth)):
-    """Get generation history"""
+    """Get generation history with favorite status"""
     query = supabase.table("generations").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit)
     if content_type:
         query = query.eq("type", content_type)
     result = query.execute()
-    return result.data
+    generations = result.data or []
+
+    if not generations:
+        return []
+
+    # Fetch all favorites for this user that have a generation_id
+    fav_result = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).not_.is_("generation_id", "null").execute()
+    
+    # Build lookup: generation_id -> {variant_index: favorite_id}
+    fav_map = {}
+    for fav in (fav_result.data or []):
+        gid = fav["generation_id"]
+        if gid not in fav_map:
+            fav_map[gid] = {}
+        fav_map[gid][fav["variant_index"]] = fav["id"]
+
+    # Attach favorite info to each generation
+    for gen in generations:
+        gen["favorited_variants"] = fav_map.get(gen["id"], {})
+
+    return generations
 
 @api_router.get("/user/stats")
 async def get_user_stats(user=Depends(require_auth)):
@@ -672,10 +697,42 @@ async def add_favorite(content: dict, user=Depends(require_auth)):
         "user_id": user.id,
         "content": content.get("content", ""),
         "type": content.get("type", "tweet"),
+        "generation_id": content.get("generation_id"),
+        "variant_index": content.get("variant_index", 0),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     supabase.table("favorites").insert(favorite_doc).execute()
     return {"success": True, "id": favorite_doc["id"]}
+
+@api_router.post("/favorites/toggle")
+async def toggle_favorite(content: dict, user=Depends(require_auth)):
+    """Toggle favorite on a generation variant"""
+    generation_id = content.get("generation_id")
+    variant_index = content.get("variant_index", 0)
+
+    if not generation_id:
+        raise HTTPException(status_code=400, detail="generation_id gerekli")
+
+    # Check if already favorited
+    existing = supabase.table("favorites").select("id").eq("user_id", user.id).eq("generation_id", generation_id).eq("variant_index", variant_index).execute()
+
+    if existing.data:
+        # Remove
+        supabase.table("favorites").delete().eq("id", existing.data[0]["id"]).eq("user_id", user.id).execute()
+        return {"success": True, "action": "removed", "favorite_id": None}
+    else:
+        # Add
+        fav_id = str(uuid.uuid4())
+        supabase.table("favorites").insert({
+            "id": fav_id,
+            "user_id": user.id,
+            "content": content.get("content", ""),
+            "type": content.get("type", "tweet"),
+            "generation_id": generation_id,
+            "variant_index": variant_index,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+        return {"success": True, "action": "added", "favorite_id": fav_id}
 
 @api_router.delete("/favorites/{favorite_id}")
 async def remove_favorite(favorite_id: str, user=Depends(require_auth)):

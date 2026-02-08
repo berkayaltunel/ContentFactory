@@ -1754,6 +1754,7 @@ export default function XAIModule() {
           updateJob(jobId, {
             status: "completed",
             variants: response.data.variants,
+            generationId: response.data.generation_id,
           });
           toast.success("İçerik başarıyla üretildi!");
         } else {
