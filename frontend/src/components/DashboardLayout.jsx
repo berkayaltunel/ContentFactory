@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { 
-  Twitter, Youtube, Instagram, Music2, Linkedin, FileText,
   Sun, Moon, Settings, Layers, LogOut, User, History, Heart,
-  ChevronDown, Sparkles, Dna, TrendingUp, BarChart3
+  ChevronDown, Sparkles, Dna, TrendingUp, BarChart3, FileText
 } from "lucide-react";
+import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
+import { HiDocumentText } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/components/ThemeProvider";
@@ -21,13 +22,24 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 
+/* Brand icon wrappers (react-icons → Lucide-compatible className) */
+const BrandIcon = ({ Icon, className = "" }) => (
+  <Icon className={className} style={{ width: "1em", height: "1em" }} />
+);
+const XIcon = (props) => <BrandIcon Icon={FaXTwitter} {...props} />;
+const YTIcon = (props) => <BrandIcon Icon={FaYoutube} {...props} />;
+const IGIcon = (props) => <BrandIcon Icon={FaInstagram} {...props} />;
+const TTIcon = (props) => <BrandIcon Icon={FaTiktok} {...props} />;
+const LIIcon = (props) => <BrandIcon Icon={FaLinkedinIn} {...props} />;
+const BlogIcon = (props) => <BrandIcon Icon={HiDocumentText} {...props} />;
+
 const moduleItems = [
-  { path: "/dashboard/x-ai", label: "X", icon: Twitter, color: "text-sky-400" },
-  { path: "/dashboard/youtube", label: "YouTube", icon: Youtube, color: "text-red-500" },
-  { path: "/dashboard/instaflow", label: "Instagram", icon: Instagram, color: "text-pink-500" },
-  { path: "/dashboard/tiktrend", label: "TikTok", icon: Music2, color: "text-cyan-400" },
-  { path: "/dashboard/linkshare", label: "LinkedIn", icon: Linkedin, color: "text-blue-500" },
-  { path: "/dashboard/blog", label: "Blog", icon: FileText, color: "text-orange-500" },
+  { path: "/dashboard/x-ai", label: "X", icon: XIcon, color: "text-foreground" },
+  { path: "/dashboard/youtube", label: "YouTube", icon: YTIcon, color: "text-red-500" },
+  { path: "/dashboard/instaflow", label: "Instagram", icon: IGIcon, color: "text-pink-500" },
+  { path: "/dashboard/tiktrend", label: "TikTok", icon: TTIcon, color: "text-foreground" },
+  { path: "/dashboard/linkshare", label: "LinkedIn", icon: LIIcon, color: "text-[#0A66C2]" },
+  { path: "/dashboard/blog", label: "Blog", icon: BlogIcon, color: "text-orange-500" },
 ];
 
 const toolItems = [
