@@ -22,12 +22,12 @@ import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 
 const moduleItems = [
-  { path: "/dashboard/x-ai", label: "X AI", icon: Twitter, color: "text-sky-400" },
-  { path: "/dashboard/youtube", label: "YouTube AI", icon: Youtube, color: "text-red-500" },
-  { path: "/dashboard/instaflow", label: "InstaFlow AI", icon: Instagram, color: "text-pink-500" },
-  { path: "/dashboard/tiktrend", label: "TikTrend AI", icon: Music2, color: "text-cyan-400" },
-  { path: "/dashboard/linkshare", label: "LinkedIn AI", icon: Linkedin, color: "text-blue-500" },
-  { path: "/dashboard/blog", label: "Blog Architect", icon: FileText, color: "text-orange-500" },
+  { path: "/dashboard/x-ai", label: "X", icon: Twitter, color: "text-sky-400" },
+  { path: "/dashboard/youtube", label: "YouTube", icon: Youtube, color: "text-red-500" },
+  { path: "/dashboard/instaflow", label: "Instagram", icon: Instagram, color: "text-pink-500" },
+  { path: "/dashboard/tiktrend", label: "TikTok", icon: Music2, color: "text-cyan-400" },
+  { path: "/dashboard/linkshare", label: "LinkedIn", icon: Linkedin, color: "text-blue-500" },
+  { path: "/dashboard/blog", label: "Blog", icon: FileText, color: "text-orange-500" },
 ];
 
 const toolItems = [

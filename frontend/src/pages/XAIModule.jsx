@@ -1653,6 +1653,68 @@ function ArticleTab({ jobs, onAddJob, onDismissJob }) {
   );
 }
 
+// ── Collapsible Guide (XPatla-style) ────────────────
+function GuideAccordion() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mb-6">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-all group"
+      >
+        <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
+        <span className="text-sm font-medium text-foreground/90 flex-1 text-left">
+          Sıfırdan mı başlıyorsun? Önce beğendiğin birinin hesabını ekle, onun tarzında başla
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {open ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+            className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </button>
+
+      {open && (
+        <div className="mt-3 px-5 py-5 rounded-2xl bg-card/50 border border-border/50 animate-in slide-in-from-top-2 fade-in duration-200">
+          <p className="text-sm text-muted-foreground mb-4">
+            AI seni taklit etmek için geçmiş tweetlerine bakıyor. Yeni hesapta yeterli içerik yok, ama bir çözüm var:
+          </p>
+
+          <ol className="space-y-3 mb-5">
+            {[
+              "Taklit etmek istediğin bir hesap bul (alanında başarılı biri)",
+              "O hesabı Type Hype'a ekle (stil analizi için)",
+              "Onun stilinde, senin istediğin konularda tweet üret",
+              "Bu tweetleri kendi hesabından paylaş",
+              "20-30 tweet sonra kendi hesabını Type Hype'a ekle",
+              "Artık sistem SENİN stilini öğrenmiş olur",
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="text-sm font-semibold text-amber-500/70 shrink-0 w-6">{i + 1}.</span>
+                <span className="text-sm text-foreground/80">{step}</span>
+              </li>
+            ))}
+          </ol>
+
+          <div className="pt-4 border-t border-border/30">
+            <p className="text-xs text-amber-500/60 italic">
+              Kısaca: AI'ı güzel örneklerle besle, o seni taklit etmeyi öğrensin.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Job ID counter
 let jobIdCounter = 0;
 
@@ -1780,6 +1842,9 @@ export default function XAIModule() {
           AI senin stilinde viral içerik üretsin
         </p>
       </div>
+
+      {/* Collapsible Guide */}
+      <GuideAccordion />
 
       {/* Style DNA Panel */}
       <StyleDNAPanel />
