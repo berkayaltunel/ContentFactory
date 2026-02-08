@@ -21,6 +21,7 @@ import StyleLabPage from "@/pages/StyleLabPage";
 import CoachPage from "@/pages/CoachPage";
 import TrendDashboardPage from "@/pages/TrendDashboardPage";
 import AccountAnalysisPage from "@/pages/AccountAnalysisPage";
+import DashboardHome from "@/pages/DashboardHome";
 
 function App() {
   return (
@@ -42,7 +43,7 @@ function App() {
               {/* Protected dashboard routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<ProfileProvider><DashboardLayout /></ProfileProvider>}>
-                  <Route index element={<Navigate to="/dashboard/x-ai" replace />} />
+                  <Route index element={<DashboardHome />} />
                   <Route path="x-ai" element={<XAIModule />} />
                   <Route path="youtube" element={<YouTubeModule />} />
                   <Route path="instaflow" element={<InstaFlowModule />} />
