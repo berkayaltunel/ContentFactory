@@ -10,12 +10,30 @@ const api = axios.create({
   baseURL: API_BASE,
 });
 
-// Add security headers to every request
+// Add security headers + auth token to every request
 api.interceptors.request.use((config) => {
   config.headers["X-TH-Client"] = "web-app";
   config.headers["X-Requested-With"] = "XMLHttpRequest";
 
-  // Replay protection: timestamp + nonce for POST requests
+  // Auto-attach auth token from Supabase session
+  if (!config.headers["Authorization"]) {
+    try {
+      const raw = localStorage.getItem(
+        Object.keys(localStorage).find((k) => k.startsWith("sb-") && k.endsWith("-auth-token")) || ""
+      );
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const token = parsed?.access_token;
+        if (token) {
+          config.headers["Authorization"] = `Bearer ${token}`;
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  // Replay protection: timestamp + nonce for mutation requests
   if (config.method === "post" || config.method === "put" || config.method === "patch" || config.method === "delete") {
     config.headers["X-TH-Timestamp"] = Math.floor(Date.now() / 1000).toString();
     config.headers["X-TH-Nonce"] = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
