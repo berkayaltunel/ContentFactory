@@ -48,7 +48,7 @@ import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 
 // Style Profile Settings Component
-function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
+function StyleProfileSettings({ onNavigateToStyleLab }) {
   const [profiles, setProfiles] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,9 +57,7 @@ function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        const token = getAccessToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await api.get(`${API}/styles/list`, { headers });
+        const response = await api.get(`${API}/styles/list`);
         if (response.data) {
           setProfiles(response.data);
           if (response.data.length > 0) {
@@ -73,7 +71,7 @@ function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
       }
     };
     fetchProfiles();
-  }, [getAccessToken]);
+  }, []);
 
   const handleRefreshStyle = async () => {
     if (!selectedProfile) {
@@ -83,12 +81,9 @@ function StyleProfileSettings({ onNavigateToStyleLab, getAccessToken }) {
 
     setRefreshing(true);
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await api.post(
         `${API}/styles/${selectedProfile}/refresh`,
-        {},
-        { headers }
+        {}
       );
       
       if (response.data.success) {
@@ -268,7 +263,7 @@ const navItems = [
 
 export default function DashboardLayout() {
   const { theme, setTheme } = useTheme();
-  const { user, signOut, isAuthenticated, getAccessToken } = useAuth();
+  const { user, signOut, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -278,9 +273,7 @@ export default function DashboardLayout() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = getAccessToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await api.get(`${API}/user/stats`, { headers });
+        const response = await api.get(`${API}/user/stats`);
         if (response.data) {
           setStats(response.data);
         }
@@ -292,7 +285,7 @@ export default function DashboardLayout() {
     if (isAuthenticated) {
       fetchStats();
     }
-  }, [isAuthenticated, getAccessToken]);
+  }, [isAuthenticated]);
 
   const handleSignOut = async () => {
     try {
@@ -551,7 +544,6 @@ export default function DashboardLayout() {
                 setSettingsOpen(false);
                 navigate('/dashboard/style-lab');
               }}
-              getAccessToken={getAccessToken}
             />
           </div>
         </DialogContent>

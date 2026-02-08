@@ -6,7 +6,7 @@ import api, { API } from '@/lib/api';
 
 
 export function ProtectedRoute() {
-  const { isAuthenticated, loading, getAccessToken, signOut } = useAuth();
+  const { isAuthenticated, loading, signOut } = useAuth();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -17,10 +17,7 @@ export function ProtectedRoute() {
       if (!isAuthenticated) return;
       setChecking(true);
       try {
-        const token = getAccessToken();
-        const res = await api.get(`${API}/auth/check`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const res = await api.get(`${API}/auth/check`);
         if (res.data?.authorized) {
           setAuthorized(true);
         } else {
@@ -35,7 +32,7 @@ export function ProtectedRoute() {
       }
     };
     checkAccess();
-  }, [isAuthenticated, getAccessToken]);
+  }, [isAuthenticated]);
 
   if (loading || (isAuthenticated && !authChecked)) {
     return (

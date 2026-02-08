@@ -12,7 +12,6 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 import SkeletonTweetRow from "./SkeletonTweetRow";
 
 
@@ -314,8 +313,6 @@ export default function GenerationCard({ job }) {
   const [videoContent, setVideoContent] = useState("");
   const [imagePromptOpen, setImagePromptOpen] = useState(false);
   const [imagePromptContent, setImagePromptContent] = useState("");
-  const { getAccessToken } = useAuth();
-
   const color = PERSONA_COLORS[job.persona] || "#6B7280";
   const isGenerating = job.status === "generating";
 
@@ -331,13 +328,11 @@ export default function GenerationCard({ job }) {
   };
 
   const handleFavorite = async (index, variant) => {
-    const token = getAccessToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const next = new Map(favorites);
     if (next.has(index)) {
       const favId = next.get(index);
       try {
-        await api.delete(`${API}/favorites/${favId}`, { headers });
+        await api.delete(`${API}/favorites/${favId}`);
         next.delete(index);
         toast.success("Favorilerden kaldırıldı");
       } catch {
@@ -348,7 +343,7 @@ export default function GenerationCard({ job }) {
         const res = await api.post(`${API}/favorites`, {
           content: variant.content,
           type: job.type || "tweet",
-        }, { headers });
+        });
         next.set(index, res.data.id);
         toast.success("Favorilere eklendi!");
       } catch {

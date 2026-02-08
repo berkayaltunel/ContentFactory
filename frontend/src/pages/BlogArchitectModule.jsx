@@ -21,7 +21,6 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
@@ -497,7 +496,6 @@ function RepurposeTab({ jobs, onAddJob }) {
 export default function BlogArchitectModule() {
   const [jobs, setJobs] = useState([]);
   const [activeTab, setActiveTab] = useState("full");
-  const { getAccessToken } = useAuth();
   const [searchParams] = useSearchParams();
 
   const initialTopic = searchParams.get("topic") || "";
@@ -516,12 +514,10 @@ export default function BlogArchitectModule() {
   useEffect(() => {
     const fetchMeta = async () => {
       try {
-        const token = await getAccessToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const [fw, st, lv] = await Promise.all([
-          api.get(`${API}/meta/blog/frameworks`, { headers }),
-          api.get(`${API}/meta/blog/styles`, { headers }),
-          api.get(`${API}/meta/blog/levels`, { headers }),
+          api.get(`${API}/meta/blog/frameworks`),
+          api.get(`${API}/meta/blog/styles`),
+          api.get(`${API}/meta/blog/levels`),
         ]);
         setFrameworks(fw.data || []);
         setStyles(st.data || []);
@@ -554,7 +550,7 @@ export default function BlogArchitectModule() {
       }
     };
     fetchMeta();
-  }, [getAccessToken]);
+  }, []);
 
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...updates } : j)));
@@ -583,9 +579,7 @@ export default function BlogArchitectModule() {
       setJobs((prev) => [newJob, ...prev]);
 
       try {
-        const token = await getAccessToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await api.post(`${API}${params.endpoint}`, params.body, { headers });
+        const res = await api.post(`${API}${params.endpoint}`, params.body);
         const data = res.data;
 
         // Backend success: false kontrolü
@@ -632,7 +626,7 @@ export default function BlogArchitectModule() {
         toast.error("Üretim başarısız oldu");
       }
     },
-    [getAccessToken, updateJob]
+    [updateJob]
   );
 
   const handleUseOutline = useCallback((outlineText, topic) => {

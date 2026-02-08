@@ -32,7 +32,6 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 import StyleSelector from "@/components/StyleSelector";
@@ -1169,7 +1168,6 @@ let jobIdCounter = 0;
 // Main X AI Module Component
 export default function XAIModule() {
   const [jobs, setJobs] = useState([]);
-  const { getAccessToken } = useAuth();
   const [searchParams] = useSearchParams();
   const initialTopic = searchParams.get("topic") || "";
 
@@ -1259,9 +1257,7 @@ export default function XAIModule() {
           };
         }
 
-        const token = getAccessToken();
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await api.post(endpoint, body, { headers });
+        const response = await api.post(endpoint, body);
 
         if (response.data.success) {
           updateJob(jobId, {
@@ -1278,7 +1274,7 @@ export default function XAIModule() {
         toast.error(error.response?.data?.detail || "Bir hata oluştu");
       }
     },
-    [updateJob, getAccessToken]
+    [updateJob]
   );
 
   return (

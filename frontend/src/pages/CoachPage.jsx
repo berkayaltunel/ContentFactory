@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 
 
 const insightIcons = {
@@ -168,7 +167,6 @@ export default function CoachPage() {
   const [postingData, setPostingData] = useState(null);
   const [bestNow, setBestNow] = useState(null);
   const [postingLoading, setPostingLoading] = useState(false);
-  const { getAccessToken } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -179,9 +177,7 @@ export default function CoachPage() {
   const fetchInsights = async () => {
     setLoading(true);
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await api.get(`${API}/coach/insights`, { headers });
+      const res = await api.get(`${API}/coach/insights`);
       setInsights(res.data);
     } catch (e) {
       toast.error("Coach verileri yüklenemedi");
@@ -193,11 +189,9 @@ export default function CoachPage() {
   const fetchPostingData = async () => {
     setPostingLoading(true);
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const [heatmapRes, bestNowRes] = await Promise.all([
-        api.get(`${API}/posting-times/heatmap`, { headers }),
-        api.get(`${API}/posting-times/best-now`, { headers }),
+        api.get(`${API}/posting-times/heatmap`),
+        api.get(`${API}/posting-times/best-now`),
       ]);
       setPostingData(heatmapRes.data);
       setBestNow(bestNowRes.data);
@@ -211,9 +205,7 @@ export default function CoachPage() {
   const fetchWeeklyPlan = async () => {
     setPlanLoading(true);
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await api.get(`${API}/coach/weekly-plan?niche=tech`, { headers });
+      const res = await api.get(`${API}/coach/weekly-plan?niche=tech`);
       setWeeklyPlan(res.data);
     } catch (e) {
       toast.error("Haftalık plan oluşturulamadı");

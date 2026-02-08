@@ -18,19 +18,17 @@ import api, { API } from "@/lib/api";
 
 
 export default function HistoryPage() {
-  const { getAccessToken, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    if (isAuthenticated) fetchHistory();
+  }, [isAuthenticated]);
 
   const fetchHistory = async () => {
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await api.get(`${API}/generations/history?limit=50`, { headers });
+      const response = await api.get(`${API}/generations/history?limit=50`);
       setGenerations(response.data || []);
     } catch (error) {
       console.error('History fetch error:', error);

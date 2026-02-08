@@ -39,18 +39,27 @@ export function AuthProvider({ children }) {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            avatar_url: session.user.user_metadata?.avatar_url || null,
-          });
-        } else {
+      (event, newSession) => {
+        // During token refresh, session can briefly be null.
+        // Only clear user on explicit SIGNED_OUT, never on transient nulls.
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
           setUser(null);
+          setLoading(false);
+          return;
         }
+
+        if (newSession) {
+          setSession(newSession);
+          setUser({
+            id: newSession.user.id,
+            email: newSession.user.email || '',
+            name: newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || 'User',
+            avatar_url: newSession.user.user_metadata?.avatar_url || null,
+          });
+        }
+        // If newSession is null but event is NOT SIGNED_OUT (e.g. TOKEN_REFRESHED edge case),
+        // keep existing session/user — don't wipe state.
         setLoading(false);
       }
     );

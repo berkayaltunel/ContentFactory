@@ -30,7 +30,6 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
@@ -367,8 +366,6 @@ let jobIdCounter = 0;
 
 export default function InstaFlowModule() {
   const [jobs, setJobs] = useState([]);
-  const { getAccessToken } = useAuth();
-
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...updates } : j)));
   }, []);
@@ -388,9 +385,6 @@ export default function InstaFlowModule() {
     setJobs((prev) => [newJob, ...prev]);
 
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
       let endpoint = `${API}/generate/instagram/caption`;
       let body = { topic: params.topic, variants: params.variants };
 
@@ -407,7 +401,7 @@ export default function InstaFlowModule() {
         body = { ...body, day_count: params.dayCount };
       }
 
-      const response = await api.post(endpoint, body, { headers });
+      const response = await api.post(endpoint, body);
 
       if (response.data.success) {
         updateJob(jobId, { status: "completed", variants: response.data.variants });
@@ -420,7 +414,7 @@ export default function InstaFlowModule() {
       updateJob(jobId, { status: "error" });
       toast.error(error.response?.data?.detail || "Bir hata oluştu");
     }
-  }, [updateJob, getAccessToken]);
+  }, [updateJob]);
 
   return (
     <div className="max-w-3xl" data-testid="instaflow-module">

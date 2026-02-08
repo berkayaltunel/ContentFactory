@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ import api, { API } from "@/lib/api";
 
 
 export default function FavoritesPage() {
-  const { getAccessToken } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,9 +24,7 @@ export default function FavoritesPage() {
 
   const fetchFavorites = async () => {
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await api.get(`${API}/favorites`, { headers });
+      const response = await api.get(`${API}/favorites`);
       setFavorites(response.data || []);
     } catch (error) {
       console.error('Favorites fetch error:', error);
@@ -51,9 +47,7 @@ export default function FavoritesPage() {
 
   const handleRemoveFavorite = async (id) => {
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await api.delete(`${API}/favorites/${id}`, { headers });
+      await api.delete(`${API}/favorites/${id}`);
       setFavorites(favorites.filter(f => f.id !== id));
       toast.success("Favorilerden kaldırıldı");
     } catch (error) {

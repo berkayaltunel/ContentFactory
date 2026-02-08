@@ -27,7 +27,6 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 
@@ -264,8 +263,6 @@ let jobIdCounter = 0;
 
 export default function TikTrendModule() {
   const [jobs, setJobs] = useState([]);
-  const { getAccessToken } = useAuth();
-
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...updates } : j)));
   }, []);
@@ -285,8 +282,6 @@ export default function TikTrendModule() {
     setJobs((prev) => [newJob, ...prev]);
 
     try {
-      const token = getAccessToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       let endpoint, body;
 
       if (params.type === "tiktok_script") {
@@ -300,7 +295,7 @@ export default function TikTrendModule() {
         body = { topic: params.topic, type: "trend_ideas" };
       }
 
-      const response = await api.post(endpoint, body, { headers });
+      const response = await api.post(endpoint, body);
 
       if (response.data.success) {
         updateJob(jobId, { status: "completed", variants: response.data.variants });
@@ -313,7 +308,7 @@ export default function TikTrendModule() {
       updateJob(jobId, { status: "error" });
       toast.error(error.response?.data?.detail || "Bir hata oluştu");
     }
-  }, [updateJob, getAccessToken]);
+  }, [updateJob]);
 
   return (
     <div className="max-w-3xl" data-testid="tiktrend-module">
