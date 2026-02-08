@@ -1771,13 +1771,13 @@ export default function XAIModule() {
 
   return (
     <div className="max-w-3xl" data-testid="x-ai-module">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-outfit text-4xl font-bold tracking-tight mb-2">
-          Viral Thread Engine
+      {/* Hero Header */}
+      <div className="mb-8 text-center">
+        <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+          Konu yaz, <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">viral tweetler</span> üret
         </h1>
-        <p className="text-muted-foreground">
-          AI senin tarzında viral içerik üretsin.
+        <p className="text-muted-foreground text-lg">
+          AI senin stilinde viral içerik üretsin
         </p>
       </div>
 

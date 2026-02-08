@@ -319,9 +319,13 @@ export default function YouTubeModule() {
 
   return (
     <div className="max-w-3xl" data-testid="youtube-module">
-      <div className="mb-8">
-        <h1 className="font-outfit text-4xl font-bold tracking-tight mb-2 text-red-500">YouTube AI</h1>
-        <p className="text-muted-foreground">Video fikirlerinden scriptlere, başlıklardan thumbnail'lara.</p>
+      <div className="mb-8 text-center">
+        <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+          Konu yaz, <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">viral videolar</span> planla
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Video fikirlerinden scriptlere, başlıklardan thumbnail'lara
+        </p>
       </div>
 
       <Card className="bg-card border-border mb-8">

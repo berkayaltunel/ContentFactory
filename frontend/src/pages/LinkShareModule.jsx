@@ -852,16 +852,13 @@ export default function LinkShareModule() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg">
-          <Share2 className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">LinkedIn AI</h1>
-          <p className="text-sm text-muted-foreground">
-            Post, carousel, hook ve analiz araçları
-          </p>
-        </div>
+      <div className="text-center mb-2">
+        <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+          Konu yaz, <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">viral postlar</span> üret
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Post, carousel, hook ve analiz araçları
+        </p>
       </div>
 
       {/* Tabs */}

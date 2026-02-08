@@ -637,15 +637,14 @@ export default function BlogArchitectModule() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-          <FileText className="h-6 w-6 text-indigo-400" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Blog Architect</h1>
-          <p className="text-sm text-muted-foreground">AI destekli blog içerik üretimi, SEO analizi ve dağıtım</p>
-        </div>
+      {/* Hero Header */}
+      <div className="text-center mb-2">
+        <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+          Konu yaz, <span className="bg-gradient-to-r from-indigo-400 to-violet-500 bg-clip-text text-transparent">viral bloglar</span> üret
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          AI destekli blog içerik üretimi, SEO analizi ve dağıtım
+        </p>
       </div>
 
       {/* Tabs */}

@@ -312,9 +312,13 @@ export default function TikTrendModule() {
 
   return (
     <div className="max-w-3xl" data-testid="tiktrend-module">
-      <div className="mb-8">
-        <h1 className="font-outfit text-4xl font-bold tracking-tight mb-2 text-cyan-400">TikTrend AI</h1>
-        <p className="text-muted-foreground">Gen Z'nin hızına yetişin. Trendleri yakalayın, akımı yönetin.</p>
+      <div className="mb-8 text-center">
+        <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+          Konu yaz, <span className="bg-gradient-to-r from-cyan-400 to-pink-500 bg-clip-text text-transparent">viral videolar</span> üret
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Gen Z'nin hızına yetişin, trendleri yakalayın
+        </p>
       </div>
 
       <Card className="bg-card border-border mb-8">

@@ -418,12 +418,12 @@ export default function InstaFlowModule() {
 
   return (
     <div className="max-w-3xl" data-testid="instaflow-module">
-      <div className="mb-8">
-        <h1 className="font-outfit text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">
-          Instagram AI
+      <div className="mb-8 text-center">
+        <h1 className="font-outfit text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+          Konu yaz, <span className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">viral reeller</span> üret
         </h1>
-        <p className="text-muted-foreground">
-          Instagram algoritmasını lehinize çeviren içerikler üretin.
+        <p className="text-muted-foreground text-lg">
+          Instagram algoritmasını lehinize çeviren içerikler üretin
         </p>
       </div>
 
