@@ -44,7 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import ProfileSwitcher from "@/components/ProfileSwitcher";
+// ProfileSwitcher removed - style profiles now managed in X AI module
 
 
 // Style Profile Settings Component
@@ -228,14 +228,6 @@ const navItems = [
     borderColor: "border-orange-500/30"
   },
   { 
-    path: "/dashboard/style-lab", 
-    label: "Style Lab", 
-    icon: Dna,
-    color: "text-purple-400",
-    bgColor: "bg-gradient-to-r from-purple-500/10 to-pink-500/10",
-    borderColor: "border-purple-500/30"
-  },
-  { 
     path: "/dashboard/trends", 
     label: "🔥 Trendler", 
     icon: TrendingUp,
@@ -390,11 +382,6 @@ export default function DashboardLayout() {
             </NavLink>
           </div>
         </nav>
-
-        {/* Profile Switcher */}
-        <div className="mt-auto border-t border-border pt-3 px-2">
-          <ProfileSwitcher />
-        </div>
 
         {/* User Profile Section */}
         <div className="border-t border-border p-4">

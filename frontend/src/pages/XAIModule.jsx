@@ -18,6 +18,17 @@ import {
   Lightbulb,
   X,
   User,
+  Dna,
+  Trash2,
+  Brain,
+  Loader2,
+  Check,
+  Fingerprint,
+  Heart,
+  Target,
+  Wand2,
+  Copy,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +40,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
-import StyleSelector from "@/components/StyleSelector";
 import { useProfile } from "@/contexts/ProfileContext";
 
 
@@ -167,6 +186,528 @@ function KnowledgeSelector({ value, onChange }) {
         </p>
       )}
     </div>
+  );
+}
+
+// AI Analysis Dialog (moved from StyleLabPage)
+function AIAnalysisDialog({ open, onOpenChange, profileData }) {
+  const [copied, setCopied] = useState(false);
+  
+  if (!profileData) return null;
+
+  const fp = profileData.style_fingerprint || {};
+  const aiAnalysis = fp.ai_analysis || "";
+  const examples = fp.example_tweets || [];
+  const stylePrompt = profileData.style_prompt || "";
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(stylePrompt);
+    setCopied(true);
+    toast.success("Stil prompt kopyalandı!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sections = [];
+  if (aiAnalysis) {
+    const parts = aiAnalysis.split(/\d+\.\s+\*\*/);
+    for (const part of parts) {
+      if (!part.trim()) continue;
+      const titleEnd = part.indexOf("**");
+      if (titleEnd > 0) {
+        const title = part.substring(0, titleEnd).replace(/\*\*/g, "").trim();
+        const content = part.substring(titleEnd + 2).replace(/^\s*:\s*/, "").trim();
+        sections.push({ title, content });
+      } else {
+        sections.push({ title: "", content: part.trim() });
+      }
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-400" />
+            AI Stil Analizi: {profileData.name}
+          </DialogTitle>
+          <DialogDescription>
+            {fp.tweet_count || 0} tweet analiz edildi
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6 py-4">
+          <div className="grid grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/20 text-center">
+              <p className="text-2xl font-bold text-sky-400">{fp.tweet_count || 0}</p>
+              <p className="text-xs text-muted-foreground">Tweet</p>
+            </div>
+            <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500/10 to-red-500/10 border border-pink-500/20 text-center">
+              <p className="text-2xl font-bold text-pink-400">{fp.avg_length || 0}</p>
+              <p className="text-xs text-muted-foreground">Ort. Karakter</p>
+            </div>
+            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 text-center">
+              <p className="text-2xl font-bold text-green-400">{fp.avg_engagement?.likes?.toFixed(0) || 0}</p>
+              <p className="text-xs text-muted-foreground">Ort. Beğeni</p>
+            </div>
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 text-center">
+              <p className="text-2xl font-bold text-purple-400">{fp.emoji_usage?.toFixed(1) || 0}</p>
+              <p className="text-xs text-muted-foreground">Emoji/Tweet</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <Target className="h-4 w-4 text-sky-400" />
+                Uzunluk Dağılımı
+              </h4>
+              <div className="space-y-2">
+                {["short", "medium", "long"].map((key) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {key === "short" ? "Kısa (<100)" : key === "medium" ? "Orta (100-200)" : "Uzun (200+)"}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full",
+                            key === "short" ? "bg-sky-400" : key === "medium" ? "bg-purple-400" : "bg-pink-400"
+                          )}
+                          style={{ width: `${fp.length_distribution?.[key] || 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium w-10 text-right">{fp.length_distribution?.[key] || 0}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-yellow-400" />
+                Kullanım Oranları
+              </h4>
+              <div className="space-y-2">
+                {[
+                  { label: "Soru (?)", val: fp.question_ratio },
+                  { label: "Ünlem (!)", val: fp.exclamation_ratio },
+                  { label: "Link paylaşımı", val: fp.link_usage },
+                  { label: "Hashtag/tweet", val: fp.hashtag_usage },
+                ].map(({ label, val }) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{label}</span>
+                    <span className="text-sm font-medium">{val || 0}{label.includes("Hashtag") ? "" : "%"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {sections.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-yellow-400" />
+                AI Derinlemesine Analiz
+              </h4>
+              <div className="space-y-3">
+                {sections.map((section, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-gradient-to-r from-purple-500/5 to-pink-500/5 border border-purple-500/10">
+                    {section.title && <h5 className="font-medium text-purple-300 mb-2">{section.title}</h5>}
+                    <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{section.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {examples.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-400" />
+                En İyi Tweet'ler
+              </h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {examples.slice(0, 5).map((tweet, idx) => (
+                  <div key={idx} className="p-3 rounded-lg bg-secondary/30 border border-border/50">
+                    <p className="text-sm">{tweet.content}</p>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> {tweet.likes}</span>
+                      <span className="flex items-center gap-1"><Repeat2 className="h-3 w-3" /> {tweet.retweets}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stylePrompt && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Wand2 className="h-4 w-4 text-pink-400" />
+                  Stil Prompt
+                </h4>
+                <Button variant="ghost" size="sm" onClick={handleCopyPrompt} className="h-8 text-xs">
+                  {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                  {copied ? "Kopyalandı" : "Kopyala"}
+                </Button>
+              </div>
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 font-mono text-xs whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                {stylePrompt}
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Style DNA Panel: Inline style profile management for X AI
+function StyleDNAPanel() {
+  const { profiles, activeProfile, activeProfileId, setActiveProfile, refreshProfiles } = useProfile();
+  const [addMode, setAddMode] = useState(false);
+  const [username, setUsername] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addProgress, setAddProgress] = useState(0);
+  const [addStep, setAddStep] = useState(""); // "scraping" | "analyzing" | "creating"
+  const [profileListOpen, setProfileListOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [selectedProfileData, setSelectedProfileData] = useState(null);
+
+  // Quick add: scrape tweets → analyze → create profile (all in one flow)
+  const handleQuickAdd = async () => {
+    const clean = username.trim().replace("@", "");
+    if (!clean) {
+      toast.error("Kullanıcı adı girin");
+      return;
+    }
+    setAdding(true);
+    setAddProgress(0);
+    setAddStep("scraping");
+
+    try {
+      // Step 1: Add source (scrape tweets)
+      setAddStep("scraping");
+      setAddProgress(20);
+      const sourceRes = await api.post(`${API}/sources/add`, { twitter_username: clean });
+      const source = sourceRes.data;
+      setAddProgress(40);
+
+      // Step 2: Analyze style
+      setAddStep("analyzing");
+      setAddProgress(60);
+      await api.post(`${API}/styles/analyze-source/${source.id}`);
+      setAddProgress(80);
+
+      // Step 3: Create profile
+      setAddStep("creating");
+      const profileName = `${source.twitter_display_name || clean} Style`;
+      const profileRes = await api.post(`${API}/styles/create`, {
+        name: profileName,
+        source_ids: [source.id],
+      });
+      setAddProgress(100);
+
+      // Activate the new profile
+      await refreshProfiles();
+      await setActiveProfile(profileRes.data.id);
+
+      toast.success(`@${clean} stili oluşturuldu ve aktif edildi!`);
+      setUsername("");
+      setAddMode(false);
+    } catch (error) {
+      const msg = error.response?.data?.detail || "Profil oluşturulamadı";
+      toast.error(msg);
+    } finally {
+      setAdding(false);
+      setAddProgress(0);
+      setAddStep("");
+    }
+  };
+
+  const handleRefreshProfile = async () => {
+    if (!activeProfileId) return;
+    setRefreshing(true);
+    try {
+      await api.post(`${API}/styles/${activeProfileId}/refresh`);
+      await refreshProfiles();
+      toast.success("Stil profili güncellendi!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Güncelleme başarısız");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleViewAnalysis = async () => {
+    if (!activeProfileId) return;
+    try {
+      const [profileRes, promptRes] = await Promise.all([
+        api.get(`${API}/styles/${activeProfileId}`),
+        api.get(`${API}/styles/${activeProfileId}/prompt`),
+      ]);
+      setSelectedProfileData({
+        ...profileRes.data,
+        style_prompt: promptRes.data.style_prompt,
+      });
+      setAnalysisOpen(true);
+    } catch (error) {
+      toast.error("Analiz yüklenemedi");
+    }
+  };
+
+  const handleDeleteProfile = async (profileId) => {
+    try {
+      await api.delete(`${API}/styles/${profileId}`);
+      if (activeProfileId === profileId) {
+        await setActiveProfile(null);
+      }
+      await refreshProfiles();
+      toast.success("Profil silindi");
+    } catch (error) {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const stepLabels = {
+    scraping: "Tweet'ler çekiliyor...",
+    analyzing: "AI analiz yapıyor...",
+    creating: "Profil oluşturuluyor...",
+  };
+
+  return (
+    <>
+      <div className="mb-6">
+        <Card className={cn(
+          "border-border overflow-hidden transition-all",
+          activeProfile && "border-purple-500/30 bg-gradient-to-r from-purple-500/5 to-pink-500/5"
+        )}>
+          <CardContent className="p-4">
+            {/* Active profile display */}
+            {activeProfile ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <Dna className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">{activeProfile.name}</p>
+                        <Badge variant="secondary" className="text-xs">
+                          {activeProfile.style_summary?.tweet_count || 0} tweet
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-purple-400">
+                        Üretimler bu stilde yapılacak
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleViewAnalysis}
+                      className="h-8 w-8"
+                      title="Detaylı analiz"
+                    >
+                      <Brain className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshProfile}
+                      disabled={refreshing}
+                      className="h-8 w-8"
+                      title="Stili yenile"
+                    >
+                      <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setProfileListOpen(!profileListOpen)}
+                      className="h-8 text-xs gap-1"
+                    >
+                      Değiştir
+                      <ChevronDown className={cn("h-3 w-3 transition-transform", profileListOpen && "rotate-180")} />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Profile switcher dropdown */}
+                {profileListOpen && (
+                  <div className="border-t border-border/50 pt-3 space-y-1">
+                    {profiles.filter(p => p.id !== activeProfileId).map((profile) => (
+                      <button
+                        key={profile.id}
+                        onClick={() => { setActiveProfile(profile.id); setProfileListOpen(false); }}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm hover:bg-secondary/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-white">
+                              {profile.name?.charAt(0)?.toUpperCase() || "S"}
+                            </span>
+                          </div>
+                          <span>{profile.name}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {profile.style_summary?.tweet_count || 0} tweet
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => { setActiveProfile(null); setProfileListOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                      <span>Stil klonlamayı kapat</span>
+                    </button>
+                    <div className="border-t border-border/50 pt-2 mt-2">
+                      <button
+                        onClick={() => { setAddMode(true); setProfileListOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-purple-400 hover:bg-purple-500/10 transition-colors"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Yeni stil profili ekle</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : !addMode ? (
+              /* No profile: Show options */
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <Dna className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Stil Klonlama</p>
+                    <p className="text-xs text-muted-foreground">
+                      Bir Twitter hesabının yazım stilini klonla
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {profiles.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setProfileListOpen(!profileListOpen)}
+                      className="h-8 text-xs gap-1"
+                    >
+                      Profil Seç
+                      <ChevronDown className={cn("h-3 w-3 transition-transform", profileListOpen && "rotate-180")} />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddMode(true)}
+                    className="h-8 text-xs gap-1 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Yeni
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Profile list when no active profile */}
+            {!activeProfile && profileListOpen && profiles.length > 0 && (
+              <div className="mt-3 border-t border-border/50 pt-3 space-y-1">
+                {profiles.map((profile) => (
+                  <div key={profile.id} className="flex items-center justify-between">
+                    <button
+                      onClick={() => { setActiveProfile(profile.id); setProfileListOpen(false); }}
+                      className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-secondary/50 transition-colors text-left"
+                    >
+                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] font-bold text-white">
+                          {profile.name?.charAt(0)?.toUpperCase() || "S"}
+                        </span>
+                      </div>
+                      <span>{profile.name}</span>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {profile.style_summary?.tweet_count || 0} tweet
+                      </span>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteProfile(profile.id)}
+                      className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10 shrink-0"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add mode: Quick add flow */}
+            {addMode && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Dna className="h-5 w-5 text-purple-400" />
+                    <p className="text-sm font-medium">Yeni Stil Profili</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => { setAddMode(false); setUsername(""); }}
+                    className="h-7 w-7"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Twitter kullanıcı adı gir, tweet'ler çekilecek ve AI ile stil profili oluşturulacak.
+                </p>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                    <Input
+                      placeholder="kullanici_adi"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="pl-8"
+                      disabled={adding}
+                      onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleQuickAdd}
+                    disabled={adding || !username.trim()}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white gap-2"
+                  >
+                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {adding ? "İşleniyor" : "Oluştur"}
+                  </Button>
+                </div>
+                {adding && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">{stepLabels[addStep] || "Hazırlanıyor..."}</span>
+                      <span className="text-muted-foreground">{addProgress}%</span>
+                    </div>
+                    <Progress value={addProgress} className="h-1.5" />
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <AIAnalysisDialog
+        open={analysisOpen}
+        onOpenChange={setAnalysisOpen}
+        profileData={selectedProfileData}
+      />
+    </>
   );
 }
 
@@ -420,14 +961,6 @@ function TweetTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
         <label className="text-sm font-medium">Varyant Sayısı</label>
         <VariantCounter value={variants} onChange={setVariants} />
       </div>
-
-      {/* Active Profile Info */}
-      {activeProfile && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20 text-sm text-purple-400">
-          <span>🧬</span>
-          <span>{activeProfile.name} stili uygulanacak</span>
-        </div>
-      )}
 
       {/* Advanced Settings */}
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
@@ -1288,6 +1821,9 @@ export default function XAIModule() {
           AI senin tarzında viral içerik üretsin.
         </p>
       </div>
+
+      {/* Style DNA Panel */}
+      <StyleDNAPanel />
 
       {/* Main Content Card */}
       <Card className="bg-card border-border mb-8">
