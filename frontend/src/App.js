@@ -35,8 +35,9 @@ function App() {
               {/* Auth routes - redirect to dashboard if logged in */}
               <Route element={<PublicRoute />}>
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
               </Route>
+              {/* Signup devre dışı - sadece Google Auth ile giriş */}
+              <Route path="/signup" element={<Navigate to="/login" replace />} />
 
               {/* Protected dashboard routes */}
               <Route element={<ProtectedRoute />}>

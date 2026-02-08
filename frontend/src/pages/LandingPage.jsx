@@ -81,7 +81,7 @@ export default function LandingPage() {
                 <Link to="/login">
                   <Button variant="ghost" data-testid="login-btn">Giriş Yap</Button>
                 </Link>
-                <Link to="/signup">
+                <Link to="/login">
                   <Button data-testid="signup-btn">
                     Ücretsiz Başla
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -115,7 +115,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to={isAuthenticated ? "/dashboard" : "/signup"}>
+            <Link to={isAuthenticated ? "/dashboard" : "/login"}>
               <Button size="lg" className="h-14 px-8 text-lg" data-testid="hero-cta">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Hemen Başla
@@ -228,7 +228,7 @@ export default function LandingPage() {
             <p className="text-muted-foreground text-lg mb-8">
               Ücretsiz hesap oluşturun ve hemen viral içerikler üretmeye başlayın.
             </p>
-            <Link to={isAuthenticated ? "/dashboard" : "/signup"}>
+            <Link to={isAuthenticated ? "/dashboard" : "/login"}>
               <Button size="lg" className="h-14 px-8 text-lg">
                 <Users className="mr-2 h-5 w-5" />
                 Ücretsiz Hesap Oluştur
