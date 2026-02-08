@@ -1665,7 +1665,7 @@ function GuideAccordion() {
       >
         <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
         <span className="text-sm font-medium text-foreground/90 flex-1 text-left">
-          ✨ Yeni misin? 30 günde kendi stilini oluşturmanın en hızlı yolunu göster
+          ✨ Yeni misin? Kendi stilini oluşturmanın en hızlı yolunu keşfet
         </span>
         <div className="flex items-center gap-2 shrink-0">
           {open ? (
@@ -1688,7 +1688,7 @@ function GuideAccordion() {
             Henüz yeterli içeriğin yok mu? Sorun değil.
           </p>
           <p className="text-sm text-muted-foreground mb-5">
-            Type Hype, beğendiğin hesapların yazım DNA'sını analiz eder ve sana özel içerikler üretir. İşte 30 günde kendi stilini oluşturmanın yol haritası:
+            Type Hype, beğendiğin hesapların yazım DNA'sını analiz eder ve sana özel içerikler üretir. İşte kendi stilini oluşturmanın yol haritası:
           </p>
 
           <ol className="space-y-3 mb-5">
