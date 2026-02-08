@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import {
   Sparkles, Heart, Copy, ArrowRight, Twitter, FileText,
   MessageSquare, Quote, Calendar, Search, Lightbulb, Dna,
-  BarChart3, TrendingUp, ExternalLink
+  BarChart3, TrendingUp, ExternalLink, Zap
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
+import ContentCalendar from "@/components/dashboard/ContentCalendar";
 
 /* ── Helpers ────────────────────────────────────── */
 
@@ -85,7 +86,7 @@ function AnimatedCounter({ value, duration = 800 }) {
 export default function DashboardHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ generations: 0, tweets: 0, favorites: 0, thisWeek: 0 });
+  const [stats, setStats] = useState({ generations: 0, tweets: 0, favorites: 0 });
   const [recentGenerations, setRecentGenerations] = useState([]);
   const [styleProfiles, setStyleProfiles] = useState([]);
   const [topicInput, setTopicInput] = useState("");
@@ -125,11 +126,10 @@ export default function DashboardHome() {
 
   const firstName = user?.name?.split(" ")[0] || "Kullanıcı";
 
-  const statCards = [
-    { label: "Toplam Üretim", value: stats.generations, icon: Sparkles, color: "text-purple-500", bg: "bg-purple-500/10" },
+  const inlineStats = [
+    { label: "Üretim", value: stats.generations, icon: Sparkles, color: "text-purple-500", bg: "bg-purple-500/10" },
     { label: "Tweet", value: stats.tweets, icon: Twitter, color: "text-sky-500", bg: "bg-sky-500/10" },
     { label: "Favori", value: stats.favorites, icon: Heart, color: "text-rose-500", bg: "bg-rose-500/10" },
-    { label: "Bu Hafta", value: stats.thisWeek || 0, icon: Calendar, color: "text-emerald-500", bg: "bg-emerald-500/10" },
   ];
 
   const getContent = (gen) => {
@@ -143,7 +143,7 @@ export default function DashboardHome() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* ── Greeting Section ── */}
+      {/* ── Greeting Section + Inline Stats ── */}
       <div
         className="relative rounded-3xl p-8 overflow-hidden animate-stagger"
         style={{ "--i": 0 }}
@@ -154,10 +154,37 @@ export default function DashboardHome() {
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl" />
         
         <div className="relative z-10">
-          <h1 className="font-outfit text-3xl md:text-4xl font-bold tracking-tight mb-1">
-            {getGreetingEmoji()} {getGreeting()}, {firstName}
-          </h1>
-          <p className="text-muted-foreground mb-6">İçerik üretim panelinize hoş geldiniz</p>
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="font-outfit text-3xl md:text-4xl font-bold tracking-tight mb-1">
+                {getGreetingEmoji()} {getGreeting()}, {firstName}
+              </h1>
+              <p className="text-muted-foreground">İçerik üretim panelinize hoş geldiniz</p>
+            </div>
+
+            {/* Inline stat pills */}
+            <div className="flex gap-2 flex-wrap">
+              {inlineStats.map((s) => {
+                const Icon = s.icon;
+                return (
+                  <div
+                    key={s.label}
+                    className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-card/60 backdrop-blur-sm border border-border/40 shadow-sm"
+                  >
+                    <div className={cn("p-1.5 rounded-lg", s.bg)}>
+                      <Icon className={cn("h-3.5 w-3.5", s.color)} />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-outfit font-bold leading-none">
+                        <AnimatedCounter value={s.value || 0} />
+                      </p>
+                      <p className="text-[10px] text-muted-foreground leading-none mt-0.5">{s.label}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="flex gap-3 max-w-2xl">
             <div className="flex-1 relative">
@@ -181,34 +208,13 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* ── Quick Stats ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statCards.map((s, index) => {
-          const Icon = s.icon;
-          return (
-            <Card
-              key={s.label}
-              className="p-5 rounded-2xl border-border/50 shadow-sm hover-lift animate-stagger group"
-              style={{ "--i": index + 1 }}
-            >
-              <div className="flex items-center gap-3">
-                <div className={cn("p-2.5 rounded-xl transition-transform duration-200 group-hover:scale-110", s.bg)}>
-                  <Icon className={cn("h-5 w-5", s.color)} />
-                </div>
-                <div>
-                  <p className="text-2xl font-outfit font-bold">
-                    <AnimatedCounter value={s.value || 0} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+      {/* ── Content Calendar ── */}
+      <section className="animate-stagger" style={{ "--i": 2 }}>
+        <ContentCalendar />
+      </section>
 
       {/* ── Recent Generations ── */}
-      <section className="animate-stagger" style={{ "--i": 5 }}>
+      <section className="animate-stagger" style={{ "--i": 4 }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-outfit text-xl font-semibold">Son Üretimler</h2>
           <Link to="/dashboard/history" className="text-sm text-purple-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
@@ -225,7 +231,7 @@ export default function DashboardHome() {
                 <Card
                   key={gen.id || i}
                   className="rounded-2xl border-border/50 shadow-sm hover-lift group overflow-hidden animate-stagger"
-                  style={{ "--i": i + 6 }}
+                  style={{ "--i": i + 5 }}
                 >
                   {/* Gradient top border */}
                   <div className={cn("h-[2px] bg-gradient-to-r", type.border)} />
@@ -296,7 +302,7 @@ export default function DashboardHome() {
       </section>
 
       {/* ── Style Profiles ── */}
-      <section className="animate-stagger" style={{ "--i": 9 }}>
+      <section className="animate-stagger" style={{ "--i": 8 }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-outfit text-xl font-semibold">Stil Profilleri</h2>
           <Link to="/dashboard/style-lab" className="text-sm text-purple-500 hover:text-purple-400 flex items-center gap-1 transition-colors">
@@ -311,7 +317,7 @@ export default function DashboardHome() {
                 <Card
                   key={profile.id || i}
                   className="p-5 rounded-2xl border-border/50 shadow-sm hover-lift animate-stagger"
-                  style={{ "--i": i + 10 }}
+                  style={{ "--i": i + 9 }}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="relative">
@@ -368,7 +374,7 @@ export default function DashboardHome() {
       </section>
 
       {/* ── Bugünün İlhamı ── */}
-      <section className="animate-stagger" style={{ "--i": 13 }}>
+      <section className="animate-stagger" style={{ "--i": 12 }}>
         <Card className="rounded-2xl border-border/50 overflow-hidden relative">
           <div className="h-[2px] bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500" />
           <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl" />

@@ -634,6 +634,78 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
         logger.error(f"Article generation error: {str(e)}")
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
+@api_router.get("/generations/calendar")
+async def get_generation_calendar(year: int = None, month: int = None, user=Depends(require_auth)):
+    """Get generation counts grouped by day for calendar view"""
+    from datetime import date
+    today = date.today()
+    y = year or today.year
+    m = month or today.month
+
+    # Build date range for the month
+    start = f"{y:04d}-{m:02d}-01T00:00:00+00:00"
+    if m == 12:
+        end = f"{y + 1:04d}-01-01T00:00:00+00:00"
+    else:
+        end = f"{y:04d}-{m + 1:02d}-01T00:00:00+00:00"
+
+    result = supabase.table("generations") \
+        .select("id, type, topic, created_at, variants") \
+        .eq("user_id", user.id) \
+        .gte("created_at", start) \
+        .lt("created_at", end) \
+        .order("created_at", desc=True) \
+        .execute()
+
+    # Group by day
+    days = {}
+    for gen in (result.data or []):
+        day = gen["created_at"][:10]  # "2026-02-08"
+        if day not in days:
+            days[day] = {"count": 0, "types": {}, "generations": []}
+        days[day]["count"] += 1
+        t = gen.get("type", "tweet")
+        days[day]["types"][t] = days[day]["types"].get(t, 0) + 1
+        # Include minimal generation data for preview
+        preview = {
+            "id": gen["id"],
+            "type": t,
+            "topic": gen.get("topic", ""),
+            "created_at": gen["created_at"],
+        }
+        # Get first variant content for preview
+        variants = gen.get("variants")
+        if variants and isinstance(variants, list) and len(variants) > 0:
+            first = variants[0]
+            if isinstance(first, dict):
+                preview["content"] = first.get("content", "")[:150]
+            elif isinstance(first, str):
+                preview["content"] = first[:150]
+        days[day]["generations"].append(preview)
+
+    # Calculate streak
+    streak = 0
+    check_date = today
+    while True:
+        ds = check_date.isoformat()
+        if ds in days and days[ds]["count"] > 0:
+            streak += 1
+            check_date = check_date - __import__('datetime').timedelta(days=1)
+        else:
+            # If today has no generations, check if yesterday started a streak
+            if check_date == today and streak == 0:
+                check_date = check_date - __import__('datetime').timedelta(days=1)
+                continue
+            break
+
+    return {
+        "year": y,
+        "month": m,
+        "days": days,
+        "streak": streak,
+        "total_this_month": sum(d["count"] for d in days.values())
+    }
+
 @api_router.get("/generations/history")
 async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth)):
     """Get generation history with favorite status"""

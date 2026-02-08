@@ -296,3 +296,12 @@
 .animate-heart-pop {
   animation: heart-pop 0.4s ease-out;
 }
+
+/* Scrollbar hide utility for horizontal scroll areas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
