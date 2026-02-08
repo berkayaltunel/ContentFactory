@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Twitter,
   Sparkles,
@@ -360,18 +360,18 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
   );
 }
 
-// Style DNA Panel: Inline style profile management for X AI
+// Style DNA Panel: Compact profile selector for X AI (detailed management in Style Lab)
 function StyleDNAPanel() {
   const { profiles, activeProfile, activeProfileId, setActiveProfile, refreshProfiles } = useProfile();
   const [addMode, setAddMode] = useState(false);
   const [username, setUsername] = useState("");
   const [adding, setAdding] = useState(false);
   const [addProgress, setAddProgress] = useState(0);
-  const [addStep, setAddStep] = useState(""); // "scraping" | "analyzing" | "creating"
+  const [addStep, setAddStep] = useState("");
   const [profileListOpen, setProfileListOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [selectedProfileData, setSelectedProfileData] = useState(null);
+  const navigate = useNavigate();
 
   // Quick add: scrape tweets → analyze → create profile (all in one flow)
   const handleQuickAdd = async () => {
@@ -385,20 +385,17 @@ function StyleDNAPanel() {
     setAddStep("scraping");
 
     try {
-      // Step 1: Add source (scrape tweets)
       setAddStep("scraping");
       setAddProgress(20);
       const sourceRes = await api.post(`${API}/sources/add`, { twitter_username: clean });
       const source = sourceRes.data;
       setAddProgress(40);
 
-      // Step 2: Analyze style
       setAddStep("analyzing");
       setAddProgress(60);
       await api.post(`${API}/styles/analyze-source/${source.id}`);
       setAddProgress(80);
 
-      // Step 3: Create profile
       setAddStep("creating");
       const profileName = `${source.twitter_display_name || clean} Style`;
       const profileRes = await api.post(`${API}/styles/create`, {
@@ -407,7 +404,6 @@ function StyleDNAPanel() {
       });
       setAddProgress(100);
 
-      // Activate the new profile
       await refreshProfiles();
       await setActiveProfile(profileRes.data.id);
 
@@ -415,26 +411,11 @@ function StyleDNAPanel() {
       setUsername("");
       setAddMode(false);
     } catch (error) {
-      const msg = error.response?.data?.detail || "Profil oluşturulamadı";
-      toast.error(msg);
+      toast.error(error.response?.data?.detail || "Profil oluşturulamadı");
     } finally {
       setAdding(false);
       setAddProgress(0);
       setAddStep("");
-    }
-  };
-
-  const handleRefreshProfile = async () => {
-    if (!activeProfileId) return;
-    setRefreshing(true);
-    try {
-      await api.post(`${API}/styles/${activeProfileId}/refresh`);
-      await refreshProfiles();
-      toast.success("Stil profili güncellendi!");
-    } catch (error) {
-      toast.error(error.response?.data?.detail || "Güncelleme başarısız");
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -452,19 +433,6 @@ function StyleDNAPanel() {
       setAnalysisOpen(true);
     } catch (error) {
       toast.error("Analiz yüklenemedi");
-    }
-  };
-
-  const handleDeleteProfile = async (profileId) => {
-    try {
-      await api.delete(`${API}/styles/${profileId}`);
-      if (activeProfileId === profileId) {
-        await setActiveProfile(null);
-      }
-      await refreshProfiles();
-      toast.success("Profil silindi");
-    } catch (error) {
-      toast.error("Silinemedi");
     }
   };
 
@@ -514,16 +482,6 @@ function StyleDNAPanel() {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      onClick={handleRefreshProfile}
-                      disabled={refreshing}
-                      className="h-8 w-8"
-                      title="Stili yenile"
-                    >
-                      <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-                    </Button>
-                    <Button
-                      variant="ghost"
                       size="sm"
                       onClick={() => setProfileListOpen(!profileListOpen)}
                       className="h-8 text-xs gap-1"
@@ -565,18 +523,18 @@ function StyleDNAPanel() {
                     </button>
                     <div className="border-t border-border/50 pt-2 mt-2">
                       <button
-                        onClick={() => { setAddMode(true); setProfileListOpen(false); }}
+                        onClick={() => navigate("/dashboard/style-lab")}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-purple-400 hover:bg-purple-500/10 transition-colors"
                       >
-                        <Plus className="h-4 w-4" />
-                        <span>Yeni stil profili ekle</span>
+                        <Dna className="h-4 w-4" />
+                        <span>Style Lab'da Yönet</span>
                       </button>
                     </div>
                   </div>
                 )}
               </div>
             ) : !addMode ? (
-              /* No profile: Show options */
+              /* No profile: Show compact options */
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
@@ -608,7 +566,7 @@ function StyleDNAPanel() {
                     className="h-8 text-xs gap-1 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
                   >
                     <Plus className="h-3 w-3" />
-                    Yeni
+                    Hızlı Ekle
                   </Button>
                 </div>
               </div>
@@ -618,31 +576,31 @@ function StyleDNAPanel() {
             {!activeProfile && profileListOpen && profiles.length > 0 && (
               <div className="mt-3 border-t border-border/50 pt-3 space-y-1">
                 {profiles.map((profile) => (
-                  <div key={profile.id} className="flex items-center justify-between">
-                    <button
-                      onClick={() => { setActiveProfile(profile.id); setProfileListOpen(false); }}
-                      className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-secondary/50 transition-colors text-left"
-                    >
-                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-bold text-white">
-                          {profile.name?.charAt(0)?.toUpperCase() || "S"}
-                        </span>
-                      </div>
-                      <span>{profile.name}</span>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {profile.style_summary?.tweet_count || 0} tweet
+                  <button
+                    key={profile.id}
+                    onClick={() => { setActiveProfile(profile.id); setProfileListOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-secondary/50 transition-colors text-left"
+                  >
+                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-bold text-white">
+                        {profile.name?.charAt(0)?.toUpperCase() || "S"}
                       </span>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteProfile(profile.id)}
-                      className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10 shrink-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                    </div>
+                    <span>{profile.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {profile.style_summary?.tweet_count || 0} tweet
+                    </span>
+                  </button>
                 ))}
+                <div className="border-t border-border/50 pt-2 mt-2">
+                  <button
+                    onClick={() => navigate("/dashboard/style-lab")}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <Dna className="h-4 w-4" />
+                    <span>Style Lab'da Yönet</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -652,7 +610,7 @@ function StyleDNAPanel() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Dna className="h-5 w-5 text-purple-400" />
-                    <p className="text-sm font-medium">Yeni Stil Profili</p>
+                    <p className="text-sm font-medium">Hızlı Stil Profili</p>
                   </div>
                   <Button
                     variant="ghost"

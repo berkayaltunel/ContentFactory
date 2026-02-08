@@ -228,6 +228,14 @@ const navItems = [
     borderColor: "border-orange-500/30"
   },
   { 
+    path: "/dashboard/style-lab", 
+    label: "Style Lab", 
+    icon: Dna,
+    color: "text-purple-400",
+    bgColor: "bg-gradient-to-r from-purple-500/10 to-pink-500/10",
+    borderColor: "border-purple-500/30"
+  },
+  { 
     path: "/dashboard/trends", 
     label: "🔥 Trendler", 
     icon: TrendingUp,
