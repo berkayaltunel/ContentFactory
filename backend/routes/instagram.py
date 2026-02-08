@@ -5,7 +5,9 @@ POST /api/generate/instagram/hashtags - Hashtag üretimi
 POST /api/generate/instagram/story-ideas - Story fikir üretimi
 GET /api/meta/instagram/formats - Mevcut formatlar
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
@@ -55,7 +57,7 @@ class GenerationResponse(BaseModel):
 
 
 @router.post("/generate/instagram/caption", response_model=GenerationResponse)
-async def generate_instagram_caption(request: InstagramCaptionRequest):
+async def generate_instagram_caption(request: InstagramCaptionRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Instagram caption üret"""
     try:
         from server import generate_with_openai
@@ -76,7 +78,7 @@ async def generate_instagram_caption(request: InstagramCaptionRequest):
 
 
 @router.post("/generate/instagram/reel-script", response_model=GenerationResponse)
-async def generate_instagram_reel(request: InstagramReelRequest):
+async def generate_instagram_reel(request: InstagramReelRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Instagram reel scripti üret"""
     try:
         from server import generate_with_openai
@@ -97,7 +99,7 @@ async def generate_instagram_reel(request: InstagramReelRequest):
 
 
 @router.post("/generate/instagram/hashtags", response_model=GenerationResponse)
-async def generate_instagram_hashtags(request: InstagramHashtagRequest):
+async def generate_instagram_hashtags(request: InstagramHashtagRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Instagram hashtag seti üret"""
     try:
         from server import generate_with_openai
@@ -115,7 +117,7 @@ async def generate_instagram_hashtags(request: InstagramHashtagRequest):
 
 
 @router.post("/generate/instagram/story-ideas", response_model=GenerationResponse)
-async def generate_instagram_stories(request: InstagramStoryRequest):
+async def generate_instagram_stories(request: InstagramStoryRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Instagram story fikirleri üret"""
     try:
         from server import generate_with_openai

@@ -8,7 +8,9 @@ GET /api/meta/blog/styles - Blog stilleri
 GET /api/meta/blog/frameworks - Yazı framework'leri
 GET /api/meta/blog/levels - İçerik seviyeleri
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 import json
@@ -113,7 +115,7 @@ def _calculate_readability(text: str) -> dict:
 # ==================== ROUTES ====================
 
 @router.post("/generate/blog/outline", response_model=GenerationResponse)
-async def generate_blog_outline(request: BlogOutlineRequest):
+async def generate_blog_outline(request: BlogOutlineRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Blog taslağı üret"""
     try:
         from server import generate_with_openai
@@ -149,7 +151,7 @@ async def generate_blog_outline(request: BlogOutlineRequest):
 
 
 @router.post("/generate/blog/full", response_model=GenerationResponse)
-async def generate_blog_full(request: BlogFullRequest):
+async def generate_blog_full(request: BlogFullRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Tam blog yazısı üret"""
     try:
         from server import generate_with_openai
@@ -193,7 +195,7 @@ async def generate_blog_full(request: BlogFullRequest):
 
 
 @router.post("/generate/blog/seo-optimize", response_model=GenerationResponse)
-async def generate_blog_seo(request: BlogSEORequest):
+async def generate_blog_seo(request: BlogSEORequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Mevcut blog yazısını SEO analiz et"""
     try:
         from server import generate_with_openai
@@ -229,7 +231,7 @@ async def generate_blog_seo(request: BlogSEORequest):
 
 
 @router.post("/generate/blog/cover-image", response_model=GenerationResponse)
-async def generate_blog_cover_image(request: BlogCoverImageRequest):
+async def generate_blog_cover_image(request: BlogCoverImageRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Blog cover image + makale içi görsel promptları üret"""
     try:
         from server import generate_with_openai
@@ -265,7 +267,7 @@ async def generate_blog_cover_image(request: BlogCoverImageRequest):
 
 
 @router.post("/generate/blog/repurpose", response_model=GenerationResponse)
-async def generate_blog_repurpose(request: BlogRepurposeRequest):
+async def generate_blog_repurpose(request: BlogRepurposeRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Blog'u başka platforma dönüştür"""
     try:
         from server import generate_with_openai

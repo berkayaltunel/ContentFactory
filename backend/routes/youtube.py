@@ -5,7 +5,9 @@ POST /api/generate/youtube/title - Başlık üretimi
 POST /api/generate/youtube/description - Açıklama + tag üretimi
 GET /api/meta/youtube/formats - YouTube formatları
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
@@ -61,7 +63,7 @@ def _lang_instruction(lang: str) -> str:
 
 
 @router.post("/generate/youtube/idea", response_model=GenerationResponse)
-async def generate_youtube_idea(request: YouTubeIdeaRequest):
+async def generate_youtube_idea(request: YouTubeIdeaRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """YouTube video fikirleri üret"""
     try:
         from server import generate_with_openai
@@ -78,7 +80,7 @@ async def generate_youtube_idea(request: YouTubeIdeaRequest):
 
 
 @router.post("/generate/youtube/script", response_model=GenerationResponse)
-async def generate_youtube_script(request: YouTubeScriptRequest):
+async def generate_youtube_script(request: YouTubeScriptRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """YouTube video scripti üret"""
     try:
         from server import generate_with_openai
@@ -96,7 +98,7 @@ async def generate_youtube_script(request: YouTubeScriptRequest):
 
 
 @router.post("/generate/youtube/title", response_model=GenerationResponse)
-async def generate_youtube_title(request: YouTubeTitleRequest):
+async def generate_youtube_title(request: YouTubeTitleRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """YouTube başlıkları üret"""
     try:
         from server import generate_with_openai
@@ -113,7 +115,7 @@ async def generate_youtube_title(request: YouTubeTitleRequest):
 
 
 @router.post("/generate/youtube/description", response_model=GenerationResponse)
-async def generate_youtube_description(request: YouTubeDescriptionRequest):
+async def generate_youtube_description(request: YouTubeDescriptionRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """YouTube açıklama + taglar üret"""
     try:
         from server import generate_with_openai

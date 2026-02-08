@@ -53,17 +53,8 @@ from prompts.builder import (
 )
 
 # ==================== AUTH ====================
-
-async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Optional[str]:
-    """Extract user_id from Supabase JWT token."""
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    token = authorization.replace("Bearer ", "")
-    try:
-        user_response = supabase.auth.get_user(token)
-        return user_response.user.id
-    except Exception:
-        return None
+from middleware.auth import require_auth, optional_auth
+from middleware.rate_limit import rate_limit
 
 # ==================== MODELS ====================
 
@@ -213,6 +204,15 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
 async def root():
     return {"message": "ContentFactory API"}
 
+@api_router.get("/auth/check")
+async def auth_check(user=Depends(require_auth)):
+    """Frontend login sonrası whitelist kontrolü. 200 dönerse kullanıcı geçerli."""
+    return {
+        "authorized": True,
+        "user_id": user.id,
+        "email": user.email,
+    }
+
 @api_router.get("/health")
 async def health_check():
     return {
@@ -359,7 +359,7 @@ async def fetch_tweet(url: str):
 # ==================== CONTENT GENERATION ROUTES ====================
 
 @api_router.post("/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet(request: TweetGenerateRequest, user_id: str = Depends(get_current_user_id)):
+async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet content"""
     try:
         # Fetch style prompt if style_profile_id provided
@@ -410,7 +410,7 @@ async def generate_tweet(request: TweetGenerateRequest, user_id: str = Depends(g
         # Log to database
         supabase.table("generations").insert({
             "type": "tweet",
-            "user_id": user_id,
+            "user_id": user.id if user else None,
             "topic": request.topic,
             "mode": request.mode,
             "length": request.length,
@@ -434,7 +434,7 @@ async def generate_tweet(request: TweetGenerateRequest, user_id: str = Depends(g
         return GenerationResponse(success=False, variants=[], error=str(e))
 
 @api_router.post("/generate/quote", response_model=GenerationResponse)
-async def generate_quote(request: QuoteGenerateRequest, user_id: str = Depends(get_current_user_id)):
+async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate quote tweet content"""
     try:
         if not request.tweet_content:
@@ -467,7 +467,7 @@ async def generate_quote(request: QuoteGenerateRequest, user_id: str = Depends(g
 
         supabase.table("generations").insert({
             "type": "quote",
-            "user_id": user_id,
+            "user_id": user.id if user else None,
             "tweet_url": request.tweet_url,
             "tweet_content": request.tweet_content,
             "length": request.length,
@@ -490,7 +490,7 @@ async def generate_quote(request: QuoteGenerateRequest, user_id: str = Depends(g
         return GenerationResponse(success=False, variants=[], error=str(e))
 
 @api_router.post("/generate/reply", response_model=GenerationResponse)
-async def generate_reply(request: ReplyGenerateRequest, user_id: str = Depends(get_current_user_id)):
+async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate reply content"""
     try:
         if not request.tweet_content:
@@ -524,7 +524,7 @@ async def generate_reply(request: ReplyGenerateRequest, user_id: str = Depends(g
 
         supabase.table("generations").insert({
             "type": "reply",
-            "user_id": user_id,
+            "user_id": user.id if user else None,
             "tweet_url": request.tweet_url,
             "tweet_content": request.tweet_content,
             "reply_mode": request.reply_mode,
@@ -548,7 +548,7 @@ async def generate_reply(request: ReplyGenerateRequest, user_id: str = Depends(g
         return GenerationResponse(success=False, variants=[], error=str(e))
 
 @api_router.post("/generate/article", response_model=GenerationResponse)
-async def generate_article(request: ArticleGenerateRequest, user_id: str = Depends(get_current_user_id)):
+async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate X article content"""
     try:
         topic = request.topic
@@ -579,7 +579,7 @@ async def generate_article(request: ArticleGenerateRequest, user_id: str = Depen
 
         supabase.table("generations").insert({
             "type": "article",
-            "user_id": user_id,
+            "user_id": user.id if user else None,
             "topic": request.topic,
             "title": request.title,
             "length": request.length,
@@ -601,28 +601,28 @@ async def generate_article(request: ArticleGenerateRequest, user_id: str = Depen
         return GenerationResponse(success=False, variants=[], error=str(e))
 
 @api_router.get("/generations/history")
-async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user_id: str = Depends(get_current_user_id)):
+async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth)):
     """Get generation history"""
     query = supabase.table("generations").select("*").order("created_at", desc=True).limit(limit)
-    if user_id:
-        query = query.eq("user_id", user_id)
+    if user:
+        query = query.eq("user_id", user.id)
     if content_type:
         query = query.eq("type", content_type)
     result = query.execute()
     return result.data
 
 @api_router.get("/user/stats")
-async def get_user_stats(user_id: str = Depends(get_current_user_id)):
+async def get_user_stats(user=Depends(require_auth)):
     """Get user statistics"""
     try:
         gen_query = supabase.table("generations").select("id", count="exact")
         tweet_query = supabase.table("generations").select("id", count="exact").eq("type", "tweet")
         fav_query = supabase.table("favorites").select("id", count="exact")
 
-        if user_id:
-            gen_query = gen_query.eq("user_id", user_id)
-            tweet_query = tweet_query.eq("user_id", user_id)
-            fav_query = fav_query.eq("user_id", user_id)
+        if user:
+            gen_query = gen_query.eq("user_id", user.id)
+            tweet_query = tweet_query.eq("user_id", user.id)
+            fav_query = fav_query.eq("user_id", user.id)
 
         return {
             "generations": gen_query.execute().count or 0,
@@ -633,23 +633,23 @@ async def get_user_stats(user_id: str = Depends(get_current_user_id)):
         return {"generations": 0, "tweets": 0, "favorites": 0}
 
 @api_router.get("/favorites")
-async def get_favorites(limit: int = 50, user_id: str = Depends(get_current_user_id)):
+async def get_favorites(limit: int = 50, user=Depends(require_auth)):
     """Get user favorites"""
     try:
         query = supabase.table("favorites").select("*").order("created_at", desc=True).limit(limit)
-        if user_id:
-            query = query.eq("user_id", user_id)
+        if user:
+            query = query.eq("user_id", user.id)
         result = query.execute()
         return result.data
     except Exception:
         return []
 
 @api_router.post("/favorites")
-async def add_favorite(content: dict, user_id: str = Depends(get_current_user_id)):
+async def add_favorite(content: dict, user=Depends(require_auth)):
     """Add content to favorites"""
     favorite_doc = {
         "id": str(uuid.uuid4()),
-        "user_id": user_id,
+        "user_id": user.id if user else None,
         "content": content.get("content", ""),
         "type": content.get("type", "tweet"),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -658,11 +658,11 @@ async def add_favorite(content: dict, user_id: str = Depends(get_current_user_id
     return {"success": True, "id": favorite_doc["id"]}
 
 @api_router.delete("/favorites/{favorite_id}")
-async def remove_favorite(favorite_id: str, user_id: str = Depends(get_current_user_id)):
+async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
     """Remove content from favorites"""
     query = supabase.table("favorites").delete().eq("id", favorite_id)
-    if user_id:
-        query = query.eq("user_id", user_id)
+    if user:
+        query = query.eq("user_id", user.id)
     query.execute()
     return {"success": True}
 

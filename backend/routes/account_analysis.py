@@ -3,6 +3,7 @@ POST /api/analyze/account - Twitter hesap analizi
 GET /api/analyze/history - Geçmiş analizler
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
+from middleware.auth import require_auth
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -30,7 +31,7 @@ def get_supabase():
 
 
 @router.post("/account")
-async def analyze_account(request: AccountAnalysisRequest):
+async def analyze_account(request: AccountAnalysisRequest, user=Depends(require_auth)):
     """Twitter hesabını analiz et"""
     try:
         from server import openai_client
@@ -130,7 +131,7 @@ Son tweet'ler:
 
 
 @router.get("/history")
-async def get_analysis_history(limit: int = Query(20, le=100)):
+async def get_analysis_history(limit: int = Query(20, le=100), user=Depends(require_auth)):
     """Geçmiş analizleri getir"""
     try:
         sb = get_supabase()

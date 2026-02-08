@@ -3,6 +3,7 @@ GET /api/coach/insights - Kullanıcının üretim geçmişi analizi + öneriler
 GET /api/coach/weekly-plan - Haftalık içerik planı önerisi
 """
 from fastapi import APIRouter, HTTPException, Depends, Header
+from middleware.auth import require_auth
 from typing import Optional, List
 from collections import Counter
 import json
@@ -30,7 +31,7 @@ async def get_current_user_id(authorization: Optional[str] = Header(None)) -> Op
 
 
 @router.get("/insights")
-async def get_insights(user_id: str = Depends(get_current_user_id)):
+async def get_insights(user=Depends(require_auth)):
     """Kullanıcının üretim geçmişini analiz et ve öneriler sun"""
     try:
         sb = get_supabase()
@@ -38,8 +39,8 @@ async def get_insights(user_id: str = Depends(get_current_user_id)):
 
         # Son 100 üretimi çek
         query = sb.table("generations").select("*").order("created_at", desc=True).limit(100)
-        if user_id:
-            query = query.eq("user_id", user_id)
+        if user:
+            query = query.eq("user_id", user.id)
         result = query.execute()
         generations = result.data or []
 
@@ -61,8 +62,8 @@ async def get_insights(user_id: str = Depends(get_current_user_id)):
 
         # Favori oranı
         fav_query = sb.table("favorites").select("id", count="exact")
-        if user_id:
-            fav_query = fav_query.eq("user_id", user_id)
+        if user:
+            fav_query = fav_query.eq("user_id", user.id)
         fav_count = fav_query.execute().count or 0
 
         stats = {
@@ -129,7 +130,7 @@ JSON formatında döndür:
 @router.get("/weekly-plan")
 async def get_weekly_plan(
     niche: str = "tech",
-    user_id: str = Depends(get_current_user_id)
+    user=Depends(require_auth)
 ):
     """Haftalık içerik planı önerisi"""
     try:

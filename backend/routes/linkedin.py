@@ -7,7 +7,9 @@ POST /api/generate/linkedin/image-prompt - Görsel promptu üret
 GET /api/meta/linkedin/formats - Formatlar
 GET /api/meta/linkedin/personas - Persona'lar
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 import json
@@ -109,7 +111,7 @@ def _get_lang(language: str) -> str:
 # ==================== ROUTES ====================
 
 @router.post("/generate/linkedin", response_model=GenerationResponse)
-async def generate_linkedin_post(request: LinkedInGenerateRequest):
+async def generate_linkedin_post(request: LinkedInGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """LinkedIn post üret (persona entegrasyonlu)"""
     try:
         from server import generate_with_openai
@@ -146,7 +148,7 @@ async def generate_linkedin_post(request: LinkedInGenerateRequest):
 
 
 @router.post("/generate/linkedin/carousel", response_model=GenerationResponse)
-async def generate_linkedin_carousel(request: LinkedInCarouselRequest):
+async def generate_linkedin_carousel(request: LinkedInCarouselRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """LinkedIn carousel metin üret"""
     try:
         from server import generate_with_openai
@@ -179,7 +181,7 @@ async def generate_linkedin_carousel(request: LinkedInCarouselRequest):
 
 
 @router.post("/generate/linkedin/hooks", response_model=GenerationResponse)
-async def generate_linkedin_hooks(request: LinkedInHooksRequest):
+async def generate_linkedin_hooks(request: LinkedInHooksRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Hook alternatifleri üret"""
     try:
         from server import generate_with_openai
@@ -225,7 +227,7 @@ Sadece hook'ları yaz, açıklama ekleme."""
 
 
 @router.post("/generate/linkedin/analyze", response_model=GenerationResponse)
-async def analyze_linkedin_post(request: LinkedInAnalyzeRequest):
+async def analyze_linkedin_post(request: LinkedInAnalyzeRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Mevcut LinkedIn postunu analiz et"""
     try:
         from server import generate_with_openai
@@ -301,7 +303,7 @@ Sadece JSON döndür. {lang}"""
 
 
 @router.post("/generate/linkedin/image-prompt", response_model=GenerationResponse)
-async def generate_linkedin_image(request: LinkedInImageRequest):
+async def generate_linkedin_image(request: LinkedInImageRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """LinkedIn post görseli için prompt üret"""
     try:
         from server import generate_with_openai

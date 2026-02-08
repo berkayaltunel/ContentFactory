@@ -1,5 +1,6 @@
 """Style Sources API routes"""
 from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -40,7 +41,7 @@ def get_supabase():
     return supabase
 
 @router.post("/add", response_model=SourceResponse)
-async def add_source(request: AddSourceRequest, supabase = Depends(get_supabase)):
+async def add_source(request: AddSourceRequest, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Add a Twitter user as style source and fetch their tweets"""
     username = request.twitter_username.lstrip('@')
     
@@ -116,7 +117,7 @@ async def add_source(request: AddSourceRequest, supabase = Depends(get_supabase)
     )
 
 @router.get("/list", response_model=List[SourceResponse])
-async def list_sources(supabase = Depends(get_supabase)):
+async def list_sources(user=Depends(require_auth), supabase=Depends(get_supabase)):
     """List all style sources"""
     result = supabase.table("style_sources").select("*").order("created_at", desc=True).execute()
     
@@ -134,7 +135,7 @@ async def list_sources(supabase = Depends(get_supabase)):
     return sources
 
 @router.get("/{source_id}/tweets", response_model=List[TweetResponse])
-async def get_source_tweets(source_id: str, limit: int = 50, supabase = Depends(get_supabase)):
+async def get_source_tweets(source_id: str, limit: int = 50, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Get tweets from a source"""
     result = supabase.table("source_tweets").select("*").eq("source_id", source_id).order("likes", desc=True).limit(limit).execute()
     
@@ -154,14 +155,14 @@ async def get_source_tweets(source_id: str, limit: int = 50, supabase = Depends(
     return tweets
 
 @router.delete("/{source_id}")
-async def delete_source(source_id: str, supabase = Depends(get_supabase)):
+async def delete_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Delete a style source and its tweets"""
     # Tweets will be deleted via CASCADE
     supabase.table("style_sources").delete().eq("id", source_id).execute()
     return {"success": True}
 
 @router.post("/{source_id}/refresh")
-async def refresh_source(source_id: str, supabase = Depends(get_supabase)):
+async def refresh_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Re-fetch tweets for a source"""
     # Get source
     result = supabase.table("style_sources").select("*").eq("id", source_id).execute()

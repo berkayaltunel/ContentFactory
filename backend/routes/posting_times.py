@@ -4,6 +4,7 @@ Analyzes generation history + general Twitter best practices for TR audience.
 Returns heatmap data (7 days x 24 hours).
 """
 from fastapi import APIRouter, Depends, Header
+from middleware.auth import require_auth
 from typing import Optional
 from collections import Counter, defaultdict
 import json
@@ -83,7 +84,7 @@ DAYS_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi",
 
 
 @router.get("/heatmap")
-async def get_posting_heatmap():
+async def get_posting_heatmap(user=Depends(require_auth)):
     """
     Return 7x24 heatmap data for optimal posting times.
     Combines TR base data with user's generation/favorite patterns.
@@ -156,7 +157,7 @@ async def get_posting_heatmap():
 
 
 @router.get("/best-now")
-async def get_best_time_now():
+async def get_best_time_now(user=Depends(require_auth)):
     """Quick check: is now a good time to post?"""
     now = datetime.utcnow()
     istanbul_hour = (now.hour + 3) % 24

@@ -4,7 +4,9 @@ POST /api/trends/refresh - Trend yenileme
 GET /api/trends/{id} - Trend detayı
 POST /api/trends/{id}/generate - Trend'den içerik üret
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -47,6 +49,7 @@ def get_supabase():
 async def list_trends(
     category: Optional[str] = Query(None),
     limit: int = Query(20, le=100),
+    user=Depends(require_auth),
 ):
     """Trend listesi"""
     try:
@@ -62,7 +65,7 @@ async def list_trends(
 
 
 @router.post("/refresh")
-async def refresh_trends(request: TrendRefreshRequest):
+async def refresh_trends(request: TrendRefreshRequest, user=Depends(require_auth)):
     """Trend'leri yenile (AI ile güncel konuları analiz et)"""
     try:
         from server import openai_client
@@ -125,13 +128,13 @@ Her trend için JSON formatında döndür:
 
 
 @router.get("/categories")
-async def get_categories():
+async def get_categories(user=Depends(require_auth)):
     """Mevcut trend kategorileri"""
     return ["ai", "tech", "crypto", "gundem", "business", "lifestyle"]
 
 
 @router.get("/{trend_id}")
-async def get_trend(trend_id: str):
+async def get_trend(trend_id: str, user=Depends(require_auth)):
     """Trend detayı"""
     try:
         sb = get_supabase()
@@ -147,7 +150,7 @@ async def get_trend(trend_id: str):
 
 
 @router.post("/{trend_id}/generate", response_model=GenerationResponse)
-async def generate_from_trend(trend_id: str, request: TrendGenerateRequest):
+async def generate_from_trend(trend_id: str, request: TrendGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Trend'den içerik üret"""
     try:
         from server import generate_with_openai

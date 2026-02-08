@@ -1,5 +1,6 @@
 """Style Profiles API routes"""
 from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -32,7 +33,7 @@ def get_supabase():
 
 
 @router.post("/create", response_model=ProfileResponse)
-async def create_style_profile(request: CreateProfileRequest, supabase=Depends(get_supabase)):
+async def create_style_profile(request: CreateProfileRequest, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Create a style profile from multiple sources"""
     
     # Fetch all tweets from sources
@@ -77,7 +78,7 @@ async def create_style_profile(request: CreateProfileRequest, supabase=Depends(g
 
 
 @router.get("/list", response_model=List[ProfileResponse])
-async def list_profiles(supabase=Depends(get_supabase)):
+async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabase)):
     """List all style profiles"""
     result = supabase.table("style_profiles").select("*").order("created_at", desc=True).execute()
     
@@ -102,7 +103,7 @@ async def list_profiles(supabase=Depends(get_supabase)):
 
 
 @router.get("/{profile_id}")
-async def get_profile(profile_id: str, supabase=Depends(get_supabase)):
+async def get_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Get full profile with fingerprint"""
     result = supabase.table("style_profiles").select("*").eq("id", profile_id).execute()
     
@@ -113,7 +114,7 @@ async def get_profile(profile_id: str, supabase=Depends(get_supabase)):
 
 
 @router.get("/{profile_id}/prompt")
-async def get_style_prompt(profile_id: str, supabase=Depends(get_supabase)):
+async def get_style_prompt(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Get the style prompt for generation"""
     result = supabase.table("style_profiles").select("*").eq("id", profile_id).execute()
     
@@ -131,14 +132,14 @@ async def get_style_prompt(profile_id: str, supabase=Depends(get_supabase)):
 
 
 @router.delete("/{profile_id}")
-async def delete_profile(profile_id: str, supabase=Depends(get_supabase)):
+async def delete_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Delete a style profile"""
     supabase.table("style_profiles").delete().eq("id", profile_id).execute()
     return {"success": True}
 
 
 @router.post("/{profile_id}/refresh")
-async def refresh_style_profile(profile_id: str, supabase=Depends(get_supabase)):
+async def refresh_style_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """
     Refresh a style profile by re-scraping tweets (100 tweet) and AI-powered deep analysis.
     """
@@ -258,7 +259,7 @@ async def refresh_style_profile(profile_id: str, supabase=Depends(get_supabase))
 
 
 @router.post("/analyze-source/{source_id}")
-async def analyze_source(source_id: str, supabase=Depends(get_supabase)):
+async def analyze_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Analyze a single source without creating a profile"""
     result = supabase.table("source_tweets").select("*").eq("source_id", source_id).execute()
     

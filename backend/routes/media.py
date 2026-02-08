@@ -2,6 +2,8 @@
 Media routes - Nano Banana Pro image prompt generation
 """
 from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional
 import logging
@@ -39,7 +41,7 @@ PLATFORM_SPECS = {
 
 
 @router.post("/generate-image-prompt", response_model=ImagePromptResponse)
-async def generate_image_prompt(request: ImagePromptRequest):
+async def generate_image_prompt(request: ImagePromptRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate a Nano Banana Pro compatible image prompt from content."""
     from server import openai_client
     if not openai_client:

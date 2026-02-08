@@ -1,7 +1,9 @@
 """İçerik dönüştürme route'ları.
 POST /api/repurpose/video-script - Tweet/içeriği video script'e çevir
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 import json
@@ -35,7 +37,7 @@ class VideoScriptResponse(BaseModel):
 
 
 @router.post("/video-script", response_model=VideoScriptResponse)
-async def convert_to_video_script(request: VideoScriptRequest):
+async def convert_to_video_script(request: VideoScriptRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """Tweet/içeriği video script'ine çevir"""
     try:
         from server import openai_client

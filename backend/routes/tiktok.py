@@ -3,7 +3,9 @@ POST /api/generate/tiktok/script - TikTok script üretimi
 POST /api/generate/tiktok/caption - Caption + hashtag üretimi
 GET /api/meta/tiktok/formats - TikTok formatları
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from middleware.auth import require_auth
+from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
@@ -44,7 +46,7 @@ def _lang(lang: str) -> str:
 
 
 @router.post("/generate/tiktok/script", response_model=GenerationResponse)
-async def generate_tiktok_script(request: TikTokScriptRequest):
+async def generate_tiktok_script(request: TikTokScriptRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """TikTok video scripti üret"""
     try:
         from server import generate_with_openai
@@ -65,7 +67,7 @@ async def generate_tiktok_script(request: TikTokScriptRequest):
 
 
 @router.post("/generate/tiktok/caption", response_model=GenerationResponse)
-async def generate_tiktok_caption(request: TikTokCaptionRequest):
+async def generate_tiktok_caption(request: TikTokCaptionRequest, _=Depends(rate_limit), user=Depends(require_auth)):
     """TikTok caption + hashtag üret"""
     try:
         from server import generate_with_openai
