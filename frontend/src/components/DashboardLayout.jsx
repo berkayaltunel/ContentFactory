@@ -18,8 +18,6 @@ import {
   ChevronDown,
   Sparkles,
   Dna,
-  RefreshCw,
-  Palette,
   TrendingUp,
   BarChart3
 } from "lucide-react";
@@ -46,137 +44,6 @@ import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 // ProfileSwitcher removed - style profiles now managed in X AI module
 
-
-// Style Profile Settings Component
-function StyleProfileSettings({ onNavigateToStyleLab }) {
-  const [profiles, setProfiles] = useState([]);
-  const [selectedProfile, setSelectedProfile] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProfiles = async () => {
-      try {
-        const response = await api.get(`${API}/styles/list`);
-        if (response.data) {
-          setProfiles(response.data);
-          if (response.data.length > 0) {
-            setSelectedProfile(response.data[0].id);
-          }
-        }
-      } catch (error) {
-        // Style profiles may not exist yet
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfiles();
-  }, []);
-
-  const handleRefreshStyle = async () => {
-    if (!selectedProfile) {
-      toast.error("Lütfen bir stil profili seçin");
-      return;
-    }
-
-    setRefreshing(true);
-    try {
-      const response = await api.post(
-        `${API}/styles/${selectedProfile}/refresh`,
-        {}
-      );
-      
-      if (response.data.success) {
-        toast.success(`Stil profili güncellendi! ${response.data.tweets_analyzed} tweet analiz edildi.`);
-      } else {
-        toast.error("Stil profili güncellenemedi");
-      }
-    } catch (error) {
-      console.error('Refresh error:', error);
-      toast.error(error.response?.data?.detail || "Stil profili güncellenemedi");
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      <label className="text-sm font-medium">Stil Profili</label>
-      
-      {loading ? (
-        <div className="text-xs text-muted-foreground">Yükleniyor...</div>
-      ) : profiles.length === 0 ? (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Henüz bir stil profili oluşturmadınız. Style Lab'dan yeni bir profil oluşturun.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onNavigateToStyleLab}
-            className="w-full gap-2"
-            data-testid="create-style-btn"
-          >
-            <Palette className="h-4 w-4" />
-            Stil Profili Oluştur
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <select
-            value={selectedProfile || ''}
-            onChange={(e) => setSelectedProfile(e.target.value)}
-            className="w-full p-2 text-sm rounded-md border border-border bg-background"
-            data-testid="style-profile-select"
-          >
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.name} ({profile.style_summary?.tweet_count || 0} tweet)
-              </option>
-            ))}
-          </select>
-          
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefreshStyle}
-              disabled={refreshing || !selectedProfile}
-              className="flex-1 gap-2"
-              data-testid="refresh-style-btn"
-            >
-              {refreshing ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Güncelleniyor...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4" />
-                  Yenile
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNavigateToStyleLab}
-              className="gap-2"
-              data-testid="manage-style-btn"
-            >
-              <Palette className="h-4 w-4" />
-              Düzenle
-            </Button>
-          </div>
-          
-          <p className="text-xs text-muted-foreground">
-            "Yenile" ile tweet'ler tekrar çekilir ve stil analizi güncellenir. (Ayda max 3)
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 const navItems = [
   { 
@@ -533,13 +400,6 @@ export default function DashboardLayout() {
               </div>
             )}
 
-            {/* Style Profile Update */}
-            <StyleProfileSettings 
-              onNavigateToStyleLab={() => {
-                setSettingsOpen(false);
-                navigate('/dashboard/style-lab');
-              }}
-            />
           </div>
         </DialogContent>
       </Dialog>
