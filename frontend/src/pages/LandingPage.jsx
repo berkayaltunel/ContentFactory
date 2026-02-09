@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
@@ -19,6 +19,7 @@ import { HiDocumentText } from 'react-icons/hi2';
    ═══════════════════════════════════════════ */
 
 const satoshiFont = "'Satoshi', 'Inter', system-ui, sans-serif";
+const clashFont = "'Clash Display', 'Satoshi', system-ui, sans-serif";
 
 /* Animations */
 const fadeUp = {
@@ -90,7 +91,7 @@ function MascotVideo({ className = '', style = {} }) {
       playsInline
       className={className}
       style={style}
-      src="/maskotvideo.mp4"
+      src="/maskotvideo-loop.mp4"
     />
   );
 }
@@ -229,7 +230,6 @@ function Navbar() {
     { label: 'Nasıl Çalışır', href: '#how-it-works' },
     { label: 'Özellikler', href: '#features' },
     { label: 'Platformlar', href: '#platforms' },
-    { label: 'Giriş Yap', href: '/login', isRoute: true },
     { label: 'SSS', href: '#faq' },
   ];
 
@@ -350,7 +350,7 @@ function Navbar() {
 function WordReveal({ children, delay = 0, inView }) {
   return (
     <span
-      className="inline-block transition-opacity duration-500"
+      className="transition-opacity duration-500"
       style={{
         opacity: inView ? 1 : 0.15,
         transitionDelay: inView ? `${delay}ms` : '0ms',
@@ -361,31 +361,47 @@ function WordReveal({ children, delay = 0, inView }) {
   );
 }
 
+function InlineVideo({ src, className = '' }) {
+  return (
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className={`inline-block align-middle mx-1.5 md:mx-3 ${className}`}
+      style={{ mixBlendMode: 'multiply' }}
+      src={src}
+    />
+  );
+}
+
 function ValueStatements() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
 
+  /*
+   * 3-act story: Discover → Create → Win
+   * Copywriting: specific > vague, benefit > feature, customer language
+   * Psychology: Loss Aversion (3rd line), Specificity (1st line), JTBD (2nd line)
+   */
   const lines = [
     {
       segments: [
         { type: 'text', content: 'Type Hype' },
-        { type: 'icon', content: <Brain className="w-[56px] h-[56px] md:w-[72px] md:h-[72px] text-violet-500" />, bg: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(217,70,239,0.10))' },
-        { type: 'text', content: 'senin yazım stilini öğrenir.' },
+        { type: 'video', src: '/glass-final.webm' },
+        { type: 'text', content: 'yazım tarzını çözer. Her kelimeni, her virgülünü öğrenir.' },
       ],
     },
     {
       segments: [
-        { type: 'text', content: 'Sonra' },
-        { type: 'icon', content: <Pen className="w-[56px] h-[56px] md:w-[72px] md:h-[72px] text-fuchsia-500" />, bg: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(217,70,239,0.10))' },
-        { type: 'text', content: '6 platform için viral içerik üretir.' },
+        { type: 'text', content: 'Senden' },
+        { type: 'video', src: '/pencil-final.webm' },
+        { type: 'text', content: 'ayırt edilemez içerikler üretir. 6 platform, tek tık.' },
       ],
     },
     {
       segments: [
-        { type: 'icon', content: <FaXTwitter className="w-7 h-7 md:w-9 md:h-9 text-[#1d1d1f]" />, bg: 'rgba(0,0,0,0.05)' },
-        { type: 'icon', content: <FaInstagram className="w-7 h-7 md:w-9 md:h-9 text-pink-500" />, bg: 'linear-gradient(135deg, rgba(228,64,95,0.12), rgba(252,175,69,0.10))' },
-        { type: 'icon', content: <FaLinkedinIn className="w-7 h-7 md:w-9 md:h-9 text-[#0a66c2]" />, bg: 'rgba(10,102,194,0.10)' },
-        { type: 'text', content: 'paylaş ve büyü.' },
+        { type: 'text', content: 'Bir ajansın tüm işini tek başına halledersin.' },
       ],
     },
   ];
@@ -393,22 +409,17 @@ function ValueStatements() {
   let wordIndex = 0;
 
   return (
-    <section ref={ref} style={{ background: '#fbfbfb', fontFamily: satoshiFont, paddingTop: 100, paddingBottom: 80 }}>
-      <div className="max-w-[700px] mx-auto text-center px-6">
+    <section ref={ref} style={{ background: '#ffffff', paddingTop: 100, paddingBottom: 100 }}>
+      <div className="max-w-[740px] mx-auto text-center px-6 space-y-12">
         {lines.map((line, li) => {
           const lineElements = [];
           line.segments.forEach((seg, si) => {
-            if (seg.type === 'icon') {
+            if (seg.type === 'video') {
               const d = wordIndex * 80;
               wordIndex++;
               lineElements.push(
-                <WordReveal key={`${li}-icon-${si}`} delay={d} inView={inView}>
-                  <span
-                    className="inline-flex items-center justify-center mx-1.5 md:mx-2 align-middle rounded-2xl"
-                    style={{ width: 56, height: 56, background: seg.bg }}
-                  >
-                    {seg.content}
-                  </span>
+                <WordReveal key={`${li}-vid-${si}`} delay={d} inView={inView}>
+                  <InlineVideo src={seg.src} className="w-14 h-14 md:w-20 md:h-20" />
                 </WordReveal>
               );
             } else {
@@ -427,8 +438,12 @@ function ValueStatements() {
           return (
             <p
               key={li}
-              className="text-[24px] md:text-[44px] md:leading-[56px] text-[#1d1d1f] leading-[1.2]"
-              style={{ fontWeight: 800, marginBottom: li < lines.length - 1 ? 48 : 0, fontFamily: satoshiFont }}
+              className="text-[26px] sm:text-[32px] md:text-[44px] text-[#1d1d1f]"
+              style={{
+                fontWeight: 600,
+                lineHeight: 1.35,
+                fontFamily: clashFont,
+              }}
             >
               {lineElements}
             </p>
@@ -440,66 +455,81 @@ function ValueStatements() {
 }
 
 /* ═══════════════════════════════════════════
-   S3: HERO — "Onlar Viral. Sen?"
+   S3: HERO — "Hype ile tanış."
+   Marketing: Pain → Promise → Proof → CTA
+   Psychology: JTBD, Loss Aversion, Social Proof
    ═══════════════════════════════════════════ */
 function Hero() {
   return (
-    <section className="relative overflow-hidden" style={{ background: '#fbfbfb', paddingTop: 120, paddingBottom: 40, fontFamily: satoshiFont }}>
-      <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-violet-100/40 rounded-full blur-[120px] -z-10" />
+    <section className="relative overflow-hidden" style={{ background: '#fbfbfb', paddingTop: 130, paddingBottom: 60, fontFamily: satoshiFont }}>
+      {/* Subtle ambient glow */}
+      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-br from-violet-100/30 via-fuchsia-100/20 to-transparent rounded-full blur-[120px] -z-10" />
 
       <motion.div className="max-w-[1200px] mx-auto text-center px-6" initial="hidden" animate="visible" variants={stagger}>
-        {/* H2 */}
-        <motion.h2
-          variants={fadeUp}
-          className="text-[32px] md:text-[52px] text-[#1d1d1f] leading-[1.08] tracking-[-0.03em] max-w-[700px] mx-auto"
-          style={{ fontFamily: satoshiFont, fontWeight: 800 }}
-        >
-          Onlar viral.{' '}
-          <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
-            Sen?
-          </span>
-        </motion.h2>
-
-        {/* Subtitle */}
-        <motion.p
-          variants={fadeUp}
-          className="mt-6 text-[16px] md:text-[18px] text-gray-400 max-w-[560px] mx-auto leading-[1.65]"
-          style={{ fontWeight: 500 }}
-        >
-          Konunu yaz, Type Hype viral içerik üretsin. Yüzlerce içerik, sen uyurken hazır.
-        </motion.p>
-
-        {/* CTA */}
-        <motion.div variants={fadeUp} className="mt-9 flex items-center justify-center">
-          <HoloButton to="/login">
-            Ücretsiz Başla <ArrowRight className="w-4 h-4 inline ml-1" />
-          </HoloButton>
+        {/* Eyebrow badge */}
+        <motion.div variants={fadeUp} className="flex justify-center mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-50/80 rounded-full border border-violet-100/60">
+            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+            <span className="text-[13px] text-violet-600 font-medium">Sosyal medya içeriğini yeniden keşfet</span>
+          </div>
         </motion.div>
 
-        {/* Trust badges */}
-        <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-6 text-[13px] text-gray-400">
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-2">
-              {['bg-violet-400', 'bg-fuchsia-400', 'bg-pink-400', 'bg-amber-400'].map((bg, i) => (
-                <div key={i} className={`w-6 h-6 rounded-full ${bg} border-2 border-white`} />
+        {/* Main headline — Clash Display for impact */}
+        <motion.h1
+          variants={fadeUp}
+          className="text-[36px] sm:text-[48px] md:text-[64px] lg:text-[72px] text-[#1d1d1f] leading-[1.05] tracking-[-0.03em] max-w-[800px] mx-auto"
+          style={{ fontFamily: clashFont, fontWeight: 600 }}
+        >
+          Hype ile tanış.
+        </motion.h1>
+
+        {/* Sub-headline — emotional hook */}
+        <motion.p
+          variants={fadeUp}
+          className="mt-4 text-[20px] sm:text-[24px] md:text-[32px] text-gray-400 max-w-[600px] mx-auto leading-[1.3] tracking-[-0.01em]"
+          style={{ fontFamily: clashFont, fontWeight: 500 }}
+        >
+          Senin sosyal medya ekibin.
+        </motion.p>
+
+        {/* Value proposition — specific, benefit-driven */}
+        <motion.p
+          variants={fadeUp}
+          className="mt-6 text-[15px] md:text-[17px] text-gray-400 max-w-[480px] mx-auto leading-[1.7]"
+          style={{ fontWeight: 500 }}
+        >
+          Yazım tarzını öğrenir. Senin sesinde, 6 platforma özel viral içerik üretir.
+          Bir ajansın tüm işini tek başına halleder.
+        </motion.p>
+
+        {/* CTA — action-oriented, specific */}
+        <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <HoloButton to="/login">
+            Hype ile Tanış <ArrowRight className="w-4 h-4 inline ml-1" />
+          </HoloButton>
+          <span className="text-[13px] text-gray-300 font-medium">Ücretsiz. Kredi kartı yok.</span>
+        </motion.div>
+
+        {/* Social proof strip */}
+        <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-8 text-[13px] text-gray-400">
+          <div className="flex items-center gap-2.5">
+            <div className="flex -space-x-1.5">
+              {['bg-violet-400', 'bg-fuchsia-400', 'bg-pink-400', 'bg-amber-400', 'bg-emerald-400'].map((bg, i) => (
+                <div key={i} className={`w-7 h-7 rounded-full ${bg} border-2 border-white`} />
               ))}
             </div>
-            <span>500+ kullanıcı</span>
+            <span className="font-medium">500+ içerik üreticisi</span>
           </div>
           <div className="flex items-center gap-1.5">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
             ))}
-            <span className="ml-1">4.9/5 puan</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-green-500" />
-            <span>Verileriniz güvende</span>
+            <span className="ml-1 font-medium">4.9/5</span>
           </div>
         </motion.div>
 
-        {/* Browser Frame + Mascot Video */}
-        <motion.div variants={scaleIn} className="mt-14 max-w-[1040px] mx-auto">
+        {/* Browser Frame + Mascot Video — the product reveal */}
+        <motion.div variants={scaleIn} className="mt-16 max-w-[1040px] mx-auto">
           <BrowserFrame>
             <MascotVideo className="w-full" />
           </BrowserFrame>
@@ -1049,8 +1079,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: '#fbfbfb', fontFamily: satoshiFont }}>
       <Navbar />
-      <ValueStatements />
       <Hero />
+      <ValueStatements />
       <HowItWorks />
       <BrandDNAFeatures />
       <StyleShowcase />
