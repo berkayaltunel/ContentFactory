@@ -258,7 +258,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
       const res = await api.post(`${API}/favorites/toggle`, {
         content: text,
         type: platform,
-        generation_id: result?.id || null,
+        generation_id: result?.generation_id || result?.id || null,
       });
       setIsFavorited(res.data.action === "added");
       toast.success(res.data.action === "added" ? "Favorilere eklendi!" : "Favorilerden kaldırıldı");

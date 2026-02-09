@@ -44,6 +44,7 @@ class GenerationResponse(BaseModel):
     """İçerik üretim yanıtı."""
     success: bool
     variants: List[GeneratedContent]
+    generation_id: Optional[str] = None
     error: Optional[str] = None
 
 
@@ -211,7 +212,27 @@ Emoji kullanma. AI template kalıpları kullanma. Doğal ve özgün yaz.
         contents = result_tuple[0] if isinstance(result_tuple, tuple) else result_tuple
         text = contents[0] if contents else ""
         variants = [GeneratedContent(content=text, variant_index=0, character_count=len(text))]
-        return GenerationResponse(success=True, variants=variants)
+
+        # Veritabanına kaydet (geçmişte görünsün)
+        gen_id = None
+        try:
+            gen_result = sb.table("generations").insert({
+                "type": request.platform,
+                "user_id": user.id,
+                "topic": trend["topic"],
+                "mode": "trend",
+                "language": request.language,
+                "additional_context": request.additional_context,
+                "is_ultra": False,
+                "variant_count": 1,
+                "variants": [v.model_dump(mode="json") for v in variants],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }).execute()
+            gen_id = gen_result.data[0]["id"] if gen_result.data else None
+        except Exception as save_err:
+            logger.warning(f"Trend generation DB save failed (content still returned): {save_err}")
+
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
 
     except HTTPException:
         raise
