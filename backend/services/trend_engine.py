@@ -29,20 +29,41 @@ openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY', ''))
 class TrendEngine:
     """Discovers and analyzes trends from RSS feeds using GPT-4o."""
 
-    RSS_FEEDS = [
-        # AI Company Blogs
-        {"source": "Anthropic News", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml"},
-        {"source": "Anthropic Engineering", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml"},
-        {"source": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml"},
-        {"source": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/"},
-        {"source": "Google DeepMind", "url": "https://deepmind.google/blog/rss.xml"},
-        {"source": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml"},
-        # Tech Media
-        {"source": "MIT Tech Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed"},
-        {"source": "The Verge AI", "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"},
-        {"source": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/"},
-        {"source": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/technology-lab"},
-    ]
+    # Load feeds from config file, fallback to hardcoded defaults
+    @staticmethod
+    def _load_feeds():
+        """Load RSS feeds from config/rss_feeds.json or use defaults."""
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "rss_feeds.json")
+        try:
+            with open(config_path, "r") as f:
+                all_feeds = json.load(f)
+            # Filter: only active feeds, prioritize AI and Tech
+            active = [f for f in all_feeds if f.get("status") == "active"]
+            # Always include AI + Tech, sample from others
+            priority = [f for f in active if f["category"] in ("AI", "Tech")]
+            others = [f for f in active if f["category"] not in ("AI", "Tech")]
+            # Take all priority + up to 8 from others (rotate based on day)
+            day_offset = datetime.now().timetuple().tm_yday % max(len(others), 1)
+            selected_others = (others[day_offset:] + others[:day_offset])[:8]
+            feeds = priority + selected_others
+            logger.info(f"Loaded {len(feeds)} feeds from config ({len(priority)} priority + {len(selected_others)} rotating)")
+            return [{"source": f["source"], "url": f["url"]} for f in feeds]
+        except Exception as e:
+            logger.warning(f"Could not load feeds config: {e}, using defaults")
+            return [
+                {"source": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml"},
+                {"source": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/"},
+                {"source": "Google DeepMind", "url": "https://deepmind.google/blog/rss.xml"},
+                {"source": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml"},
+                {"source": "MIT Tech Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed"},
+                {"source": "The Verge AI", "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"},
+                {"source": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/"},
+            ]
+
+    RSS_FEEDS = []  # populated in __init__
+
+    def __init__(self):
+        self.RSS_FEEDS = self._load_feeds()
 
     CATEGORIES = ["AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"]
 
