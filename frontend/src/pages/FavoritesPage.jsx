@@ -13,6 +13,9 @@ import {
   CheckSquare,
   Square,
   X,
+  Undo2,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -26,50 +29,28 @@ const TYPE_CONFIG = {
   article: { label: "Makale", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
 };
 
+function daysLeft(deletedAt) {
+  if (!deletedAt) return 30;
+  const deleted = new Date(deletedAt);
+  const expiry = new Date(deleted.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const diff = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
+
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState([]);
+  const [trash, setTrash] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [activeTab, setActiveTab] = useState("favorites"); // "favorites" | "trash"
 
   useEffect(() => {
     fetchFavorites();
   }, []);
-
-  const toggleSelect = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleDeleteAll = async () => {
-    if (!window.confirm("Tüm favorilerinizi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
-    try {
-      const res = await api.delete(`${API}/favorites/all`);
-      setFavorites([]);
-      toast.success(`${res.data.deleted} favori silindi`);
-    } catch {
-      toast.error("Silinemedi");
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    if (!window.confirm(`${selectedIds.size} favoriyi silmek istediğinize emin misiniz?`)) return;
-    try {
-      const ids = Array.from(selectedIds);
-      await api.delete(`${API}/favorites/bulk`, { data: { ids } });
-      setFavorites((prev) => prev.filter((f) => !selectedIds.has(f.id)));
-      toast.success(`${ids.length} favori silindi`);
-      setSelectedIds(new Set());
-      setSelectionMode(false);
-    } catch {
-      toast.error("Silinemedi");
-    }
-  };
 
   const fetchFavorites = async () => {
     try {
@@ -83,6 +64,128 @@ export default function FavoritesPage() {
     }
   };
 
+  const fetchTrash = async () => {
+    setTrashLoading(true);
+    try {
+      const response = await api.get(`${API}/favorites/trash`);
+      setTrash(response.data || []);
+    } catch (error) {
+      console.error("Trash fetch error:", error);
+      setTrash([]);
+    } finally {
+      setTrashLoading(false);
+    }
+  };
+
+  // Tab değişince trash'i yükle
+  useEffect(() => {
+    if (activeTab === "trash" && trash.length === 0) {
+      fetchTrash();
+    }
+  }, [activeTab]);
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // ── Favoriden Çıkar (hard delete, toggle off) ──
+  const handleUnfavorite = async (id) => {
+    try {
+      await api.delete(`${API}/favorites/${id}`);
+      setFavorites((prev) => prev.filter((f) => f.id !== id));
+      toast.success("Favorilerden çıkarıldı");
+    } catch {
+      toast.error("İşlem başarısız");
+    }
+  };
+
+  // ── Sil (soft delete → çöp kutusuna) ──
+  const handleSoftDelete = async (id) => {
+    try {
+      await api.post(`${API}/favorites/${id}/soft-delete`);
+      const item = favorites.find((f) => f.id === id);
+      setFavorites((prev) => prev.filter((f) => f.id !== id));
+      if (item) setTrash((prev) => [{ ...item, deleted_at: new Date().toISOString() }, ...prev]);
+      toast.success("Çöp kutusuna taşındı (30 gün içinde geri alabilirsiniz)");
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  // ── Tümünü Sil (soft delete all) ──
+  const handleDeleteAll = async () => {
+    if (!window.confirm("Tüm favorilerinizi çöp kutusuna taşımak istediğinize emin misiniz?")) return;
+    try {
+      const res = await api.delete(`${API}/favorites/all`);
+      // Taşınanları trash'e ekle
+      setTrash((prev) => [...favorites.map(f => ({ ...f, deleted_at: new Date().toISOString() })), ...prev]);
+      setFavorites([]);
+      toast.success(`${res.data.deleted} favori çöp kutusuna taşındı`);
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  // ── Seçilenleri Sil (soft delete bulk) ──
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`${selectedIds.size} favoriyi çöp kutusuna taşımak istediğinize emin misiniz?`)) return;
+    try {
+      const ids = Array.from(selectedIds);
+      await api.delete(`${API}/favorites/bulk`, { data: { ids } });
+      const moved = favorites.filter((f) => selectedIds.has(f.id));
+      setTrash((prev) => [...moved.map(f => ({ ...f, deleted_at: new Date().toISOString() })), ...prev]);
+      setFavorites((prev) => prev.filter((f) => !selectedIds.has(f.id)));
+      toast.success(`${ids.length} favori çöp kutusuna taşındı`);
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  // ── Geri Al (restore) ──
+  const handleRestore = async (id) => {
+    try {
+      await api.post(`${API}/favorites/${id}/restore`);
+      const item = trash.find((f) => f.id === id);
+      setTrash((prev) => prev.filter((f) => f.id !== id));
+      if (item) setFavorites((prev) => [{ ...item, deleted_at: null }, ...prev]);
+      toast.success("Favori geri alındı!");
+    } catch {
+      toast.error("Geri alma başarısız");
+    }
+  };
+
+  // ── Kalıcı Sil (hard delete from trash) ──
+  const handlePermanentDelete = async (id) => {
+    if (!window.confirm("Bu favori kalıcı olarak silinecek. Geri alınamaz. Emin misiniz?")) return;
+    try {
+      await api.delete(`${API}/favorites/${id}`);
+      setTrash((prev) => prev.filter((f) => f.id !== id));
+      toast.success("Kalıcı olarak silindi");
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  // ── Çöp Kutusunu Boşalt ──
+  const handlePurgeTrash = async () => {
+    if (!window.confirm("Çöp kutusundaki tüm favoriler kalıcı olarak silinecek. Geri alınamaz!")) return;
+    try {
+      const res = await api.delete(`${API}/favorites/trash/purge`);
+      setTrash([]);
+      toast.success(`${res.data.purged} favori kalıcı olarak silindi`);
+    } catch {
+      toast.error("Temizleme başarısız");
+    }
+  };
+
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content);
     toast.success("Kopyalandı!");
@@ -91,16 +194,6 @@ export default function FavoritesPage() {
   const handleTweet = (content) => {
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
     window.open(tweetUrl, "_blank");
-  };
-
-  const handleRemoveFavorite = async (id) => {
-    try {
-      await api.delete(`${API}/favorites/${id}`);
-      setFavorites(favorites.filter((f) => f.id !== id));
-      toast.success("Favorilerden kaldırıldı");
-    } catch (error) {
-      toast.error("Kaldırılamadı");
-    }
   };
 
   if (loading) {
@@ -113,125 +206,241 @@ export default function FavoritesPage() {
 
   return (
     <div className="max-w-4xl" data-testid="favorites-page">
-      <div className="mb-8">
+      {/* Header */}
+      <div className="mb-6">
         <h1 className="font-outfit text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
           <Heart className="h-10 w-10 text-red-500" />
           Favoriler
         </h1>
         <p className="text-muted-foreground">
-          Beğendiğiniz ve kaydettiğiniz içerikler ({favorites.length}).
+          Beğendiğiniz ve kaydettiğiniz içerikler.
         </p>
-        {favorites.length > 0 && (
-          <div className="flex items-center gap-2 mt-4">
-            {!selectionMode ? (
-              <>
-                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
-                  <CheckSquare className="h-4 w-4 mr-1.5" /> Seç
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteAll}>
-                  <Trash2 className="h-4 w-4 mr-1.5" /> Tümünü Sil
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
-                  <X className="h-4 w-4 mr-1.5" /> İptal
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteSelected} disabled={selectedIds.size === 0}>
-                  <Trash2 className="h-4 w-4 mr-1.5" /> Seçilenleri Sil ({selectedIds.size})
-                </Button>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
-      {favorites.length === 0 ? (
-        <Card className="bg-card border-border">
-          <CardContent className="py-16 text-center">
-            <HeartOff className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-outfit text-xl font-semibold mb-2">Henüz favori yok</h3>
-            <p className="text-muted-foreground">
-              Üretilen içeriklerde veya geçmişte kalp ikonuna tıklayarak favorilere ekleyebilirsiniz.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {favorites.map((fav, index) => {
-            const typeConfig = TYPE_CONFIG[fav.type] || { label: fav.type || "Tweet", color: "bg-secondary text-muted-foreground" };
-            return (
-              <Card key={fav.id || index} className={cn("bg-card border-border hover:border-primary/20 transition-colors", selectedIds.has(fav.id) && "border-primary/40 bg-primary/5")}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-2">
-                      {selectionMode && (
-                        <button onClick={() => toggleSelect(fav.id)} className="mr-1">
-                          {selectedIds.has(fav.id) ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
-                        </button>
-                      )}
-                      <Badge className={typeConfig.color}>
-                        {typeConfig.label}
-                      </Badge>
-                      {fav.variant_index != null && fav.variant_index > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          Varyant {fav.variant_index + 1}
+      {/* Tabs: Favoriler / Çöp Kutusu */}
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          onClick={() => { setActiveTab("favorites"); setSelectionMode(false); setSelectedIds(new Set()); }}
+          className={cn(
+            "px-4 py-2 rounded-full text-sm font-medium transition-all border",
+            activeTab === "favorites"
+              ? "bg-foreground text-background border-transparent"
+              : "bg-secondary text-muted-foreground hover:bg-secondary/80 border-border"
+          )}
+        >
+          <Heart className="h-3.5 w-3.5 inline mr-1.5" />
+          Favoriler ({favorites.length})
+        </button>
+        <button
+          onClick={() => { setActiveTab("trash"); setSelectionMode(false); setSelectedIds(new Set()); }}
+          className={cn(
+            "px-4 py-2 rounded-full text-sm font-medium transition-all border",
+            activeTab === "trash"
+              ? "bg-foreground text-background border-transparent"
+              : "bg-secondary text-muted-foreground hover:bg-secondary/80 border-border"
+          )}
+        >
+          <Trash2 className="h-3.5 w-3.5 inline mr-1.5" />
+          Çöp Kutusu {trash.length > 0 && `(${trash.length})`}
+        </button>
+      </div>
+
+      {/* ═══════════════════ FAVORİLER TAB ═══════════════════ */}
+      {activeTab === "favorites" && (
+        <>
+          {/* Action bar */}
+          {favorites.length > 0 && (
+            <div className="flex items-center gap-2 mb-4">
+              {!selectionMode ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
+                    <CheckSquare className="h-4 w-4 mr-1.5" /> Seç
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteAll}>
+                    <Trash2 className="h-4 w-4 mr-1.5" /> Tümünü Sil
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
+                    <X className="h-4 w-4 mr-1.5" /> İptal
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteSelected} disabled={selectedIds.size === 0}>
+                    <Trash2 className="h-4 w-4 mr-1.5" /> Seçilenleri Sil ({selectedIds.size})
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {favorites.length === 0 ? (
+            <Card className="bg-card border-border">
+              <CardContent className="py-16 text-center">
+                <HeartOff className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-outfit text-xl font-semibold mb-2">Henüz favori yok</h3>
+                <p className="text-muted-foreground">
+                  Üretilen içeriklerde kalp ikonuna tıklayarak favorilere ekleyebilirsiniz.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {favorites.map((fav) => {
+                const typeConfig = TYPE_CONFIG[fav.type] || { label: fav.type || "Tweet", color: "bg-secondary text-muted-foreground" };
+                return (
+                  <Card key={fav.id} className={cn("bg-card border-border hover:border-primary/20 transition-colors", selectedIds.has(fav.id) && "border-primary/40 bg-primary/5")}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex items-center gap-2">
+                          {selectionMode && (
+                            <button onClick={() => toggleSelect(fav.id)} className="mr-1">
+                              {selectedIds.has(fav.id) ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
+                            </button>
+                          )}
+                          <Badge className={typeConfig.color}>{typeConfig.label}</Badge>
+                          {fav.variant_index != null && fav.variant_index > 0 && (
+                            <Badge variant="outline" className="text-xs">Varyant {fav.variant_index + 1}</Badge>
+                          )}
+                          {fav.created_at && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(fav.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                        </div>
+                        {!selectionMode && (
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => handleCopy(fav.content)}>
+                              <Copy className="h-4 w-4" />
+                              <span className="hidden sm:inline">Kopyala</span>
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-sky-400 hover:text-sky-300" onClick={() => handleTweet(fav.content)}>
+                              <Send className="h-4 w-4" />
+                              <span className="hidden sm:inline">Tweetle</span>
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleUnfavorite(fav.id)}
+                              title="Favorilerden çıkar"
+                            >
+                              <HeartOff className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              onClick={() => handleSoftDelete(fav.id)}
+                              title="Çöp kutusuna taşı"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm whitespace-pre-wrap">{fav.content}</p>
+                      
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="secondary" className="text-xs">
+                          {fav.content?.length || 0} karakter
                         </Badge>
-                      )}
-                      {fav.created_at && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {new Date(fav.created_at).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1.5"
-                        onClick={() => handleCopy(fav.content)}
-                      >
-                        <Copy className="h-4 w-4" />
-                        <span className="hidden sm:inline">Kopyala</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1.5 text-sky-400 hover:text-sky-300"
-                        onClick={() => handleTweet(fav.content)}
-                      >
-                        <Send className="h-4 w-4" />
-                        <span className="hidden sm:inline">Tweetle</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        onClick={() => handleRemoveFavorite(fav.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm whitespace-pre-wrap">{fav.content}</p>
-                  
-                  <div className="flex items-center gap-2 mt-3">
-                    <Badge variant="secondary" className="text-xs">
-                      {fav.content?.length || 0} karakter
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══════════════════ ÇÖP KUTUSU TAB ═══════════════════ */}
+      {activeTab === "trash" && (
+        <>
+          {/* Info banner */}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm mb-4">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span>Silinen favoriler 30 gün boyunca burada saklanır. Süre dolunca kalıcı olarak silinir.</span>
+          </div>
+
+          {/* Actions */}
+          {trash.length > 0 && (
+            <div className="flex items-center gap-2 mb-4">
+              <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handlePurgeTrash}>
+                <Trash2 className="h-4 w-4 mr-1.5" /> Çöp Kutusunu Boşalt
+              </Button>
+            </div>
+          )}
+
+          {trashLoading ? (
+            <div className="flex items-center justify-center min-h-[200px]">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : trash.length === 0 ? (
+            <Card className="bg-card border-border">
+              <CardContent className="py-16 text-center">
+                <Trash2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-outfit text-xl font-semibold mb-2">Çöp kutusu boş</h3>
+                <p className="text-muted-foreground">
+                  Sildiğiniz favoriler burada görünecek.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {trash.map((fav) => {
+                const typeConfig = TYPE_CONFIG[fav.type] || { label: fav.type || "Tweet", color: "bg-secondary text-muted-foreground" };
+                const remaining = daysLeft(fav.deleted_at);
+                return (
+                  <Card key={fav.id} className="bg-card border-border opacity-75 hover:opacity-100 transition-opacity">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Badge className={typeConfig.color}>{typeConfig.label}</Badge>
+                          <Badge variant="outline" className={cn("text-xs gap-1", remaining <= 7 ? "text-red-400 border-red-500/30" : "text-amber-400 border-amber-500/30")}>
+                            <Clock className="h-3 w-3" />
+                            {remaining} gün kaldı
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline" size="sm"
+                            className="h-8 gap-1.5 text-green-400 hover:text-green-300 hover:bg-green-500/10 border-green-500/30"
+                            onClick={() => handleRestore(fav.id)}
+                          >
+                            <Undo2 className="h-4 w-4" />
+                            <span className="hidden sm:inline">Geri Al</span>
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
+                            className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => handlePermanentDelete(fav.id)}
+                            title="Kalıcı olarak sil"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm whitespace-pre-wrap text-muted-foreground">{fav.content}</p>
+                      
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="secondary" className="text-xs">
+                          {fav.content?.length || 0} karakter
+                        </Badge>
+                        {fav.deleted_at && (
+                          <span className="text-xs text-muted-foreground">
+                            Silindi: {new Date(fav.deleted_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

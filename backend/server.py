@@ -10,7 +10,7 @@ from typing import List, Optional
 import uuid
 import re
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from openai import OpenAI
 
 ROOT_DIR = Path(__file__).parent
@@ -718,8 +718,8 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
     if not generations:
         return []
 
-    # Fetch all favorites for this user that have a generation_id
-    fav_result = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).not_.is_("generation_id", "null").execute()
+    # Fetch all active favorites for this user that have a generation_id (exclude soft-deleted)
+    fav_result = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).not_.is_("generation_id", "null").is_("deleted_at", "null").execute()
     
     # Build lookup: generation_id -> {variant_index: favorite_id}
     fav_map = {}
@@ -741,7 +741,7 @@ async def get_user_stats(user=Depends(require_auth)):
     try:
         gen_query = supabase.table("generations").select("id", count="exact").eq("user_id", user.id)
         tweet_query = supabase.table("generations").select("id", count="exact").eq("type", "tweet").eq("user_id", user.id)
-        fav_query = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id)
+        fav_query = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).is_("deleted_at", "null")
 
         return {
             "generations": gen_query.execute().count or 0,
@@ -753,9 +753,19 @@ async def get_user_stats(user=Depends(require_auth)):
 
 @api_router.get("/favorites")
 async def get_favorites(limit: int = 50, user=Depends(require_auth)):
-    """Get user favorites"""
+    """Get user favorites (only active, not soft-deleted)"""
     try:
-        query = supabase.table("favorites").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit)
+        query = supabase.table("favorites").select("*").eq("user_id", user.id).is_("deleted_at", "null").order("created_at", desc=True).limit(limit)
+        result = query.execute()
+        return result.data
+    except Exception:
+        return []
+
+@api_router.get("/favorites/trash")
+async def get_favorites_trash(limit: int = 50, user=Depends(require_auth)):
+    """Get soft-deleted favorites (Recently Deleted, 30 gün içinde geri alınabilir)"""
+    try:
+        query = supabase.table("favorites").select("*").eq("user_id", user.id).not_.is_("deleted_at", "null").order("deleted_at", desc=True).limit(limit)
         result = query.execute()
         return result.data
     except Exception:
@@ -785,8 +795,8 @@ async def toggle_favorite(content: dict, user=Depends(require_auth)):
     if not generation_id:
         raise HTTPException(status_code=400, detail="generation_id gerekli")
 
-    # Check if already favorited
-    existing = supabase.table("favorites").select("id").eq("user_id", user.id).eq("generation_id", generation_id).eq("variant_index", variant_index).execute()
+    # Check if already favorited (only active ones, not soft-deleted)
+    existing = supabase.table("favorites").select("id").eq("user_id", user.id).eq("generation_id", generation_id).eq("variant_index", variant_index).is_("deleted_at", "null").execute()
 
     if existing.data:
         # Remove
@@ -845,31 +855,72 @@ async def delete_generation(generation_id: str, user=Depends(require_auth)):
     count = len(result.data) if result.data else 0
     return {"deleted": count}
 
+@api_router.post("/favorites/{favorite_id}/soft-delete")
+async def soft_delete_favorite(favorite_id: str, user=Depends(require_auth)):
+    """Soft delete: Çöp kutusuna taşı (30 gün sonra kalıcı silinir)"""
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table("favorites").update({"deleted_at": now}).eq("id", favorite_id).eq("user_id", user.id).execute()
+    return {"success": True, "action": "soft_deleted"}
+
+@api_router.post("/favorites/{favorite_id}/restore")
+async def restore_favorite(favorite_id: str, user=Depends(require_auth)):
+    """Geri al: Çöp kutusundan geri getir"""
+    supabase.table("favorites").update({"deleted_at": None}).eq("id", favorite_id).eq("user_id", user.id).execute()
+    return {"success": True, "action": "restored"}
+
 @api_router.delete("/favorites/all")
 async def delete_all_favorites(user=Depends(require_auth)):
-    """Delete ALL favorites for the user"""
-    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).execute()
+    """Soft delete ALL active favorites for the user (çöp kutusuna taşı)"""
+    now = datetime.now(timezone.utc).isoformat()
+    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).is_("deleted_at", "null").execute()
     count = result.count or (len(result.data) if result.data else 0)
     if count > 0:
-        supabase.table("favorites").delete().eq("user_id", user.id).execute()
+        supabase.table("favorites").update({"deleted_at": now}).eq("user_id", user.id).is_("deleted_at", "null").execute()
     return {"deleted": count}
 
 @api_router.delete("/favorites/bulk")
 async def bulk_delete_favorites(body: dict, user=Depends(require_auth)):
-    """Bulk delete favorites by IDs"""
+    """Soft delete favorites by IDs (çöp kutusuna taşı)"""
     ids = body.get("ids", [])
     if not ids:
         return {"deleted": 0}
+    now = datetime.now(timezone.utc).isoformat()
     deleted = 0
     for fid in ids:
-        result = supabase.table("favorites").delete().eq("id", fid).eq("user_id", user.id).execute()
+        result = supabase.table("favorites").update({"deleted_at": now}).eq("id", fid).eq("user_id", user.id).is_("deleted_at", "null").execute()
         if result.data:
             deleted += len(result.data)
     return {"deleted": deleted}
 
+@api_router.delete("/favorites/trash/purge")
+async def purge_trash(user=Depends(require_auth)):
+    """Çöp kutusundaki tüm favorileri kalıcı sil"""
+    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).not_.is_("deleted_at", "null").execute()
+    count = result.count or (len(result.data) if result.data else 0)
+    if count > 0:
+        supabase.table("favorites").delete().eq("user_id", user.id).not_.is_("deleted_at", "null").execute()
+    return {"purged": count}
+
+@api_router.post("/favorites/auto-purge")
+async def auto_purge_expired_favorites(request: Request):
+    """Cron job: 30 günü geçen soft-deleted favorileri kalıcı sil (tüm kullanıcılar)"""
+    import os
+    secret = request.headers.get("X-Cron-Secret", "")
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    # 30 günden eski silinmişleri bul ve sil
+    expired = supabase.table("favorites").select("id", count="exact").not_.is_("deleted_at", "null").lt("deleted_at", cutoff).execute()
+    count = expired.count or (len(expired.data) if expired.data else 0)
+    if count > 0:
+        supabase.table("favorites").delete().not_.is_("deleted_at", "null").lt("deleted_at", cutoff).execute()
+    return {"purged": count, "cutoff": cutoff}
+
 @api_router.delete("/favorites/{favorite_id}")
 async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
-    """Remove content from favorites"""
+    """Favoriden çıkar (toggle off, hard delete from favorites table)"""
     supabase.table("favorites").delete().eq("id", favorite_id).eq("user_id", user.id).execute()
     return {"success": True}
 
