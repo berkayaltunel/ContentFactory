@@ -1,9 +1,12 @@
-"""Trend Discovery Engine - RSS + Twitter + GPT-4o Analysis"""
+"""Trend Discovery Engine - RSS + GPT-4o Analysis
+
+Fetches real data from RSS feeds, analyzes with GPT-4o,
+and saves to Supabase with URL-based deduplication.
+"""
 import asyncio
 import json
 import logging
 import os
-import subprocess
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 import uuid
@@ -24,28 +27,33 @@ openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY', ''))
 
 
 class TrendEngine:
+    """Discovers and analyzes trends from RSS feeds using GPT-4o."""
+
     RSS_FEEDS = [
+        # AI Company Blogs
         {"source": "Anthropic News", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml"},
         {"source": "Anthropic Engineering", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml"},
-        {"source": "OpenAI Blog", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_openai_blog.xml"},
-        {"source": "Google AI Blog", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_google_ai_blog.xml"},
-        {"source": "Meta AI", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_meta_ai.xml"},
-        {"source": "xAI", "url": "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_xai.xml"},
+        {"source": "OpenAI Blog", "url": "https://openai.com/blog/rss.xml"},
+        {"source": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/"},
+        {"source": "Google DeepMind", "url": "https://deepmind.google/blog/rss.xml"},
         {"source": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml"},
+        # Tech Media
         {"source": "MIT Tech Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed"},
-    ]
-
-    TWITTER_KEYWORDS = [
-        "yapay zeka", "AI", "LLM", "GPT", "Claude", "Gemini",
-        "machine learning", "deep learning", "AGI", "tech", "startup",
-        "OpenAI", "Anthropic", "Google AI"
+        {"source": "The Verge AI", "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"},
+        {"source": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/"},
+        {"source": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/technology-lab"},
     ]
 
     CATEGORIES = ["AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"]
 
+    SCORE_THRESHOLD = 80  # Trends with score >= 80 are visible
+
     async def fetch_rss_trends(self) -> list:
-        """Fetch RSS feed items from last 48 hours"""
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+        """Fetch RSS feed items from last 48 hours.
+
+        Returns list of dicts with title, link (url), summary, source, published info.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
         items = []
 
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -63,13 +71,16 @@ class TrendEngine:
                         if published and published < cutoff:
                             continue
 
+                        raw_content = entry.get("summary", "") or entry.get("description", "") or ""
+
                         items.append({
                             "title": entry.get("title", ""),
-                            "link": entry.get("link", ""),
-                            "summary": entry.get("summary", "")[:500],
+                            "url": entry.get("link", ""),
+                            "summary": raw_content[:500],
+                            "raw_content": raw_content,
                             "source": feed_info["source"],
                             "source_type": "rss",
-                            "published": published.isoformat() if published else None,
+                            "published_at": published.isoformat() if published else None,
                         })
                 except Exception as e:
                     logger.warning(f"RSS fetch failed for {feed_info['source']}: {e}")
@@ -77,99 +88,33 @@ class TrendEngine:
         logger.info(f"Fetched {len(items)} RSS items")
         return items
 
-    async def fetch_twitter_trends(self, keywords: Optional[list] = None) -> list:
-        """Fetch trending tweets via Bird CLI search"""
-        keywords = keywords or self.TWITTER_KEYWORDS[:6]  # limit to avoid rate limits
-        items = []
-        auth_token = os.environ.get('AUTH_TOKEN', '')
-        ct0 = os.environ.get('CT0', '')
-
-        if not auth_token or not ct0:
-            logger.warning("Twitter credentials not configured, skipping Twitter trends")
-            return []
-
-        env = os.environ.copy()
-        env['AUTH_TOKEN'] = auth_token
-        env['CT0'] = ct0
-
-        for keyword in keywords:
-            try:
-                result = await asyncio.to_thread(
-                    subprocess.run,
-                    ['/opt/homebrew/bin/bird', 'search', keyword, '-n', '20', '--json'],
-                    capture_output=True, text=True, timeout=30, env=env
-                )
-                if result.returncode != 0:
-                    continue
-
-                tweets = []
-                for line in result.stdout.strip().split('\n'):
-                    line = line.strip()
-                    if line.startswith('{'):
-                        try:
-                            tweets.append(json.loads(line))
-                        except json.JSONDecodeError:
-                            continue
-
-                if not tweets:
-                    # Try array parse
-                    try:
-                        idx = result.stdout.find('[')
-                        if idx != -1:
-                            tweets = json.loads(result.stdout[idx:])
-                    except:
-                        pass
-
-                for tweet in tweets:
-                    engagement = (tweet.get('likeCount', 0) + 
-                                  tweet.get('retweetCount', 0) * 2 + 
-                                  tweet.get('replyCount', 0))
-                    if engagement < 5:
-                        continue
-
-                    items.append({
-                        "title": tweet.get('text', '')[:120],
-                        "content": tweet.get('text', ''),
-                        "link": f"https://x.com/{tweet.get('author', {}).get('username', '')}/status/{tweet.get('id', '')}",
-                        "source": f"Twitter/@{tweet.get('author', {}).get('username', '')}",
-                        "source_type": "twitter",
-                        "keyword": keyword,
-                        "engagement": engagement,
-                        "likes": tweet.get('likeCount', 0),
-                        "retweets": tweet.get('retweetCount', 0),
-                        "replies": tweet.get('replyCount', 0),
-                        "author_username": tweet.get('author', {}).get('username', ''),
-                        "author_name": tweet.get('author', {}).get('name', ''),
-                    })
-
-            except subprocess.TimeoutExpired:
-                logger.warning(f"Bird search timed out for: {keyword}")
-            except Exception as e:
-                logger.warning(f"Twitter search failed for '{keyword}': {e}")
-
-        logger.info(f"Fetched {len(items)} Twitter items")
-        return items
+    # Twitter fetch disabled - Bird CLI not available
+    # async def fetch_twitter_trends(self, keywords=None) -> list:
+    #     ...
 
     async def analyze_trends(self, raw_items: list) -> list:
-        """Analyze and score raw items with GPT-4o"""
+        """Analyze raw RSS items with GPT-4o and return scored trends.
+
+        Each trend includes a primary source URL from the raw items.
+        """
         if not raw_items:
             return []
 
-        # Group similar items, take top items by engagement/recency
+        # Build items text with raw_content for richer analysis
         items_text = ""
         for i, item in enumerate(raw_items[:40]):
             items_text += f"\n--- Item {i+1} ---\n"
             items_text += f"Başlık: {item.get('title', '')}\n"
             items_text += f"Kaynak: {item.get('source', '')}\n"
-            items_text += f"Tür: {item.get('source_type', '')}\n"
-            if item.get('content'):
-                items_text += f"İçerik: {item['content'][:200]}\n"
-            if item.get('summary'):
-                items_text += f"Özet: {item['summary'][:200]}\n"
-            if item.get('engagement'):
-                items_text += f"Engagement: {item['engagement']}\n"
+            items_text += f"URL: {item.get('url', '')}\n"
+            items_text += f"Yayın: {item.get('published_at', '')}\n"
+            raw = item.get('raw_content', '')
+            if raw:
+                items_text += f"İçerik: {raw[:400]}\n"
+            elif item.get('summary'):
+                items_text += f"Özet: {item['summary'][:300]}\n"
 
-        prompt = f"""Aşağıdaki haber ve tweet'leri analiz et. Bunları trend konularına grupla ve skorla.
+        prompt = f"""Aşağıdaki haber ve içerikleri analiz et. Bunları trend konularına grupla ve skorla.
 
 {items_text}
 
@@ -180,8 +125,12 @@ Her trend için JSON formatında döndür:
     "category": "AI|Tech|Crypto|Gündem|Business|Lifestyle",
     "score": 0-100 (trend skoru),
     "summary": "2-3 cümle Türkçe AI özeti",
-    "tweet_count": ilgili tweet sayısı,
-    "avg_engagement": ortalama engagement,
+    "url": "Ana kaynak URL (item'lardan birinin URL'i)",
+    "source": "Kaynak adı",
+    "published_at": "ISO tarih (item'dan al)",
+    "raw_content": "Ana kaynağın içerik özeti (max 500 karakter)",
+    "tweet_count": 0,
+    "avg_engagement": 0,
     "sample_sources": ["kaynak1", "kaynak2"],
     "sample_links": ["link1", "link2"],
     "keywords": ["anahtar", "kelimeler"],
@@ -189,7 +138,7 @@ Her trend için JSON formatında döndür:
   }}
 ]
 
-Skorlama kriterleri (n8n 12-point system'den esinlenme):
+Skorlama kriterleri:
 - Duyuru tipi (büyük lansman=yüksek, küçük güncelleme=düşük): 0-20
 - Erişim potansiyeli (viral olabilirlik): 0-20  
 - Kullanılabilirlik (pratik değer): 0-15
@@ -197,7 +146,9 @@ Skorlama kriterleri (n8n 12-point system'den esinlenme):
 - Rekabet (az konuşulmuş=yüksek): 0-15
 - Zamanlılık (ne kadar taze): 0-15
 
-Sadece JSON array döndür, başka açıklama ekleme. En az 3, en fazla 15 trend döndür."""
+ÖNEMLİ: Her trend'in url alanı, ilgili item'lardan birinin gerçek URL'i olmalı. URL uydurmayın.
+Yanıtı şu formatta döndür: {{"trends": [...]}}
+En az 3, en fazla 15 trend döndür. Başka açıklama ekleme."""
 
         try:
             response = openai_client.chat.completions.create(
@@ -211,14 +162,22 @@ Sadece JSON array döndür, başka açıklama ekleme. En az 3, en fazla 15 trend
                 response_format={"type": "json_object"}
             )
             content = response.choices[0].message.content.strip()
+            logger.info(f"GPT raw response (first 300): {content[:300]}")
             data = json.loads(content)
-            # Handle both {"trends": [...]} and [...]
-            if isinstance(data, dict):
-                trends = data.get("trends", data.get("items", list(data.values())[0] if data else []))
-            else:
+
+            # Robust parsing: handle {"trends": [...]}, {"items": [...]}, [...], or any dict with a list value
+            if isinstance(data, list):
                 trends = data
-            
-            if not isinstance(trends, list):
+            elif isinstance(data, dict):
+                trends = data.get("trends", data.get("items", []))
+                if not isinstance(trends, list):
+                    # Fallback: find first list value in dict
+                    trends = []
+                    for v in data.values():
+                        if isinstance(v, list):
+                            trends = v
+                            break
+            else:
                 trends = []
 
             logger.info(f"Analyzed {len(trends)} trends")
@@ -229,52 +188,92 @@ Sadece JSON array döndür, başka açıklama ekleme. En az 3, en fazla 15 trend
             return []
 
     async def refresh_all(self) -> dict:
-        """Full refresh: fetch all sources, analyze, save to Supabase"""
+        """Full refresh: fetch RSS, analyze with GPT-4o, upsert to Supabase.
+
+        Uses URL-based deduplication (upsert on conflict url).
+        Sets is_visible based on score threshold (>= 80).
+        """
         logger.info("Starting full trend refresh...")
 
-        # Fetch from all sources in parallel
-        rss_task = self.fetch_rss_trends()
-        twitter_task = self.fetch_twitter_trends()
-        rss_items, twitter_items = await asyncio.gather(rss_task, twitter_task)
+        # Fetch RSS only (Twitter disabled)
+        rss_items = await self.fetch_rss_trends()
 
-        all_items = rss_items + twitter_items
-        if not all_items:
+        if not rss_items:
             return {"success": False, "error": "No items fetched", "trends": 0}
 
+        # Build URL lookup for fallback matching
+        items_by_title = {}
+        for item in rss_items:
+            items_by_title[item.get("title", "")] = item
+
         # Analyze with GPT-4o
-        trends = await self.analyze_trends(all_items)
+        trends = await self.analyze_trends(rss_items)
         if not trends:
             return {"success": False, "error": "Analysis returned no trends", "trends": 0}
 
-        # Save to Supabase
+        # Save to Supabase with URL-based dedup
         saved = 0
         now = datetime.now(timezone.utc).isoformat()
+
         for trend in trends:
             try:
+                # Get URL: from GPT analysis or fallback to matching item
+                trend_url = trend.get("url") or ""
+                if not trend_url:
+                    # Try to match by topic/title
+                    for item in rss_items:
+                        if item.get("title", "").lower() in trend.get("topic", "").lower() or \
+                           trend.get("topic", "").lower() in item.get("title", "").lower():
+                            trend_url = item.get("url", "")
+                            break
+
+                # Skip trends without URL (can't dedup)
+                if not trend_url:
+                    logger.warning(f"Skipping trend without URL: {trend.get('topic')}")
+                    continue
+
+                score = trend.get("score", 0)
+
                 doc = {
                     "id": str(uuid.uuid4()),
                     "topic": trend.get("topic", ""),
                     "category": trend.get("category", "AI"),
-                    "score": trend.get("score", 0),
+                    "score": score,
                     "summary": trend.get("summary", ""),
+                    "url": trend_url,
+                    "source_type": "rss",
+                    "source_name": trend.get("source", ""),
+                    "published_at": trend.get("published_at", None),
+                    "is_visible": score >= self.SCORE_THRESHOLD,
+                    "raw_content": trend.get("raw_content", "")[:2000],
                     "tweet_count": trend.get("tweet_count", 0),
                     "avg_engagement": trend.get("avg_engagement", 0),
                     "sample_sources": trend.get("sample_sources", []),
                     "sample_links": trend.get("sample_links", []),
                     "keywords": trend.get("keywords", []),
                     "content_angle": trend.get("content_angle", ""),
-                    "created_at": now,
                     "updated_at": now,
                 }
-                supabase.table("trends").upsert(doc).execute()
+
+                # Check if URL already exists (dedup)
+                existing = supabase.table("trends").select("id").eq("url", trend_url).limit(1).execute()
+                if existing.data:
+                    # Update existing trend
+                    del doc["id"]  # keep original id
+                    supabase.table("trends").update(doc).eq("id", existing.data[0]["id"]).execute()
+                    logger.info(f"Updated existing trend: {trend.get('topic', '?')}")
+                else:
+                    # Insert new trend
+                    supabase.table("trends").insert(doc).execute()
+                    logger.info(f"Inserted new trend: {trend.get('topic', '?')}")
                 saved += 1
             except Exception as e:
-                logger.error(f"Failed to save trend: {e}")
+                logger.error(f"Failed to save trend '{trend.get('topic', '?')}': {e}")
 
         result = {
             "success": True,
             "rss_items": len(rss_items),
-            "twitter_items": len(twitter_items),
+            "twitter_items": 0,
             "trends_analyzed": len(trends),
             "trends_saved": saved,
             "updated_at": now,

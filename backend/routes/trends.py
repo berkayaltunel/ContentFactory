@@ -1,16 +1,19 @@
 """Trend takip ve trend bazlı içerik üretim route'ları.
-GET /api/trends - Trend listesi (kategori filtreli)
-POST /api/trends/refresh - Trend yenileme
+
+GET /api/trends - Trend listesi (kategori filtreli, is_visible=true default)
+POST /api/trends/refresh - Trend yenileme (gerçek RSS + GPT-4o analiz)
+POST /api/trends/auto-refresh - Cron job endpoint (secret header ile korunan)
+GET /api/trends/categories - Kategori listesi
 GET /api/trends/{id} - Trend detayı
 POST /api/trends/{id}/generate - Trend'den içerik üret
 """
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Header, Request
 from middleware.auth import require_auth
 from middleware.rate_limit import rate_limit
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime, timezone
-import uuid
+from datetime import datetime, timezone, timedelta
+import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,45 +21,68 @@ router = APIRouter(prefix="/trends", tags=["trends"])
 
 
 class TrendRefreshRequest(BaseModel):
-    category: Optional[str] = None  # tech, crypto, gundem, lifestyle, ai, business
+    """Trend yenileme isteği."""
+    category: Optional[str] = None
 
 
 class TrendGenerateRequest(BaseModel):
-    platform: str = "twitter"  # twitter, linkedin, instagram, blog, tiktok, youtube
+    """Trend'den içerik üretme isteği."""
+    platform: str = "twitter"
     format: Optional[str] = None
     language: str = "auto"
     additional_context: Optional[str] = None
 
 
 class GeneratedContent(BaseModel):
+    """Üretilen içerik."""
     content: str
     variant_index: int = 0
     character_count: int = 0
 
 
 class GenerationResponse(BaseModel):
+    """İçerik üretim yanıtı."""
     success: bool
     variants: List[GeneratedContent]
     error: Optional[str] = None
 
 
 def get_supabase():
+    """Get Supabase client from server module."""
     from server import supabase
     return supabase
+
+
+SINCE_DELTAS = {
+    "24h": timedelta(hours=24),
+    "7d": timedelta(days=7),
+    "30d": timedelta(days=30),
+}
 
 
 @router.get("")
 async def list_trends(
     category: Optional[str] = Query(None),
+    since: Optional[str] = Query(None, description="24h, 7d, or 30d"),
+    show_hidden: bool = Query(False, description="Show hidden (low-score) trends"),
     limit: int = Query(20, le=100),
     user=Depends(require_auth),
 ):
-    """Trend listesi"""
+    """Trend listesi. Default olarak sadece is_visible=true olanları döner."""
     try:
         sb = get_supabase()
         query = sb.table("trends").select("*").order("score", desc=True).limit(limit)
+
+        if not show_hidden:
+            query = query.eq("is_visible", True)
+
         if category:
             query = query.eq("category", category)
+
+        if since and since in SINCE_DELTAS:
+            cutoff = (datetime.now(timezone.utc) - SINCE_DELTAS[since]).isoformat()
+            query = query.gte("created_at", cutoff)
+
         result = query.execute()
         return result.data
     except Exception as e:
@@ -66,76 +92,49 @@ async def list_trends(
 
 @router.post("/refresh")
 async def refresh_trends(request: TrendRefreshRequest, user=Depends(require_auth)):
-    """Trend'leri yenile (AI ile güncel konuları analiz et)"""
+    """Trend'leri yenile - gerçek RSS verisi + GPT-4o analizi."""
     try:
-        from server import openai_client
-        sb = get_supabase()
+        from services.trend_engine import trend_engine
+        result = await trend_engine.refresh_all()
 
-        category_ctx = f"Kategori: {request.category}" if request.category else "Tüm kategoriler: tech, crypto, gündem, lifestyle, ai, business"
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Trend yenileme başarısız"))
 
-        response = openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": f"""Sen bir trend analisti sin. Şu anki güncel trendleri analiz et.
-{category_ctx}
-
-Her trend için JSON formatında döndür:
-[
-  {{
-    "topic": "trend konusu",
-    "category": "tech|crypto|gundem|lifestyle|ai|business",
-    "score": 0-100,
-    "ai_summary": "2-3 cümle özet",
-    "ai_content_suggestions": ["içerik önerisi 1", "içerik önerisi 2"]
-  }}
-]
-
-5-10 güncel trend döndür. Gerçekçi ve güncel ol."""},
-                {"role": "user", "content": "Güncel trendleri analiz et ve JSON olarak döndür."}
-            ],
-            temperature=0.7,
-            response_format={"type": "json_object"}
-        )
-
-        import json
-        trends_data = json.loads(response.choices[0].message.content)
-        trends_list = trends_data.get("trends", trends_data.get("data", []))
-        if isinstance(trends_data, list):
-            trends_list = trends_data
-
-        inserted = 0
-        for trend in trends_list:
-            if not isinstance(trend, dict) or not trend.get("topic"):
-                continue
-            sb.table("trends").insert({
-                "id": str(uuid.uuid4()),
-                "topic": trend["topic"],
-                "category": trend.get("category", "gundem"),
-                "source": "ai",
-                "score": trend.get("score", 50),
-                "ai_summary": trend.get("ai_summary", ""),
-                "ai_content_suggestions": trend.get("ai_content_suggestions", []),
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }).execute()
-            inserted += 1
-
-        return {"success": True, "trends_added": inserted}
-
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Trends refresh error: {e}")
         raise HTTPException(status_code=500, detail="Bir hata oluştu")
 
 
+@router.post("/auto-refresh")
+async def auto_refresh_trends(
+    x_cron_secret: Optional[str] = Header(None, alias="X-Cron-Secret"),
+):
+    """Cron job endpoint - secret header ile korunan, auth gerektirmez."""
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or x_cron_secret != expected:
+        raise HTTPException(status_code=403, detail="Invalid cron secret")
+
+    try:
+        from services.trend_engine import trend_engine
+        result = await trend_engine.refresh_all()
+        return result
+    except Exception as e:
+        logger.error(f"Auto-refresh error: {e}")
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
+
+
 @router.get("/categories")
 async def get_categories(user=Depends(require_auth)):
-    """Mevcut trend kategorileri"""
+    """Mevcut trend kategorileri."""
     return ["ai", "tech", "crypto", "gundem", "business", "lifestyle"]
 
 
 @router.get("/{trend_id}")
 async def get_trend(trend_id: str, user=Depends(require_auth)):
-    """Trend detayı"""
+    """Trend detayı."""
     try:
         sb = get_supabase()
         result = sb.table("trends").select("*").eq("id", trend_id).execute()
@@ -151,7 +150,7 @@ async def get_trend(trend_id: str, user=Depends(require_auth)):
 
 @router.post("/{trend_id}/generate", response_model=GenerationResponse)
 async def generate_from_trend(trend_id: str, request: TrendGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
-    """Trend'den içerik üret"""
+    """Trend'den içerik üret. raw_content varsa daha zengin context sağlar."""
     try:
         from server import generate_with_openai
         from prompts.quality import BANNED_PATTERNS
@@ -175,6 +174,15 @@ async def generate_from_trend(trend_id: str, request: TrendGenerateRequest, _=De
 
         platform_prompt = platform_prompts.get(request.platform, platform_prompts["twitter"])
 
+        # Build rich context with raw_content if available
+        raw_context = ""
+        if trend.get("raw_content"):
+            raw_context = f"\n## KAYNAK İÇERİK:\n{trend['raw_content'][:1000]}\n"
+
+        source_url = ""
+        if trend.get("url"):
+            source_url = f"\nKaynak URL: {trend['url']}"
+
         system_prompt = f"""
 {BANNED_PATTERNS}
 
@@ -185,8 +193,11 @@ async def generate_from_trend(trend_id: str, request: TrendGenerateRequest, _=De
 ## TREND BİLGİSİ:
 Konu: {trend['topic']}
 Kategori: {trend.get('category', 'genel')}
-Özet: {trend.get('ai_summary', '')}
-İçerik önerileri: {trend.get('ai_content_suggestions', [])}
+Özet: {trend.get('summary', '')}
+Keywords: {trend.get('keywords', [])}
+İçerik açısı: {trend.get('content_angle', '')}
+{source_url}
+{raw_context}
 
 ## DİL
 {lang}
