@@ -191,24 +191,14 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     navigate(`${route}?topic=${topic}&trend_context=${context}`);
   };
 
-  // Reset when trend changes
-  useEffect(() => {
-    if (trend) {
-      setResult(null);
-      setPlatform("twitter");
-      setAdditionalContext("");
-      setIsFavorited(false);
-    }
-  }, [trend?.id]);
-
-  const handleGenerate = async () => {
-    if (!trend) return;
+  // Auto-generate when trend changes (tek tıkla içerik üret)
+  const autoGenerate = async (trendData, plat) => {
+    if (!trendData) return;
     setLoading(true);
     setResult(null);
     try {
-      const res = await api.post(`${API}/trends/${trend.id}/generate`, {
-        platform,
-        additional_context: additionalContext || undefined,
+      const res = await api.post(`${API}/trends/${trendData.id}/generate`, {
+        platform: plat || "twitter",
         language: "tr",
       });
       const data = res.data;
@@ -222,6 +212,22 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reset and auto-generate when trend changes
+  useEffect(() => {
+    if (trend && open) {
+      setResult(null);
+      setPlatform("twitter");
+      setAdditionalContext("");
+      setIsFavorited(false);
+      // Otomatik üret
+      autoGenerate(trend, "twitter");
+    }
+  }, [trend?.id, open]);
+
+  const handleGenerate = async () => {
+    await autoGenerate(trend, platform);
   };
 
   const handleCopy = () => {
@@ -276,7 +282,11 @@ function GeneratePanel({ open, onOpenChange, trend }) {
                 {PLATFORMS.map((p) => (
                   <button
                     key={p.id}
-                    onClick={() => setPlatform(p.id)}
+                    onClick={() => {
+                      setPlatform(p.id);
+                      // Platform değişince otomatik yeniden üret
+                      autoGenerate(trend, p.id);
+                    }}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
                       platform === p.id
@@ -302,23 +312,23 @@ function GeneratePanel({ open, onOpenChange, trend }) {
               />
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons: Yeniden Üret (primary) + Sayfada Düzenle (secondary) */}
             <div className="flex gap-2">
-              <Button
-                onClick={handleGoToModule}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Sayfada Yaz →
-              </Button>
               <Button
                 onClick={handleGenerate}
                 disabled={loading}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+                {loading ? "Üretiliyor..." : "Yeniden Üret"}
+              </Button>
+              <Button
+                onClick={handleGoToModule}
                 variant="outline"
                 className="flex-1"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                {loading ? "Üretiliyor..." : "Hızlı Üret"}
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Sayfada Düzenle
               </Button>
             </div>
 
