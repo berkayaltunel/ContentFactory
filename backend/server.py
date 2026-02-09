@@ -34,6 +34,11 @@ openai_client = None
 if openai_api_key:
     openai_client = OpenAI(api_key=openai_api_key)
 
+# Model config (env'den okunur, kod değiştirmeden swap edilebilir)
+MODEL_CONTENT = os.environ.get('MODEL_CONTENT', 'gpt-4o')       # İçerik üretimi (tweet, post, article)
+MODEL_VISION = os.environ.get('MODEL_VISION', 'gpt-4o')         # Görsel analiz
+MODEL_ANALYSIS = os.environ.get('MODEL_ANALYSIS', 'gpt-4o-mini')  # Trend analizi, skorlama
+
 # Create the main app
 app = FastAPI(docs_url=None if not os.environ.get("DEBUG") else "/docs", redoc_url=None)
 
@@ -46,6 +51,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Log model config at startup
+logger.info(f"🤖 Model config: content={MODEL_CONTENT}, vision={MODEL_VISION}, analysis={MODEL_ANALYSIS}")
 
 # ==================== PROMPT SYSTEM ====================
 # Import from modular prompt system
@@ -146,7 +154,7 @@ async def analyze_image_with_vision(image_base64: str) -> str:
     
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model=MODEL_VISION,
             messages=[
                 {
                     "role": "user",
@@ -195,7 +203,7 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
                 variant_prompt += f"\n\nBu {i+1}. varyant. Yaklaşım: {approaches[i % len(approaches)]}"
 
             response = openai_client.chat.completions.create(
-                model="gpt-4o",
+                model=MODEL_CONTENT,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": variant_prompt}
@@ -239,6 +247,15 @@ async def auth_check(user=Depends(require_auth)):
 @api_router.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@api_router.get("/models")
+async def get_models():
+    """Aktif model konfigürasyonu"""
+    return {
+        "content": MODEL_CONTENT,
+        "vision": MODEL_VISION,
+        "analysis": MODEL_ANALYSIS,
+    }
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate, user=Depends(require_auth)):

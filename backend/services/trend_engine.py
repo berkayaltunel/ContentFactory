@@ -222,7 +222,7 @@ Başka açıklama ekleme, sadece JSON döndür."""
 
         try:
             response = openai_client.chat.completions.create(
-                model="gpt-4o",
+                model=os.environ.get('MODEL_ANALYSIS', 'gpt-4o-mini'),
                 messages=[
                     {"role": "system", "content": "Sen bir trend analisti ve içerik stratejistisin. JSON formatında yanıt ver."},
                     {"role": "user", "content": prompt}
