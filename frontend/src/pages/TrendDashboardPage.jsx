@@ -100,70 +100,59 @@ function ScoreBar({ score }) {
 function TrendCard({ trend, onGenerate }) {
   const catColor = categoryColors[trend.category] || "bg-gray-500/20 text-gray-400";
   const badge = scoreBadge(trend.score || 0);
-  const SourceIcon = SOURCE_ICONS[trend.source_type] || Newspaper;
 
   return (
-    <div className="rounded-xl border border-border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col h-full">
-      {/* Fixed content area */}
+    <div className="rounded-xl border border-border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col"
+         style={{ minHeight: 320 }}>
       <div className="p-5 flex-1 flex flex-col">
-        {/* Header: badges + title (fixed height zone) */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <span className={cn("text-xs px-2 py-0.5 rounded-full border", catColor)}>
-              {trend.category}
-            </span>
-            <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", badge.cls)}>
-              {badge.emoji} {badge.label}
-            </span>
-          </div>
-          <h3 className="font-semibold text-base leading-snug group-hover:text-orange-400 transition-colors line-clamp-2">
-            {trend.topic}
-          </h3>
+        {/* Row 1: Badges */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className={cn("text-xs px-2 py-0.5 rounded-full border", catColor)}>{trend.category}</span>
+          <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", badge.cls)}>{badge.emoji} {badge.label}</span>
         </div>
 
-        {/* Source & Time */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-          <SourceIcon className="h-3 w-3 flex-shrink-0" />
+        {/* Row 2: Title (exactly 2 lines) */}
+        <h3 className="font-semibold text-base leading-snug group-hover:text-orange-400 transition-colors line-clamp-2 min-h-[2.75rem] mb-2">
+          {trend.topic}
+        </h3>
+
+        {/* Row 3: Source + time (single line) */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
+          <Newspaper className="h-3 w-3 flex-shrink-0" />
           <span className="truncate">{trend.source_name || "RSS"}</span>
           {trend.published_at && <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>}
         </div>
 
-        {/* Score bar */}
+        {/* Row 4: Score bar */}
         <ScoreBar score={trend.score || 0} />
 
-        {/* AI Summary (always 3 lines) */}
+        {/* Row 5: Summary (exactly 3 lines, fills remaining space) */}
         <p className="text-sm text-muted-foreground mt-3 line-clamp-3 flex-1">{trend.summary}</p>
 
-        {/* Keywords (max 4, single row) */}
-        {trend.keywords?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3 overflow-hidden max-h-6">
-            {trend.keywords.slice(0, 4).map((kw, i) => (
-              <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">#{kw}</span>
-            ))}
-          </div>
-        )}
+        {/* Row 6: Keywords (fixed single row, always rendered for spacing) */}
+        <div className="flex gap-1 mt-3 h-6 overflow-hidden">
+          {(trend.keywords || []).slice(0, 3).map((kw, i) => (
+            <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground whitespace-nowrap">#{kw}</span>
+          ))}
+        </div>
+      </div>
 
-        {/* Original link */}
+      {/* Bottom: Link + Button (pinned) */}
+      <div className="px-5 pb-4">
         {trend.url && (
           <a href={trend.url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mt-3 transition-colors">
+            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mb-3 transition-colors">
             Haberi Oku <ExternalLink className="h-3 w-3" /> →
           </a>
         )}
-      </div>
-
-      {/* Action (always at bottom) */}
-      <div className="px-5 pb-5 pt-0">
-        <div className="pt-3 border-t border-border">
-          <Button
-            size="sm"
-            onClick={() => onGenerate(trend)}
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
-          >
-            <Zap className="h-4 w-4 mr-2" />
-            İçerik Üret
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={() => onGenerate(trend)}
+          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+        >
+          <Zap className="h-4 w-4 mr-2" />
+          İçerik Üret
+        </Button>
       </div>
     </div>
   );
