@@ -91,7 +91,7 @@ async def list_trends(
 
 
 @router.post("/refresh")
-async def refresh_trends(request: TrendRefreshRequest, user=Depends(require_auth)):
+async def refresh_trends(request: Optional[TrendRefreshRequest] = None, user=Depends(require_auth)):
     """Trend'leri yenile - gerçek RSS verisi + GPT-4o analizi."""
     try:
         from services.trend_engine import trend_engine
@@ -207,8 +207,10 @@ Keywords: {trend.get('keywords', [])}
 Emoji kullanma. AI template kalıpları kullanma. Doğal ve özgün yaz.
 """
 
-        contents = await generate_with_openai(system_prompt, "Trend bazlı içeriği üret.", 1)
-        variants = [GeneratedContent(content=contents[0], variant_index=0, character_count=len(contents[0]))]
+        result_tuple = await generate_with_openai(system_prompt, "Trend bazlı içeriği üret.", 1)
+        contents = result_tuple[0] if isinstance(result_tuple, tuple) else result_tuple
+        text = contents[0] if contents else ""
+        variants = [GeneratedContent(content=text, variant_index=0, character_count=len(text))]
         return GenerationResponse(success=True, variants=variants)
 
     except HTTPException:

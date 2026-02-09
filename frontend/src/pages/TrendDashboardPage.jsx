@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp, RefreshCw, ExternalLink, ChevronDown, ChevronUp,
   Flame, Zap, Copy, Heart, RotateCcw, Loader2, Newspaper, Rss, Twitter
@@ -216,11 +217,34 @@ function TrendCard({ trend, onGenerate }) {
 /* ── GeneratePanel (Sheet) ── */
 
 function GeneratePanel({ open, onOpenChange, trend }) {
+  const navigate = useNavigate();
   const [platform, setPlatform] = useState("twitter");
   const [additionalContext, setAdditionalContext] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [isFavorited, setIsFavorited] = useState(false);
+
+  // Platform → route mapping
+  const PLATFORM_ROUTES = {
+    twitter: "/dashboard/x-ai",
+    blog: "/dashboard/blog",
+    linkedin: "/dashboard/linkshare",
+    instagram: "/dashboard/instaflow",
+    youtube: "/dashboard/youtube",
+    tiktok: "/dashboard/tiktrend",
+  };
+
+  // Navigate to the module with topic prefilled
+  const handleGoToModule = () => {
+    if (!trend) return;
+    const route = PLATFORM_ROUTES[platform] || PLATFORM_ROUTES.twitter;
+    const topic = encodeURIComponent(trend.topic);
+    const context = encodeURIComponent(
+      [trend.summary, trend.content_angle, additionalContext].filter(Boolean).join("\n\n")
+    );
+    onOpenChange(false);
+    navigate(`${route}?topic=${topic}&trend_context=${context}`);
+  };
 
   // Reset when trend changes
   useEffect(() => {
@@ -326,15 +350,25 @@ function GeneratePanel({ open, onOpenChange, trend }) {
               />
             </div>
 
-            {/* Generate button */}
-            <Button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-              {loading ? "Üretiliyor..." : "Üret"}
-            </Button>
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGoToModule}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Sayfada Yaz →
+              </Button>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading}
+                variant="outline"
+                className="flex-1"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                {loading ? "Üretiliyor..." : "Hızlı Üret"}
+              </Button>
+            </div>
 
             {/* Loading skeleton */}
             {loading && (
