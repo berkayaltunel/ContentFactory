@@ -388,14 +388,14 @@ function ValueStatements() {
     {
       segments: [
         { type: 'text', content: 'Type Hype' },
-        { type: 'video', src: '/glass-final.webm' },
+        { type: 'video', src: '/glass-boomerang.webm' },
         { type: 'text', content: 'yazım tarzını çözer. Her kelimeni, her virgülünü öğrenir.' },
       ],
     },
     {
       segments: [
         { type: 'text', content: 'Senden' },
-        { type: 'video', src: '/pencil-final.webm' },
+        { type: 'video', src: '/pencil-boomerang.webm' },
         { type: 'text', content: 'ayırt edilemez içerikler üretir. 6 platform, tek tık.' },
       ],
     },
@@ -470,44 +470,38 @@ function Hero() {
         <motion.div variants={fadeUp} className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-50/80 rounded-full border border-violet-100/60">
             <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-            <span className="text-[13px] text-violet-600 font-medium">Sosyal medya içeriğini yeniden keşfet</span>
+            <span className="text-[13px] text-violet-600 font-medium">AI içerik asistanın hazır</span>
           </div>
         </motion.div>
 
         {/* Main headline — Clash Display for impact */}
         <motion.h1
           variants={fadeUp}
-          className="text-[36px] sm:text-[48px] md:text-[64px] lg:text-[72px] text-[#1d1d1f] leading-[1.05] tracking-[-0.03em] max-w-[800px] mx-auto"
+          className="text-[36px] sm:text-[48px] md:text-[64px] lg:text-[72px] text-[#1d1d1f] leading-[1.05] tracking-[-0.03em] max-w-[850px] mx-auto"
           style={{ fontFamily: clashFont, fontWeight: 600 }}
         >
-          Hype ile tanış.
+          Hype ile tanış.{' '}
+          <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+            İçerik üret.
+          </span>
         </motion.h1>
 
         {/* Sub-headline — emotional hook */}
         <motion.p
           variants={fadeUp}
-          className="mt-4 text-[20px] sm:text-[24px] md:text-[32px] text-gray-400 max-w-[600px] mx-auto leading-[1.3] tracking-[-0.01em]"
-          style={{ fontFamily: clashFont, fontWeight: 500 }}
+          className="mt-5 text-[18px] sm:text-[22px] md:text-[28px] text-gray-400 max-w-[600px] mx-auto leading-[1.4] tracking-[-0.01em]"
+          style={{ fontFamily: satoshiFont, fontWeight: 500 }}
         >
-          Senin sosyal medya ekibin.
-        </motion.p>
-
-        {/* Value proposition — specific, benefit-driven */}
-        <motion.p
-          variants={fadeUp}
-          className="mt-6 text-[15px] md:text-[17px] text-gray-400 max-w-[480px] mx-auto leading-[1.7]"
-          style={{ fontWeight: 500 }}
-        >
-          Yazım tarzını öğrenir. Senin sesinde, 6 platforma özel viral içerik üretir.
-          Bir ajansın tüm işini tek başına halleder.
+          Senin yazım tarzını öğrenen, senin sesinde
+          6 platforma içerik üreten AI ekibin.
         </motion.p>
 
         {/* CTA — action-oriented, specific */}
         <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <HoloButton to="/login">
-            Hype ile Tanış <ArrowRight className="w-4 h-4 inline ml-1" />
+            Ücretsiz Başla <ArrowRight className="w-4 h-4 inline ml-1" />
           </HoloButton>
-          <span className="text-[13px] text-gray-300 font-medium">Ücretsiz. Kredi kartı yok.</span>
+          <span className="text-[13px] text-gray-300 font-medium">Kredi kartı gerekmez</span>
         </motion.div>
 
         {/* Social proof strip */}

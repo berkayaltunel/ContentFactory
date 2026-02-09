@@ -806,6 +806,45 @@ async def toggle_favorite(content: dict, user=Depends(require_auth)):
         }).execute()
         return {"success": True, "action": "added", "favorite_id": fav_id}
 
+@api_router.delete("/generations/all")
+async def delete_all_generations(user=Depends(require_auth)):
+    """Delete ALL generations and their favorites for the user"""
+    # Delete all favorites for this user's generations
+    supabase.table("favorites").delete().eq("user_id", user.id).not_.is_("generation_id", "null").execute()
+    # Delete all generations
+    result = supabase.table("generations").select("id", count="exact").eq("user_id", user.id).execute()
+    count = result.count or 0
+    if count > 0:
+        supabase.table("generations").delete().eq("user_id", user.id).execute()
+    return {"deleted": count}
+
+@api_router.delete("/generations/bulk")
+async def bulk_delete_generations(body: dict, user=Depends(require_auth)):
+    """Bulk delete generations by IDs + their favorites"""
+    ids = body.get("ids", [])
+    if not ids:
+        return {"deleted": 0}
+    # Delete related favorites
+    for gid in ids:
+        supabase.table("favorites").delete().eq("user_id", user.id).eq("generation_id", gid).execute()
+    # Delete generations
+    deleted = 0
+    for gid in ids:
+        result = supabase.table("generations").delete().eq("id", gid).eq("user_id", user.id).execute()
+        if result.data:
+            deleted += len(result.data)
+    return {"deleted": deleted}
+
+@api_router.delete("/generations/{generation_id}")
+async def delete_generation(generation_id: str, user=Depends(require_auth)):
+    """Delete a single generation + its favorites"""
+    # Delete related favorites
+    supabase.table("favorites").delete().eq("user_id", user.id).eq("generation_id", generation_id).execute()
+    # Delete the generation
+    result = supabase.table("generations").delete().eq("id", generation_id).eq("user_id", user.id).execute()
+    count = len(result.data) if result.data else 0
+    return {"deleted": count}
+
 @api_router.delete("/favorites/{favorite_id}")
 async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
     """Remove content from favorites"""

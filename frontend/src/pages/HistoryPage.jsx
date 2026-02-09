@@ -15,6 +15,10 @@ import {
   ChevronUp,
   Send,
   Filter,
+  Trash2,
+  CheckSquare,
+  Square,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,7 +32,7 @@ const TYPE_CONFIG = {
   article: { label: "Makale", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
 };
 
-function HistoryCard({ gen, onFavoriteChange }) {
+function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelected, onToggleSelect }) {
   const [expanded, setExpanded] = useState(false);
   const [favoritedVariants, setFavoritedVariants] = useState(gen.favorited_variants || {});
   const variants = gen.variants || [];
@@ -73,11 +77,16 @@ function HistoryCard({ gen, onFavoriteChange }) {
   const visibleVariants = expanded ? variants : variants.slice(0, 1);
 
   return (
-    <Card className="bg-card border-border hover:border-primary/20 transition-colors">
+    <Card className={cn("bg-card border-border hover:border-primary/20 transition-colors", isSelected && "border-primary/40 bg-primary/5")}>
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
+            {selectionMode && (
+              <button onClick={() => onToggleSelect(gen.id)} className="mr-1">
+                {isSelected ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
+              </button>
+            )}
             <Badge className={typeConfig.color}>
               {typeConfig.label}
             </Badge>
@@ -102,6 +111,20 @@ function HistoryCard({ gen, onFavoriteChange }) {
               })}
             </span>
           </div>
+          {!selectionMode && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
+              onClick={() => {
+                if (window.confirm("Bu üretimi silmek istediğinize emin misiniz?")) {
+                  onDelete(gen.id);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Topic */}
@@ -205,10 +228,57 @@ export default function HistoryPage() {
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   useEffect(() => {
     if (isAuthenticated) fetchHistory();
   }, [isAuthenticated]);
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`${API}/generations/${id}`);
+      setGenerations((prev) => prev.filter((g) => g.id !== id));
+      toast.success("Üretim silindi");
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!window.confirm("Tüm üretim geçmişinizi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
+    try {
+      const res = await api.delete(`${API}/generations/all`);
+      setGenerations([]);
+      toast.success(`${res.data.deleted} üretim silindi`);
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`${selectedIds.size} üretimi silmek istediğinize emin misiniz?`)) return;
+    try {
+      const ids = Array.from(selectedIds);
+      await api.delete(`${API}/generations/bulk`, { data: { ids } });
+      setGenerations((prev) => prev.filter((g) => !selectedIds.has(g.id)));
+      toast.success(`${ids.length} üretim silindi`);
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const fetchHistory = async () => {
     try {
@@ -248,6 +318,29 @@ export default function HistoryPage() {
         <p className="text-muted-foreground">
           Daha önce ürettiğiniz tüm içerikler. Beğendiklerinizi favorilere ekleyin.
         </p>
+        {generations.length > 0 && (
+          <div className="flex items-center gap-2 mt-4">
+            {!selectionMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
+                  <CheckSquare className="h-4 w-4 mr-1.5" /> Seç
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteAll}>
+                  <Trash2 className="h-4 w-4 mr-1.5" /> Tümünü Sil
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
+                  <X className="h-4 w-4 mr-1.5" /> İptal
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteSelected} disabled={selectedIds.size === 0}>
+                  <Trash2 className="h-4 w-4 mr-1.5" /> Seçilenleri Sil ({selectedIds.size})
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {generations.length === 0 ? (
@@ -298,7 +391,14 @@ export default function HistoryPage() {
           {/* Generation list */}
           <div className="space-y-4">
             {filteredGenerations.map((gen, index) => (
-              <HistoryCard key={gen.id || index} gen={gen} />
+              <HistoryCard
+                key={gen.id || index}
+                gen={gen}
+                onDelete={handleDelete}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(gen.id)}
+                onToggleSelect={toggleSelect}
+              />
             ))}
           </div>
         </>

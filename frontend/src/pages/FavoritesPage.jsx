@@ -10,6 +10,9 @@ import {
   Loader2,
   HeartOff,
   Calendar,
+  CheckSquare,
+  Square,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -26,10 +29,50 @@ const TYPE_CONFIG = {
 export default function FavoritesPage() {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   useEffect(() => {
     fetchFavorites();
   }, []);
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteAll = async () => {
+    if (!window.confirm("Tüm favorilerinizi silmek istediğinize emin misiniz?")) return;
+    try {
+      for (const fav of favorites) {
+        await api.delete(`${API}/favorites/${fav.id}`);
+      }
+      setFavorites([]);
+      toast.success("Tüm favoriler silindi");
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`${selectedIds.size} favoriyi silmek istediğinize emin misiniz?`)) return;
+    try {
+      for (const id of selectedIds) {
+        await api.delete(`${API}/favorites/${id}`);
+      }
+      setFavorites((prev) => prev.filter((f) => !selectedIds.has(f.id)));
+      toast.success(`${selectedIds.size} favori silindi`);
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
 
   const fetchFavorites = async () => {
     try {
