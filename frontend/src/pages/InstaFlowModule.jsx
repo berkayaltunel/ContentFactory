@@ -1,5 +1,6 @@
 // InstaFlowModule.jsx - Instagram AI İçerik Üretim Modülü
 import { useState, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Instagram,
   Sparkles,
@@ -121,8 +122,8 @@ function ImageUpload({ imageUrl, onImageChange, onImageRemove }) {
 }
 
 // Caption Tab
-function CaptionTab({ jobs, onAddJob, onDismissJob }) {
-  const [topic, setTopic] = useState("");
+function CaptionTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
+  const [topic, setTopic] = useState(initialTopic || "");
   const [captionLength, setCaptionLength] = useState("orta");
   const [tone, setTone] = useState("eglenceli");
   const [variants, setVariants] = useState(3);
@@ -365,6 +366,8 @@ function StoryIdeasTab({ jobs, onAddJob, onDismissJob }) {
 let jobIdCounter = 0;
 
 export default function InstaFlowModule() {
+  const [searchParams] = useSearchParams();
+  const initialTopic = searchParams.get("topic") || "";
   const [jobs, setJobs] = useState([]);
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...updates } : j)));
@@ -438,7 +441,7 @@ export default function InstaFlowModule() {
             </TabsList>
 
             <TabsContent value="caption">
-              <CaptionTab jobs={jobs.filter((j) => j.type === "instagram_caption")} onAddJob={addJob} onDismissJob={dismissJob} />
+              <CaptionTab jobs={jobs.filter((j) => j.type === "instagram_caption")} onAddJob={addJob} onDismissJob={dismissJob} initialTopic={initialTopic} />
             </TabsContent>
             <TabsContent value="reel">
               <ReelScriptTab jobs={jobs.filter((j) => j.type === "instagram_reel")} onAddJob={addJob} onDismissJob={dismissJob} />

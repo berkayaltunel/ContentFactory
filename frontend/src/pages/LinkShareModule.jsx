@@ -87,13 +87,13 @@ function StatCard({ value, label, icon: Icon }) {
 
 /* ── Post Tab ──────────────────────────────────────────── */
 
-function PostTab({ personas, formats, initialTopic, hookOverride, setHookOverride, jobs, onAddJob, onDismissJob }) {
+function PostTab({ personas, formats, initialTopic, initialTrendContext, hookOverride, setHookOverride, jobs, onAddJob, onDismissJob }) {
   const [topic, setTopic] = useState(initialTopic || "");
   const [persona, setPersona] = useState(personas[0]?.id || "thought_leader");
   const [format, setFormat] = useState(formats[0]?.id || "standard");
   const [variants, setVariants] = useState(1);
-  const [additionalContext, setAdditionalContext] = useState("");
-  const [ctxOpen, setCtxOpen] = useState(false);
+  const [additionalContext, setAdditionalContext] = useState(initialTrendContext || "");
+  const [ctxOpen, setCtxOpen] = useState(!!initialTrendContext);
   const [hookOpen, setHookOpen] = useState(!!hookOverride);
   const [loading, setLoading] = useState(false);
 
@@ -767,6 +767,7 @@ function ImagePromptDialog({ open, onOpenChange, topic, content }) {
 export default function LinkShareModule() {
   const [searchParams] = useSearchParams();
   const initialTopic = searchParams.get("topic") || "";
+  const initialTrendContext = searchParams.get("trend_context") || "";
 
   const [activeTab, setActiveTab] = useState("post");
   const [hookOverride, setHookOverride] = useState("");
@@ -878,6 +879,7 @@ export default function LinkShareModule() {
             personas={personas}
             formats={formats}
             initialTopic={initialTopic}
+            initialTrendContext={initialTrendContext}
             hookOverride={hookOverride}
             setHookOverride={setHookOverride}
             jobs={jobs.filter((j) => j.type === "linkedin" && !j._tab || j._tab === "post")}

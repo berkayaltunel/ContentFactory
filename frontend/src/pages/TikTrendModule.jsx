@@ -1,5 +1,6 @@
 // TikTrendModule.jsx - TikTok AI İçerik Üretim Modülü
 import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Music2,
   Sparkles,
@@ -81,8 +82,8 @@ function VariantCounter({ value, onChange, max = 5 }) {
 }
 
 // Script Tab
-function ScriptTab({ jobs, onAddJob, onDismissJob }) {
-  const [topic, setTopic] = useState("");
+function ScriptTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
+  const [topic, setTopic] = useState(initialTopic || "");
   const [duration, setDuration] = useState("30s");
   const [format, setFormat] = useState("tutorial");
   const [variants, setVariants] = useState(2);
@@ -262,6 +263,8 @@ function TrendFikirTab({ jobs, onAddJob, onDismissJob }) {
 let jobIdCounter = 0;
 
 export default function TikTrendModule() {
+  const [searchParams] = useSearchParams();
+  const initialTopic = searchParams.get("topic") || "";
   const [jobs, setJobs] = useState([]);
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...updates } : j)));
@@ -331,7 +334,7 @@ export default function TikTrendModule() {
             </TabsList>
 
             <TabsContent value="script">
-              <ScriptTab jobs={jobs.filter((j) => j.type === "tiktok_script")} onAddJob={addJob} onDismissJob={dismissJob} />
+              <ScriptTab jobs={jobs.filter((j) => j.type === "tiktok_script")} onAddJob={addJob} onDismissJob={dismissJob} initialTopic={initialTopic} />
             </TabsContent>
             <TabsContent value="caption">
               <CaptionTab jobs={jobs.filter((j) => j.type === "tiktok_caption")} onAddJob={addJob} onDismissJob={dismissJob} />

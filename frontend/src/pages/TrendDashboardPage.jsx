@@ -179,26 +179,43 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     tiktok: "/dashboard/tiktrend",
   };
 
-  // Navigate to the module with topic prefilled
+  // Navigate to the module with topic + rich trend context
   const handleGoToModule = () => {
     if (!trend) return;
     const route = PLATFORM_ROUTES[platform] || PLATFORM_ROUTES.twitter;
     const topic = encodeURIComponent(trend.topic);
-    const context = encodeURIComponent(
-      [trend.summary, trend.content_angle, additionalContext].filter(Boolean).join("\n\n")
-    );
+
+    // Zengin context: özet + keywords + content angle + kullanıcı notu
+    const contextParts = [];
+    if (trend.summary) contextParts.push(`Özet: ${trend.summary}`);
+    if (trend.keywords?.length) contextParts.push(`Anahtar Kelimeler: ${trend.keywords.join(", ")}`);
+    if (trend.content_angle) contextParts.push(`İçerik Açısı: ${trend.content_angle}`);
+    if (trend.url) contextParts.push(`Kaynak: ${trend.url}`);
+    if (additionalContext) contextParts.push(`Not: ${additionalContext}`);
+
+    const context = encodeURIComponent(contextParts.join("\n\n"));
     onOpenChange(false);
     navigate(`${route}?topic=${topic}&trend_context=${context}`);
   };
 
-  // Auto-generate when trend changes (tek tıkla içerik üret)
-  const autoGenerate = async (trendData, plat) => {
-    if (!trendData) return;
+  // Trend değişince state'i sıfırla (otomatik üretim yok, kullanıcı seçsin)
+  useEffect(() => {
+    if (trend) {
+      setResult(null);
+      setPlatform("twitter");
+      setAdditionalContext("");
+      setIsFavorited(false);
+    }
+  }, [trend?.id]);
+
+  const handleGenerate = async () => {
+    if (!trend) return;
     setLoading(true);
     setResult(null);
     try {
-      const res = await api.post(`${API}/trends/${trendData.id}/generate`, {
-        platform: plat || "twitter",
+      const res = await api.post(`${API}/trends/${trend.id}/generate`, {
+        platform,
+        additional_context: additionalContext || undefined,
         language: "tr",
       });
       const data = res.data;
@@ -212,22 +229,6 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Reset and auto-generate when trend changes
-  useEffect(() => {
-    if (trend && open) {
-      setResult(null);
-      setPlatform("twitter");
-      setAdditionalContext("");
-      setIsFavorited(false);
-      // Otomatik üret
-      autoGenerate(trend, "twitter");
-    }
-  }, [trend?.id, open]);
-
-  const handleGenerate = async () => {
-    await autoGenerate(trend, platform);
   };
 
   const handleCopy = () => {
@@ -282,11 +283,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
                 {PLATFORMS.map((p) => (
                   <button
                     key={p.id}
-                    onClick={() => {
-                      setPlatform(p.id);
-                      // Platform değişince otomatik yeniden üret
-                      autoGenerate(trend, p.id);
-                    }}
+                    onClick={() => setPlatform(p.id)}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
                       platform === p.id
@@ -312,23 +309,24 @@ function GeneratePanel({ open, onOpenChange, trend }) {
               />
             </div>
 
-            {/* Action buttons: Yeniden Üret (primary) + Sayfada Düzenle (secondary) */}
+            {/* Action buttons */}
             <div className="flex gap-2">
               <Button
                 onClick={handleGenerate}
                 disabled={loading}
                 className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
-                {loading ? "Üretiliyor..." : "Yeniden Üret"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                {loading ? "Üretiliyor..." : "Hızlı Üret"}
               </Button>
               <Button
                 onClick={handleGoToModule}
                 variant="outline"
                 className="flex-1"
+                title="Modülde karakter, ton, uzunluk, stil profili seçerek detaylı üret"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Sayfada Düzenle
+                Sayfada Yaz →
               </Button>
             </div>
 

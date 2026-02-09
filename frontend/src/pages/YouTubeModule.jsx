@@ -1,5 +1,6 @@
 // YouTubeModule.jsx - YouTube AI İçerik Üretim Modülü
 import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Youtube,
   Sparkles,
@@ -45,8 +46,8 @@ function VariantCounter({ value, onChange, max = 5 }) {
 }
 
 // Fikir Tab
-function FikirTab({ jobs, onAddJob, onDismissJob }) {
-  const [topic, setTopic] = useState("");
+function FikirTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
+  const [topic, setTopic] = useState(initialTopic || "");
   const [ideaCount, setIdeaCount] = useState(5);
 
   const hasActiveJob = jobs.some((j) => j.status === "generating");
@@ -266,6 +267,8 @@ function ThumbnailTab({ jobs, onAddJob, onDismissJob }) {
 let jobIdCounter = 0;
 
 export default function YouTubeModule() {
+  const [searchParams] = useSearchParams();
+  const initialTopic = searchParams.get("topic") || "";
   const [jobs, setJobs] = useState([]);
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, ...updates } : j)));
@@ -339,7 +342,7 @@ export default function YouTubeModule() {
             </TabsList>
 
             <TabsContent value="fikir">
-              <FikirTab jobs={jobs.filter((j) => j.type === "youtube_idea")} onAddJob={addJob} onDismissJob={dismissJob} />
+              <FikirTab jobs={jobs.filter((j) => j.type === "youtube_idea")} onAddJob={addJob} onDismissJob={dismissJob} initialTopic={initialTopic} />
             </TabsContent>
             <TabsContent value="script">
               <ScriptTab jobs={jobs.filter((j) => j.type === "youtube_script")} onAddJob={addJob} onDismissJob={dismissJob} />

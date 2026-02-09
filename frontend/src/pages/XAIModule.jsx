@@ -796,7 +796,7 @@ function ImageUpload({ imageUrl, onImageChange, onImageRemove, onBase64Change })
 }
 
 // Tweet Tab Content
-function TweetTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
+function TweetTab({ jobs, onAddJob, onDismissJob, initialTopic, initialContext }) {
   const { activeProfileId, activeProfile } = useProfile();
   const [topic, setTopic] = useState(initialTopic || "");
   const [mode, setMode] = useState("classic");
@@ -806,8 +806,9 @@ function TweetTab({ jobs, onAddJob, onDismissJob, initialTopic }) {
   const [tone, setTone] = useState("natural");
   const [knowledge, setKnowledge] = useState(null);
   const [language, setLanguage] = useState("auto");
-  const [additionalContext, setAdditionalContext] = useState("");
-  const [showContext, setShowContext] = useState(false);
+  const [additionalContext, setAdditionalContext] = useState(initialContext || "");
+  // Trend'den gelince ek bağlam otomatik açık
+  const [showContext, setShowContext] = useState(!!initialContext);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
@@ -1728,6 +1729,7 @@ export default function XAIModule() {
   const [jobs, setJobs] = useState([]);
   const [searchParams] = useSearchParams();
   const initialTopic = searchParams.get("topic") || "";
+  const initialContext = searchParams.get("trend_context") || "";
 
   const updateJob = useCallback((jobId, updates) => {
     setJobs((prev) =>
@@ -1867,7 +1869,7 @@ export default function XAIModule() {
             </TabsList>
 
             <TabsContent value="tweet">
-              <TweetTab jobs={jobs.filter(j => j.type === "tweet")} onAddJob={addJob} onDismissJob={dismissJob} initialTopic={initialTopic} />
+              <TweetTab jobs={jobs.filter(j => j.type === "tweet")} onAddJob={addJob} onDismissJob={dismissJob} initialTopic={initialTopic} initialContext={initialContext} />
             </TabsContent>
 
             <TabsContent value="quote">
