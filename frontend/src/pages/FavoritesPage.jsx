@@ -124,6 +124,29 @@ export default function FavoritesPage() {
         <p className="text-muted-foreground">
           Beğendiğiniz ve kaydettiğiniz içerikler ({favorites.length}).
         </p>
+        {favorites.length > 0 && (
+          <div className="flex items-center gap-2 mt-4">
+            {!selectionMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
+                  <CheckSquare className="h-4 w-4 mr-1.5" /> Seç
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteAll}>
+                  <Trash2 className="h-4 w-4 mr-1.5" /> Tümünü Sil
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
+                  <X className="h-4 w-4 mr-1.5" /> İptal
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteSelected} disabled={selectedIds.size === 0}>
+                  <Trash2 className="h-4 w-4 mr-1.5" /> Seçilenleri Sil ({selectedIds.size})
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {favorites.length === 0 ? (
@@ -141,10 +164,15 @@ export default function FavoritesPage() {
           {favorites.map((fav, index) => {
             const typeConfig = TYPE_CONFIG[fav.type] || { label: fav.type || "Tweet", color: "bg-secondary text-muted-foreground" };
             return (
-              <Card key={fav.id || index} className="bg-card border-border hover:border-primary/20 transition-colors">
+              <Card key={fav.id || index} className={cn("bg-card border-border hover:border-primary/20 transition-colors", selectedIds.has(fav.id) && "border-primary/40 bg-primary/5")}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex items-center gap-2">
+                      {selectionMode && (
+                        <button onClick={() => toggleSelect(fav.id)} className="mr-1">
+                          {selectedIds.has(fav.id) ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
+                        </button>
+                      )}
                       <Badge className={typeConfig.color}>
                         {typeConfig.label}
                       </Badge>
