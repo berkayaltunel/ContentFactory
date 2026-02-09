@@ -5,7 +5,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-06",
-    "notes": "Official OpenAI blog, product announcements & research"
+    "notes": "Official OpenAI blog, product announcements & research",
+    "tier": 1
   },
   {
     "source": "Google AI Blog",
@@ -13,7 +14,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Google's AI announcements and research"
+    "notes": "Google's AI announcements and research",
+    "tier": 1
   },
   {
     "source": "Google DeepMind Blog",
@@ -21,7 +23,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-01-29",
-    "notes": "DeepMind research and announcements"
+    "notes": "DeepMind research and announcements",
+    "tier": 1
   },
   {
     "source": "Microsoft Research",
@@ -29,7 +32,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Microsoft Research blog, AI and CS research"
+    "notes": "Microsoft Research blog, AI and CS research",
+    "tier": 1
   },
   {
     "source": "Hugging Face Blog",
@@ -37,7 +41,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Open-source AI models, tools, tutorials"
+    "notes": "Open-source AI models, tools, tutorials",
+    "tier": 1
   },
   {
     "source": "NVIDIA AI Blog",
@@ -45,7 +50,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "NVIDIA AI, GPU, deep learning news"
+    "notes": "NVIDIA AI, GPU, deep learning news",
+    "tier": 1
   },
   {
     "source": "Simon Willison's Weblog",
@@ -53,7 +59,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-08",
-    "notes": "Excellent AI tools coverage, LLM insights, developer perspective"
+    "notes": "Excellent AI tools coverage, LLM insights, developer perspective",
+    "tier": 2
   },
   {
     "source": "Import AI Newsletter",
@@ -61,7 +68,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Weekly AI newsletter by Jack Clark (Anthropic co-founder)"
+    "notes": "Weekly AI newsletter by Jack Clark (Anthropic co-founder)",
+    "tier": 1
   },
   {
     "source": "Last Week in AI",
@@ -69,7 +77,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-06",
-    "notes": "Weekly AI news digest"
+    "notes": "Weekly AI news digest",
+    "tier": 1
   },
   {
     "source": "The Decoder",
@@ -77,7 +86,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-08",
-    "notes": "AI news, focused on LLMs and generative AI"
+    "notes": "AI news, focused on LLMs and generative AI",
+    "tier": 1
   },
   {
     "source": "Towards AI",
@@ -85,7 +95,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "AI tutorials, news, research summaries on Medium"
+    "notes": "AI tutorials, news, research summaries on Medium",
+    "tier": 2
   },
   {
     "source": "Machine Learning Mastery",
@@ -93,7 +104,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "ML tutorials and practical guides"
+    "notes": "ML tutorials and practical guides",
+    "tier": 2
   },
   {
     "source": "Lil'Log (Lilian Weng)",
@@ -101,7 +113,8 @@
     "category": "AI",
     "status": "active",
     "last_post": "2025-05-01",
-    "notes": "Deep technical AI blog posts by OpenAI researcher, infrequent but high quality"
+    "notes": "Deep technical AI blog posts by OpenAI researcher, infrequent but high quality",
+    "tier": 2
   },
   {
     "source": "TechCrunch",
@@ -109,7 +122,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Major tech news, startups, funding rounds"
+    "notes": "Major tech news, startups, funding rounds",
+    "tier": 1
   },
   {
     "source": "The Verge",
@@ -117,7 +131,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Consumer tech, policy, culture"
+    "notes": "Consumer tech, policy, culture",
+    "tier": 1
   },
   {
     "source": "Ars Technica",
@@ -125,7 +140,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-08",
-    "notes": "In-depth tech, science, policy coverage"
+    "notes": "In-depth tech, science, policy coverage",
+    "tier": 1
   },
   {
     "source": "Wired",
@@ -133,7 +149,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Technology, science, culture, business"
+    "notes": "Technology, science, culture, business",
+    "tier": 1
   },
   {
     "source": "MIT Technology Review",
@@ -141,7 +158,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Emerging technology analysis and impact"
+    "notes": "Emerging technology analysis and impact",
+    "tier": 1
   },
   {
     "source": "Engadget",
@@ -149,7 +167,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Consumer electronics, gadgets, tech news"
+    "notes": "Consumer electronics, gadgets, tech news",
+    "tier": 2
   },
   {
     "source": "The Information",
@@ -157,7 +176,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Premium tech business journalism (some content paywalled)"
+    "notes": "Premium tech business journalism (some content paywalled)",
+    "tier": 2
   },
   {
     "source": "VentureBeat",
@@ -165,7 +185,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "AI and enterprise tech focus"
+    "notes": "AI and enterprise tech focus",
+    "tier": 1
   },
   {
     "source": "ZDNet",
@@ -173,7 +194,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Enterprise tech, reviews, how-tos"
+    "notes": "Enterprise tech, reviews, how-tos",
+    "tier": 2
   },
   {
     "source": "Hacker News (Front Page)",
@@ -181,7 +203,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Y Combinator's Hacker News front page via hnrss.org"
+    "notes": "Y Combinator's Hacker News front page via hnrss.org",
+    "tier": 2
   },
   {
     "source": "Lobsters",
@@ -189,7 +212,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Community-driven tech link aggregator, high signal"
+    "notes": "Community-driven tech link aggregator, high signal",
+    "tier": 2
   },
   {
     "source": "Platformer",
@@ -197,7 +221,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-06",
-    "notes": "Big tech platform news by Casey Newton"
+    "notes": "Big tech platform news by Casey Newton",
+    "tier": 2
   },
   {
     "source": "404 Media",
@@ -205,7 +230,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Independent tech journalism, investigations"
+    "notes": "Independent tech journalism, investigations",
+    "tier": 2
   },
   {
     "source": "Rest of World",
@@ -213,7 +239,8 @@
     "category": "Tech",
     "status": "active",
     "last_post": "2026-01-13",
-    "notes": "Tech coverage outside Silicon Valley, global perspective"
+    "notes": "Tech coverage outside Silicon Valley, global perspective",
+    "tier": 2
   },
   {
     "source": "GitHub Blog",
@@ -221,7 +248,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "GitHub product updates, engineering, open source"
+    "notes": "GitHub product updates, engineering, open source",
+    "tier": 1
   },
   {
     "source": "Stack Overflow Blog",
@@ -229,7 +257,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-06",
-    "notes": "Developer trends, engineering culture"
+    "notes": "Developer trends, engineering culture",
+    "tier": 2
   },
   {
     "source": "Dev.to",
@@ -237,7 +266,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Community developer articles, tutorials"
+    "notes": "Community developer articles, tutorials",
+    "tier": 2
   },
   {
     "source": "CSS-Tricks",
@@ -245,7 +275,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Web development tips and tutorials"
+    "notes": "Web development tips and tutorials",
+    "tier": 2
   },
   {
     "source": "Smashing Magazine",
@@ -253,7 +284,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Web design and development"
+    "notes": "Web design and development",
+    "tier": 2
   },
   {
     "source": "Martin Fowler",
@@ -261,7 +293,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Software architecture, best practices"
+    "notes": "Software architecture, best practices",
+    "tier": 2
   },
   {
     "source": "Changelog",
@@ -269,7 +302,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-06",
-    "notes": "Open source news, developer podcasts"
+    "notes": "Open source news, developer podcasts",
+    "tier": 2
   },
   {
     "source": "freeCodeCamp",
@@ -277,7 +311,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-06",
-    "notes": "Programming tutorials, web dev"
+    "notes": "Programming tutorials, web dev",
+    "tier": 2
   },
   {
     "source": "AWS Blog",
@@ -285,7 +320,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-04",
-    "notes": "AWS product updates and cloud engineering"
+    "notes": "AWS product updates and cloud engineering",
+    "tier": 2
   },
   {
     "source": "Vercel Blog",
@@ -293,7 +329,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Next.js, frontend, deployment"
+    "notes": "Next.js, frontend, deployment",
+    "tier": 1
   },
   {
     "source": "Cloudflare Blog",
@@ -301,7 +338,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "Infrastructure, security, edge computing"
+    "notes": "Infrastructure, security, edge computing",
+    "tier": 1
   },
   {
     "source": "Netflix Tech Blog",
@@ -309,7 +347,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-01-26",
-    "notes": "Engineering at scale, distributed systems"
+    "notes": "Engineering at scale, distributed systems",
+    "tier": 2
   },
   {
     "source": "Spotify Engineering",
@@ -317,7 +356,8 @@
     "category": "Developer",
     "status": "active",
     "last_post": "2026-01-22",
-    "notes": "ML, data engineering, platform engineering"
+    "notes": "ML, data engineering, platform engineering",
+    "tier": 2
   },
   {
     "source": "Sequoia Capital",
@@ -325,7 +365,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2026-02-02",
-    "notes": "VC perspectives, startup advice"
+    "notes": "VC perspectives, startup advice",
+    "tier": 2
   },
   {
     "source": "Y Combinator Blog",
@@ -333,7 +374,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2026-02-05",
-    "notes": "YC news, startup advice"
+    "notes": "YC news, startup advice",
+    "tier": 2
   },
   {
     "source": "Paul Graham Essays",
@@ -341,7 +383,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2026-02-01",
-    "notes": "Influential startup/tech essays, infrequent"
+    "notes": "Influential startup/tech essays, infrequent",
+    "tier": 2
   },
   {
     "source": "Stratechery",
@@ -349,7 +392,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Tech strategy analysis by Ben Thompson (some paywalled)"
+    "notes": "Tech strategy analysis by Ben Thompson (some paywalled)",
+    "tier": 2
   },
   {
     "source": "Benedict Evans",
@@ -357,7 +401,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2025-11-23",
-    "notes": "Tech/mobile industry analysis, infrequent but insightful"
+    "notes": "Tech/mobile industry analysis, infrequent but insightful",
+    "tier": 2
   },
   {
     "source": "SaaStr",
@@ -365,7 +410,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "SaaS business, growth, fundraising"
+    "notes": "SaaS business, growth, fundraising",
+    "tier": 2
   },
   {
     "source": "Product Hunt",
@@ -373,7 +419,8 @@
     "category": "Startup",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "New product launches daily"
+    "notes": "New product launches daily",
+    "tier": 2
   },
   {
     "source": "Webrazzi",
@@ -381,7 +428,8 @@
     "category": "Turkish",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Türkiye'nin önde gelen teknoloji haber sitesi"
+    "notes": "Türkiye'nin önde gelen teknoloji haber sitesi",
+    "tier": 1
   },
   {
     "source": "ShiftDelete.Net",
@@ -389,7 +437,8 @@
     "category": "Turkish",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Türkçe teknoloji haberleri"
+    "notes": "Türkçe teknoloji haberleri",
+    "tier": 2
   },
   {
     "source": "Technopat",
@@ -397,7 +446,8 @@
     "category": "Turkish",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Türkçe teknoloji haberleri ve incelemeler"
+    "notes": "Türkçe teknoloji haberleri ve incelemeler",
+    "tier": 2
   },
   {
     "source": "Chip Online TR",
@@ -405,6 +455,7 @@
     "category": "Turkish",
     "status": "active",
     "last_post": "2026-02-09",
-    "notes": "Türkçe teknoloji haberleri"
+    "notes": "Türkçe teknoloji haberleri",
+    "tier": 2
   }
 ]

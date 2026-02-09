@@ -37,16 +37,16 @@ class TrendEngine:
         try:
             with open(config_path, "r") as f:
                 all_feeds = json.load(f)
-            # Filter: only active feeds, prioritize AI and Tech
+            # Filter: only active feeds, use tier system
             active = [f for f in all_feeds if f.get("status") == "active"]
-            # Always include AI + Tech, sample from others
-            priority = [f for f in active if f["category"] in ("AI", "Tech")]
-            others = [f for f in active if f["category"] not in ("AI", "Tech")]
-            # Take all priority + up to 8 from others (rotate based on day)
-            day_offset = datetime.now().timetuple().tm_yday % max(len(others), 1)
-            selected_others = (others[day_offset:] + others[:day_offset])[:8]
-            feeds = priority + selected_others
-            logger.info(f"Loaded {len(feeds)} feeds from config ({len(priority)} priority + {len(selected_others)} rotating)")
+            # Tier 1: always included (most reliable sources)
+            tier1 = [f for f in active if f.get("tier", 2) == 1]
+            tier2 = [f for f in active if f.get("tier", 2) == 2]
+            # Rotate tier 2: pick 5 per day based on day of year
+            day_offset = datetime.now().timetuple().tm_yday % max(len(tier2), 1)
+            selected_tier2 = (tier2[day_offset:] + tier2[:day_offset])[:5]
+            feeds = tier1 + selected_tier2
+            logger.info(f"Loaded {len(feeds)} feeds ({len(tier1)} tier1 + {len(selected_tier2)} tier2 rotating)")
             return [{"source": f["source"], "url": f["url"]} for f in feeds]
         except Exception as e:
             logger.warning(f"Could not load feeds config: {e}, using defaults")

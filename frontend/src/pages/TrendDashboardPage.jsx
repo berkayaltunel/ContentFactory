@@ -98,17 +98,17 @@ function ScoreBar({ score }) {
 /* ── TrendCard ── */
 
 function TrendCard({ trend, onGenerate }) {
-  const [expanded, setExpanded] = useState(false);
   const catColor = categoryColors[trend.category] || "bg-gray-500/20 text-gray-400";
   const badge = scoreBadge(trend.score || 0);
   const SourceIcon = SOURCE_ICONS[trend.source_type] || Newspaper;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 hover:border-orange-500/40 transition-all duration-300 group">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
+    <div className="rounded-xl border border-border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col h-full">
+      {/* Fixed content area */}
+      <div className="p-5 flex-1 flex flex-col">
+        {/* Header: badges + title (fixed height zone) */}
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <span className={cn("text-xs px-2 py-0.5 rounded-full border", catColor)}>
               {trend.category}
             </span>
@@ -116,98 +116,54 @@ function TrendCard({ trend, onGenerate }) {
               {badge.emoji} {badge.label}
             </span>
           </div>
-          <h3 className="font-semibold text-lg leading-tight group-hover:text-orange-400 transition-colors">
+          <h3 className="font-semibold text-base leading-snug group-hover:text-orange-400 transition-colors line-clamp-2">
             {trend.topic}
           </h3>
         </div>
-      </div>
 
-      {/* Source & Time */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-        {trend.source_name && (
-          <span className="flex items-center gap-1">
-            <SourceIcon className="h-3 w-3" />
-            {trend.source_name}
-          </span>
-        )}
-        {trend.published_at && (
-          <span>• {timeAgo(trend.published_at)}</span>
-        )}
-      </div>
-
-      {/* Score */}
-      <ScoreBar score={trend.score || 0} />
-
-      {/* Stats */}
-      <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-        {trend.tweet_count > 0 && <span>🐦 {trend.tweet_count} tweet</span>}
-        {trend.avg_engagement > 0 && <span>⚡ {Math.round(trend.avg_engagement)} ort. etkileşim</span>}
-      </div>
-
-      {/* AI Summary */}
-      <p className="text-sm text-muted-foreground mt-3 line-clamp-3">{trend.summary}</p>
-
-      {/* Content Angle */}
-      {trend.content_angle && (
-        <div className="mt-3 p-2 rounded-lg bg-orange-500/5 border border-orange-500/10">
-          <p className="text-xs text-orange-400">💡 {trend.content_angle}</p>
+        {/* Source & Time */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+          <SourceIcon className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate">{trend.source_name || "RSS"}</span>
+          {trend.published_at && <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>}
         </div>
-      )}
 
-      {/* Keywords */}
-      {trend.keywords?.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-3">
-          {trend.keywords.slice(0, 5).map((kw, i) => (
-            <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">#{kw}</span>
-          ))}
-        </div>
-      )}
+        {/* Score bar */}
+        <ScoreBar score={trend.score || 0} />
 
-      {/* Original link */}
-      {trend.url && (
-        <a
-          href={trend.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mt-3 transition-colors"
-        >
-          Haberi Oku <ExternalLink className="h-3 w-3" /> →
-        </a>
-      )}
+        {/* AI Summary (always 3 lines) */}
+        <p className="text-sm text-muted-foreground mt-3 line-clamp-3 flex-1">{trend.summary}</p>
 
-      {/* Expandable sample links */}
-      {trend.sample_links?.length > 0 && (
-        <div className="mt-3">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        {/* Keywords (max 4, single row) */}
+        {trend.keywords?.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-3 overflow-hidden max-h-6">
+            {trend.keywords.slice(0, 4).map((kw, i) => (
+              <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">#{kw}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Original link */}
+        {trend.url && (
+          <a href={trend.url} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mt-3 transition-colors">
+            Haberi Oku <ExternalLink className="h-3 w-3" /> →
+          </a>
+        )}
+      </div>
+
+      {/* Action (always at bottom) */}
+      <div className="px-5 pb-5 pt-0">
+        <div className="pt-3 border-t border-border">
+          <Button
+            size="sm"
+            onClick={() => onGenerate(trend)}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
           >
-            {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            Kaynaklar ({trend.sample_links.length})
-          </button>
-          {expanded && (
-            <div className="mt-2 space-y-1">
-              {trend.sample_links.map((link, i) => (
-                <a key={i} href={link} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-blue-400 hover:underline truncate">
-                  <ExternalLink className="h-3 w-3 flex-shrink-0" />{link}
-                </a>
-              ))}
-            </div>
-          )}
+            <Zap className="h-4 w-4 mr-2" />
+            İçerik Üret
+          </Button>
         </div>
-      )}
-
-      {/* Action */}
-      <div className="mt-4 pt-3 border-t border-border">
-        <Button
-          size="sm"
-          onClick={() => onGenerate(trend)}
-          className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
-        >
-          <Zap className="h-4 w-4 mr-2" />
-          İçerik Üret
-        </Button>
       </div>
     </div>
   );
@@ -266,9 +222,14 @@ function GeneratePanel({ open, onOpenChange, trend }) {
         additional_context: additionalContext || undefined,
         language: "tr",
       });
-      setResult(res.data);
+      const data = res.data;
+      if (data.success === false) {
+        toast.error(data.error || "İçerik üretme başarısız");
+      } else {
+        setResult(data);
+      }
     } catch (err) {
-      toast.error(err.response?.data?.detail || "İçerik üretme hatası");
+      toast.error(err.response?.data?.detail || err.response?.data?.error || "İçerik üretme hatası");
     } finally {
       setLoading(false);
     }
@@ -297,7 +258,9 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     }
   };
 
-  const content = result?.content || result?.generated_content || "";
+  // Backend returns {success, variants: [{content, character_count}]}
+  const firstVariant = result?.variants?.[0];
+  const content = firstVariant?.content || result?.content || result?.generated_content || "";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -558,7 +521,7 @@ export default function TrendDashboardPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
             {trends.map((trend) => (
               <TrendCard key={trend.id} trend={trend} onGenerate={handleGenerate} />
             ))}
