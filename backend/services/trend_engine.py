@@ -69,7 +69,7 @@ class TrendEngine:
 
     SCORE_THRESHOLD = 60  # Trends with score >= 60 are visible
 
-    MAX_AGE_HOURS = 48  # Sadece son 48 saatin haberleri
+    MAX_AGE_HOURS = 72  # Son 72 saatin haberleri
 
     async def fetch_rss_trends(self) -> list:
         """Fetch RSS feed items from last 48 hours ONLY.
@@ -180,19 +180,20 @@ SKORLAMA (toplam 100):
 | Viral potansiyel | 0-20 | Tartışma yaratır mı? Paylaşılır mı? |
 | Pratik değer | 0-15 | Geliştiriciler/kullanıcılar için uygulanabilir mi? |
 | Kaynak güvenilirliği | 0-15 | Resmi blog=15, haber sitesi=10, aggregator=5 |
-| TAZELİK (KRİTİK) | 0-25 | 0-6 saat=25, 6-12 saat=20, 12-24 saat=15, 24-36 saat=8, 36-48 saat=3 |
+| TAZELİK (KRİTİK) | 0-25 | 0-6 saat=25, 6-12 saat=20, 12-24 saat=15, 24-48 saat=8, 48-72 saat=3 |
 
 TAZELİK ZORUNLU:
-- 24 saatten eski haber MAX 65 puan alabilir
-- 36 saatten eski haber MAX 50 puan alabilir
+- 24 saatten eski haber MAX 85 puan alabilir
+- 48 saatten eski haber MAX 70 puan alabilir
+- 72 saatten eski haber MAX 50 puan alabilir
 - "Yaş" alanına bak, saat bilgisi yazıyor
 
 SKOR ÖRNEKLERİ:
 - "OpenAI yeni model duyurdu" (2 saat önce, resmi blog) → 85-95
 - "Google AI küçük API güncellemesi" (5 saat önce) → 45-55
 - "HuggingFace yeni kütüphane" (18 saat önce) → 55-65
-- "MIT araştırma makalesi" (30 saat önce) → 35-45
-- Herhangi bir haber (40+ saat) → MAX 40
+- "MIT araştırma makalesi" (30 saat önce) → 45-55
+- Herhangi bir haber (50+ saat) → MAX 50
 
 JSON formatı:
 {{
@@ -269,15 +270,15 @@ Başka açıklama ekleme, sadece JSON döndür."""
                     if matched_item:
                         age_hours = matched_item.get("age_hours")
 
-                # Zamanlılık cezası uygula
+                # Zamanlılık cezası uygula (24h → 48h → 72h katmanları)
                 gpt_score = trend.get("score", 0)
                 if age_hours is not None:
-                    if age_hours > 36:
-                        trend["score"] = min(gpt_score, 50)  # Max 50
+                    if age_hours > 48:
+                        trend["score"] = min(gpt_score, 50)  # 48-72h: max 50
                     elif age_hours > 24:
-                        trend["score"] = min(gpt_score, 65)  # Max 65
+                        trend["score"] = min(gpt_score, 70)  # 24-48h: max 70
                     elif age_hours > 12:
-                        trend["score"] = min(gpt_score, 80)  # Max 80
+                        trend["score"] = min(gpt_score, 85)  # 12-24h: max 85
 
                     if gpt_score != trend["score"]:
                         logger.info(f"Score capped: '{trend.get('topic', '?')}' {gpt_score}→{trend['score']} (age: {age_hours:.1f}h)")

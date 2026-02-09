@@ -131,7 +131,7 @@ function TrendCard({ trend, onGenerate }) {
             <>
               <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>
               {hoursAgo(trend.published_at) <= 6 && <span className="flex-shrink-0 text-green-400 font-medium">🟢 Taze</span>}
-              {hoursAgo(trend.published_at) > 24 && <span className="flex-shrink-0 text-amber-400 font-medium">⚠️ Eski</span>}
+              {hoursAgo(trend.published_at) > 48 && <span className="flex-shrink-0 text-amber-400 font-medium">⚠️ Eski</span>}
             </>
           )}
         </div>
