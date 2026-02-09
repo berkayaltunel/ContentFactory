@@ -46,13 +46,11 @@ export default function FavoritesPage() {
   };
 
   const handleDeleteAll = async () => {
-    if (!window.confirm("Tüm favorilerinizi silmek istediğinize emin misiniz?")) return;
+    if (!window.confirm("Tüm favorilerinizi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
     try {
-      for (const fav of favorites) {
-        await api.delete(`${API}/favorites/${fav.id}`);
-      }
+      const res = await api.delete(`${API}/favorites/all`);
       setFavorites([]);
-      toast.success("Tüm favoriler silindi");
+      toast.success(`${res.data.deleted} favori silindi`);
     } catch {
       toast.error("Silinemedi");
     }
@@ -62,11 +60,10 @@ export default function FavoritesPage() {
     if (selectedIds.size === 0) return;
     if (!window.confirm(`${selectedIds.size} favoriyi silmek istediğinize emin misiniz?`)) return;
     try {
-      for (const id of selectedIds) {
-        await api.delete(`${API}/favorites/${id}`);
-      }
+      const ids = Array.from(selectedIds);
+      await api.delete(`${API}/favorites/bulk`, { data: { ids } });
       setFavorites((prev) => prev.filter((f) => !selectedIds.has(f.id)));
-      toast.success(`${selectedIds.size} favori silindi`);
+      toast.success(`${ids.length} favori silindi`);
       setSelectedIds(new Set());
       setSelectionMode(false);
     } catch {

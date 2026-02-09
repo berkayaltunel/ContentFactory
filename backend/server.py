@@ -845,6 +845,28 @@ async def delete_generation(generation_id: str, user=Depends(require_auth)):
     count = len(result.data) if result.data else 0
     return {"deleted": count}
 
+@api_router.delete("/favorites/all")
+async def delete_all_favorites(user=Depends(require_auth)):
+    """Delete ALL favorites for the user"""
+    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).execute()
+    count = result.count or (len(result.data) if result.data else 0)
+    if count > 0:
+        supabase.table("favorites").delete().eq("user_id", user.id).execute()
+    return {"deleted": count}
+
+@api_router.delete("/favorites/bulk")
+async def bulk_delete_favorites(body: dict, user=Depends(require_auth)):
+    """Bulk delete favorites by IDs"""
+    ids = body.get("ids", [])
+    if not ids:
+        return {"deleted": 0}
+    deleted = 0
+    for fid in ids:
+        result = supabase.table("favorites").delete().eq("id", fid).eq("user_id", user.id).execute()
+        if result.data:
+            deleted += len(result.data)
+    return {"deleted": deleted}
+
 @api_router.delete("/favorites/{favorite_id}")
 async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
     """Remove content from favorites"""
