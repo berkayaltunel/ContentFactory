@@ -32,6 +32,13 @@ function timeAgo(dateString) {
   return date.toLocaleDateString("tr-TR");
 }
 
+function hoursAgo(dateString) {
+  if (!dateString) return 999;
+  const now = new Date();
+  const date = new Date(dateString);
+  return (now - date) / (1000 * 60 * 60);
+}
+
 function scoreBadge(score) {
   if (score >= 80) return { emoji: "🔥", label: "Sıcak", cls: "bg-gradient-to-r from-red-500 to-orange-500 text-white" };
   if (score >= 60) return { emoji: "⚡", label: "Yükselen", cls: "bg-orange-500/20 text-orange-400 border border-orange-500/30" };
@@ -116,11 +123,17 @@ function TrendCard({ trend, onGenerate }) {
           {trend.topic}
         </h3>
 
-        {/* Row 3: Source + time (single line) */}
+        {/* Row 3: Source + time + freshness indicator */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
           <Newspaper className="h-3 w-3 flex-shrink-0" />
           <span className="truncate">{trend.source_name || "RSS"}</span>
-          {trend.published_at && <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>}
+          {trend.published_at && (
+            <>
+              <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>
+              {hoursAgo(trend.published_at) <= 6 && <span className="flex-shrink-0 text-green-400 font-medium">🟢 Taze</span>}
+              {hoursAgo(trend.published_at) > 24 && <span className="flex-shrink-0 text-amber-400 font-medium">⚠️ Eski</span>}
+            </>
+          )}
         </div>
 
         {/* Row 4: Score bar */}

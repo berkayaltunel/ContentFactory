@@ -69,13 +69,20 @@ class TrendEngine:
 
     SCORE_THRESHOLD = 60  # Trends with score >= 60 are visible
 
-    async def fetch_rss_trends(self) -> list:
-        """Fetch RSS feed items from last 48 hours.
+    MAX_AGE_HOURS = 48  # Sadece son 48 saatin haberleri
 
-        Returns list of dicts with title, link (url), summary, source, published info.
+    async def fetch_rss_trends(self) -> list:
+        """Fetch RSS feed items from last 48 hours ONLY.
+
+        - published_at zorunlu: tarihsiz item'lar atlanır
+        - 48 saatten eski item'lar atlanır
+        - Her item'a age_hours eklenir (GPT'ye gönderilir)
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(hours=self.MAX_AGE_HOURS)
         items = []
+        skipped_no_date = 0
+        skipped_old = 0
 
         async with httpx.AsyncClient(timeout=15.0) as client:
             for feed_info in self.RSS_FEEDS:
@@ -83,15 +90,28 @@ class TrendEngine:
                     resp = await client.get(feed_info["url"])
                     feed = feedparser.parse(resp.text)
                     for entry in feed.entries[:10]:
+                        # Tarih parse et
                         published = None
                         if hasattr(entry, 'published_parsed') and entry.published_parsed:
                             published = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
                         elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
                             published = datetime(*entry.updated_parsed[:6], tzinfo=timezone.utc)
 
-                        if published and published < cutoff:
+                        # Tarihsiz item = güvenilmez, atla
+                        if not published:
+                            skipped_no_date += 1
                             continue
 
+                        # 48 saatten eski = atla
+                        if published < cutoff:
+                            skipped_old += 1
+                            continue
+
+                        # Gelecek tarihli kontrol (hatalı feed'ler)
+                        if published > now + timedelta(hours=1):
+                            continue
+
+                        age_hours = round((now - published).total_seconds() / 3600, 1)
                         raw_content = entry.get("summary", "") or entry.get("description", "") or ""
 
                         items.append({
@@ -101,12 +121,13 @@ class TrendEngine:
                             "raw_content": raw_content,
                             "source": feed_info["source"],
                             "source_type": "rss",
-                            "published_at": published.isoformat() if published else None,
+                            "published_at": published.isoformat(),
+                            "age_hours": age_hours,
                         })
                 except Exception as e:
                     logger.warning(f"RSS fetch failed for {feed_info['source']}: {e}")
 
-        logger.info(f"Fetched {len(items)} RSS items")
+        logger.info(f"Fetched {len(items)} RSS items (skipped: {skipped_no_date} no-date, {skipped_old} old)")
         return items
 
     # Twitter fetch disabled - Bird CLI not available
@@ -117,59 +138,86 @@ class TrendEngine:
         """Analyze raw RSS items with GPT-4o and return scored trends.
 
         Each trend includes a primary source URL from the raw items.
+        Strict freshness: age_hours included, scoring penalizes old items.
         """
         if not raw_items:
             return []
 
-        # Build items text with raw_content for richer analysis
+        # Sort by freshness (newest first)
+        sorted_items = sorted(raw_items, key=lambda x: x.get("age_hours", 999))
+
+        # Build items text with age info for strict scoring
         items_text = ""
-        for i, item in enumerate(raw_items[:40]):
+        for i, item in enumerate(sorted_items[:40]):
             items_text += f"\n--- Item {i+1} ---\n"
             items_text += f"Başlık: {item.get('title', '')}\n"
             items_text += f"Kaynak: {item.get('source', '')}\n"
             items_text += f"URL: {item.get('url', '')}\n"
             items_text += f"Yayın: {item.get('published_at', '')}\n"
+            items_text += f"Yaş: {item.get('age_hours', '?')} saat önce\n"
             raw = item.get('raw_content', '')
             if raw:
                 items_text += f"İçerik: {raw[:400]}\n"
             elif item.get('summary'):
                 items_text += f"Özet: {item['summary'][:300]}\n"
 
-        prompt = f"""Aşağıdaki haber ve içerikleri analiz et. Bunları trend konularına grupla ve skorla.
+        prompt = f"""Sen bir trend analisti ve haber editörüsün. Aşağıdaki haberleri analiz et, grupla ve SIKI şekilde skorla.
+
+KURALLAR:
+1. SADECE gerçek, doğrulanabilir haberler trend olabilir
+2. Küçük güncellemeler, minor release'ler, blog yazıları düşük skor alır
+3. Birden fazla kaynakta geçen konular daha yüksek skor alır
+4. HER trend'in url'i, aşağıdaki item'lardan birinin GERÇEK URL'i olmalı. URL UYDURMA.
+5. published_at değerini ilgili item'dan AYNEN al, değiştirme.
 
 {items_text}
 
-Her trend için JSON formatında döndür:
-[
-  {{
-    "topic": "Trend başlığı (Türkçe, kısa ve çarpıcı)",
-    "category": "AI|Tech|Crypto|Gündem|Business|Lifestyle",
-    "score": 0-100 (trend skoru),
-    "summary": "2-3 cümle Türkçe AI özeti",
-    "url": "Ana kaynak URL (item'lardan birinin URL'i)",
-    "source": "Kaynak adı",
-    "published_at": "ISO tarih (item'dan al)",
-    "raw_content": "Ana kaynağın içerik özeti (max 500 karakter)",
-    "tweet_count": 0,
-    "avg_engagement": 0,
-    "sample_sources": ["kaynak1", "kaynak2"],
-    "sample_links": ["link1", "link2"],
-    "keywords": ["anahtar", "kelimeler"],
-    "content_angle": "Bu konuda nasıl içerik üretilebilir? 1 cümle öneri"
-  }}
-]
+SKORLAMA (toplam 100):
 
-Skorlama kriterleri:
-- Duyuru tipi (büyük lansman=yüksek, küçük güncelleme=düşük): 0-20
-- Erişim potansiyeli (viral olabilirlik): 0-20  
-- Kullanılabilirlik (pratik değer): 0-15
-- Kaynak güvenilirliği: 0-15
-- Rekabet (az konuşulmuş=yüksek): 0-15
-- Zamanlılık (ne kadar taze): 0-15
+| Kriter | Puan | Açıklama |
+|--------|------|----------|
+| Etki büyüklüğü | 0-25 | Büyük lansman/duyuru=20-25, API güncelleme=10-15, blog yazısı=5-10 |
+| Viral potansiyel | 0-20 | Tartışma yaratır mı? Paylaşılır mı? |
+| Pratik değer | 0-15 | Geliştiriciler/kullanıcılar için uygulanabilir mi? |
+| Kaynak güvenilirliği | 0-15 | Resmi blog=15, haber sitesi=10, aggregator=5 |
+| TAZELİK (KRİTİK) | 0-25 | 0-6 saat=25, 6-12 saat=20, 12-24 saat=15, 24-36 saat=8, 36-48 saat=3 |
 
-ÖNEMLİ: Her trend'in url alanı, ilgili item'lardan birinin gerçek URL'i olmalı. URL uydurmayın.
-Yanıtı şu formatta döndür: {{"trends": [...]}}
-En az 3, en fazla 15 trend döndür. Başka açıklama ekleme."""
+TAZELİK ZORUNLU:
+- 24 saatten eski haber MAX 65 puan alabilir
+- 36 saatten eski haber MAX 50 puan alabilir
+- "Yaş" alanına bak, saat bilgisi yazıyor
+
+SKOR ÖRNEKLERİ:
+- "OpenAI yeni model duyurdu" (2 saat önce, resmi blog) → 85-95
+- "Google AI küçük API güncellemesi" (5 saat önce) → 45-55
+- "HuggingFace yeni kütüphane" (18 saat önce) → 55-65
+- "MIT araştırma makalesi" (30 saat önce) → 35-45
+- Herhangi bir haber (40+ saat) → MAX 40
+
+JSON formatı:
+{{
+  "trends": [
+    {{
+      "topic": "Türkçe, kısa ve çarpıcı başlık",
+      "category": "AI|Tech|Crypto|Gündem|Business|Lifestyle",
+      "score": 0-100,
+      "summary": "2-3 cümle Türkçe özet. Ne oldu, neden önemli.",
+      "url": "İlgili item'ın GERÇEK URL'i",
+      "source": "Kaynak adı",
+      "published_at": "Item'dan AYNEN alınan ISO tarih",
+      "raw_content": "İçerik özeti (max 500 karakter)",
+      "tweet_count": 0,
+      "avg_engagement": 0,
+      "sample_sources": ["kaynak1"],
+      "sample_links": ["link1"],
+      "keywords": ["anahtar", "kelimeler", "max 5"],
+      "content_angle": "İçerik üretim önerisi, 1 cümle"
+    }}
+  ]
+}}
+
+En az 3, en fazla 12 trend döndür. Düşük kaliteli/eski haberleri ATLA, trend yapma.
+Başka açıklama ekleme, sadece JSON döndür."""
 
         try:
             response = openai_client.chat.completions.create(
@@ -178,7 +226,7 @@ En az 3, en fazla 15 trend döndür. Başka açıklama ekleme."""
                     {"role": "system", "content": "Sen bir trend analisti ve içerik stratejistisin. JSON formatında yanıt ver."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
+                temperature=0.4,  # Daha tutarlı skorlama
                 max_tokens=4000,
                 response_format={"type": "json_object"}
             )
@@ -186,13 +234,12 @@ En az 3, en fazla 15 trend döndür. Başka açıklama ekleme."""
             logger.info(f"GPT raw response (first 300): {content[:300]}")
             data = json.loads(content)
 
-            # Robust parsing: handle {"trends": [...]}, {"items": [...]}, [...], or any dict with a list value
+            # Robust parsing
             if isinstance(data, list):
                 trends = data
             elif isinstance(data, dict):
                 trends = data.get("trends", data.get("items", []))
                 if not isinstance(trends, list):
-                    # Fallback: find first list value in dict
                     trends = []
                     for v in data.values():
                         if isinstance(v, list):
@@ -201,7 +248,43 @@ En az 3, en fazla 15 trend döndür. Başka açıklama ekleme."""
             else:
                 trends = []
 
-            logger.info(f"Analyzed {len(trends)} trends")
+            # ── POST-PROCESS: Zamanlılık cezası (GPT'ye güvenme, double-check) ──
+            now = datetime.now(timezone.utc)
+            items_url_map = {item.get("url", ""): item for item in raw_items}
+
+            for trend in trends:
+                # published_at'dan yaş hesapla
+                pub_str = trend.get("published_at")
+                age_hours = None
+                if pub_str:
+                    try:
+                        pub_dt = datetime.fromisoformat(pub_str.replace("Z", "+00:00"))
+                        age_hours = (now - pub_dt).total_seconds() / 3600
+                    except Exception:
+                        pass
+
+                # URL'den fallback yaş
+                if age_hours is None:
+                    matched_item = items_url_map.get(trend.get("url", ""))
+                    if matched_item:
+                        age_hours = matched_item.get("age_hours")
+
+                # Zamanlılık cezası uygula
+                gpt_score = trend.get("score", 0)
+                if age_hours is not None:
+                    if age_hours > 36:
+                        trend["score"] = min(gpt_score, 50)  # Max 50
+                    elif age_hours > 24:
+                        trend["score"] = min(gpt_score, 65)  # Max 65
+                    elif age_hours > 12:
+                        trend["score"] = min(gpt_score, 80)  # Max 80
+
+                    if gpt_score != trend["score"]:
+                        logger.info(f"Score capped: '{trend.get('topic', '?')}' {gpt_score}→{trend['score']} (age: {age_hours:.1f}h)")
+
+                trend["_age_hours"] = age_hours  # Debug bilgisi
+
+            logger.info(f"Analyzed {len(trends)} trends (post-processed with age penalties)")
             return trends
 
         except Exception as e:
