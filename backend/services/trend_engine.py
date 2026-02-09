@@ -46,7 +46,7 @@ class TrendEngine:
 
     CATEGORIES = ["AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"]
 
-    SCORE_THRESHOLD = 80  # Trends with score >= 80 are visible
+    SCORE_THRESHOLD = 60  # Trends with score >= 60 are visible
 
     async def fetch_rss_trends(self) -> list:
         """Fetch RSS feed items from last 48 hours.

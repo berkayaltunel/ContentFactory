@@ -84,7 +84,7 @@ async def list_trends(
             query = query.gte("created_at", cutoff)
 
         result = query.execute()
-        return result.data
+        return {"trends": result.data}
     except Exception as e:
         logger.error(f"Trends list error: {e}")
         raise HTTPException(status_code=500, detail="Bir hata oluştu")
