@@ -143,6 +143,37 @@ const TypeHypeLogo = () => (
 // ══════════════════════════════════════════
 
 function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab }) {
+  const [twitterInput, setTwitterInput] = useState("");
+  const [twitterSaved, setTwitterSaved] = useState(false);
+  const [twitterLoading, setTwitterLoading] = useState(false);
+  const [twitterPreview, setTwitterPreview] = useState(null);
+
+  // Load saved twitter username on open
+  useEffect(() => {
+    if (!open) return;
+    api.get(`${API}/settings`).then((res) => {
+      const u = res.data?.twitter_username || "";
+      setTwitterInput(u);
+      setTwitterPreview(u || null);
+      setTwitterSaved(false);
+    }).catch(() => {});
+  }, [open]);
+
+  const handleSaveTwitter = async () => {
+    setTwitterLoading(true);
+    try {
+      await api.patch(`${API}/settings`, { twitter_username: twitterInput.trim() });
+      setTwitterSaved(true);
+      setTwitterPreview(twitterInput.trim() || null);
+      toast.success("Twitter hesabı kaydedildi!");
+      setTimeout(() => setTwitterSaved(false), 2000);
+    } catch {
+      toast.error("Kaydedilemedi");
+    } finally {
+      setTwitterLoading(false);
+    }
+  };
+
   if (!open) return null;
 
   const currentLengths = activeTab === "reply" ? replyLengths : 
@@ -184,6 +215,83 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
             >
               <X size={16} />
             </button>
+          </div>
+
+          {/* Twitter Username */}
+          <div className="mb-4">
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+              Twitter Hesabın
+            </label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {/* Avatar Preview */}
+              {twitterPreview && (
+                <img
+                  src={`https://unavatar.io/x/${twitterPreview}`}
+                  alt=""
+                  onError={(e) => { e.target.style.display = "none"; }}
+                  style={{
+                    width: "30px",
+                    height: "30px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "1px solid var(--m-border)",
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                border: "1px solid var(--m-border)",
+                borderRadius: "999px",
+                padding: "0 12px",
+                background: "transparent",
+              }}>
+                <span style={{ fontSize: "13px", color: "var(--m-text-muted)", marginRight: "2px" }}>@</span>
+                <input
+                  type="text"
+                  value={twitterInput}
+                  onChange={(e) => {
+                    setTwitterInput(e.target.value.replace(/^@/, ""));
+                    setTwitterSaved(false);
+                  }}
+                  onBlur={() => setTwitterPreview(twitterInput.trim() || null)}
+                  placeholder="kullanıcı adı"
+                  style={{
+                    flex: 1,
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    color: "var(--m-text)",
+                    fontSize: "13px",
+                    padding: "7px 0",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+              <button
+                onClick={handleSaveTwitter}
+                disabled={twitterLoading}
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  border: twitterSaved ? "1px solid var(--m-green-border, #22c55e33)" : "1px solid var(--m-border)",
+                  background: twitterSaved ? "var(--m-green-soft, #22c55e15)" : "transparent",
+                  color: twitterSaved ? "var(--m-green, #22c55e)" : "var(--m-text-soft)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  transition: "all 0.2s ease",
+                }}
+                title="Kaydet"
+              >
+                <Check size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Mode Toggle */}
@@ -781,6 +889,10 @@ export default function XAIModule() {
   const [imageBase64, setImageBase64] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [generating, setGenerating] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -813,6 +925,30 @@ export default function XAIModule() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch generation history
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await api.get(`${API}/generations/history`, { params: { limit: 20 } });
+      setHistory(res.data || []);
+    } catch (e) {
+      // silent fail
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  // Refresh history after generation completes
+  useEffect(() => {
+    if (jobs.some((j) => j.status === "completed")) {
+      fetchHistory();
+    }
+  }, [jobs, fetchHistory]);
 
   const handleTextareaInput = (e) => {
     setInputValue(e.target.value);
@@ -1366,35 +1502,7 @@ export default function XAIModule() {
             </button>
           );
         })}
-        {/* More button for Article */}
-        <button
-          onClick={() => {
-            setActiveTab("article");
-            setSettings((s) => ({ ...s, length: "standard" }));
-          }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "9px 18px",
-            borderRadius: "999px",
-            border: activeTab === "article"
-              ? "1px solid var(--m-text-faint)"
-              : "1px solid var(--m-border)",
-            background: activeTab === "article" ? "var(--m-surface-hover)" : "transparent",
-            color: activeTab === "article"
-              ? "var(--m-text)"
-              : "var(--m-text-soft)",
-            fontSize: "13.5px",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <MoreHorizontal size={16} style={{ opacity: 0.65 }} />
-          Makale
-        </button>
+        {/* Makale butonu kaldırıldı */}
       </div>
 
       {/* Generation Results */}
@@ -1413,6 +1521,174 @@ export default function XAIModule() {
           </div>
         </div>
       )}
+
+      {/* Generation History */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "680px",
+          marginBottom: "80px",
+        }}
+      >
+        {/* Collapsible Header */}
+        <button
+          onClick={() => setHistoryOpen((p) => !p)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            width: "100%",
+            padding: "12px 0",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--m-text-soft)",
+            fontSize: "14px",
+            fontWeight: "600",
+            fontFamily: "inherit",
+          }}
+        >
+          {historyOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          Geçmiş
+          {history.length > 0 && (
+            <span style={{ fontSize: "12px", color: "var(--m-text-muted)", fontWeight: "400" }}>
+              ({history.length})
+            </span>
+          )}
+        </button>
+
+        {historyOpen && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {historyLoading && history.length === 0 && (
+              <div style={{ textAlign: "center", padding: "20px", color: "var(--m-text-muted)", fontSize: "13px" }}>
+                Yükleniyor...
+              </div>
+            )}
+            {!historyLoading && history.length === 0 && (
+              <div style={{ textAlign: "center", padding: "20px", color: "var(--m-text-muted)", fontSize: "13px" }}>
+                Henüz üretim geçmişi yok
+              </div>
+            )}
+            {history.map((gen) => {
+              const isExpanded = expandedHistoryId === gen.id;
+              const variants = gen.variants || [];
+              const createdAt = gen.created_at ? new Date(gen.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+              const preview = variants[0]?.content?.slice(0, 100) || gen.topic?.slice(0, 100) || "";
+
+              return (
+                <div
+                  key={gen.id}
+                  style={{
+                    background: "var(--m-surface)",
+                    border: "1px solid var(--m-border-light)",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    transition: "border-color 0.2s ease",
+                  }}
+                >
+                  {/* Summary row */}
+                  <button
+                    onClick={() => setExpandedHistoryId(isExpanded ? null : gen.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      width: "100%",
+                      padding: "12px 16px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontFamily: "inherit",
+                      color: "var(--m-text)",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
+                        <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--m-text)" }}>
+                          {gen.topic || gen.type || "İçerik"}
+                        </span>
+                        <span style={{
+                          fontSize: "11px",
+                          padding: "2px 8px",
+                          borderRadius: "999px",
+                          background: "var(--m-border-light)",
+                          color: "var(--m-text-muted)",
+                        }}>
+                          {variants.length} varyant
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>
+                        {createdAt}
+                        {!isExpanded && preview && (
+                          <span style={{ marginLeft: "8px", opacity: 0.7 }}>
+                            — {preview}{preview.length >= 100 ? "..." : ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isExpanded ? <ChevronUp size={14} style={{ color: "var(--m-text-muted)", flexShrink: 0 }} /> : <ChevronDown size={14} style={{ color: "var(--m-text-muted)", flexShrink: 0 }} />}
+                  </button>
+
+                  {/* Expanded: show all variants using GenerationCard-style layout */}
+                  {isExpanded && variants.length > 0 && (
+                    <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {variants.map((variant, idx) => (
+                        <div
+                          key={variant.id || idx}
+                          style={{
+                            border: "1px solid var(--m-border-light)",
+                            borderRadius: "8px",
+                            padding: "12px",
+                          }}
+                        >
+                          <p style={{ fontSize: "13px", whiteSpace: "pre-wrap", lineHeight: "1.55", color: "var(--m-text)", marginBottom: "10px" }}>
+                            {variant.content}
+                          </p>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--m-border-light)", paddingTop: "8px" }}>
+                            <span style={{ fontSize: "11px", color: "var(--m-text-muted)" }}>
+                              {variant.character_count || variant.content?.length || 0} karakter
+                              {variants.length > 1 && ` · Varyant ${idx + 1}`}
+                            </span>
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              {[
+                                { icon: "📋", label: "Kopyala", action: () => { navigator.clipboard.writeText(variant.content); toast.success("Kopyalandı!"); } },
+                                { icon: "♡", label: "Favori", action: () => { api.post(`${API}/favorites/toggle`, { content: variant.content, type: gen.type || "tweet", generation_id: gen.id, variant_index: idx }).then(() => toast.success("Favori güncellendi")).catch(() => toast.error("Hata")); } },
+                                { icon: "📹", label: "Video Script", action: () => toast.info("Video script için ana üretimden kullanın") },
+                                { icon: "🖼️", label: "Görsel Prompt", action: () => toast.info("Görsel prompt için ana üretimden kullanın") },
+                                { icon: "🐦", label: "Tweetle", action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(variant.content)}`, "_blank") },
+                              ].map((btn) => (
+                                <button
+                                  key={btn.label}
+                                  onClick={btn.action}
+                                  title={btn.label}
+                                  style={{
+                                    padding: "4px 8px",
+                                    borderRadius: "6px",
+                                    border: "1px solid var(--m-border-light)",
+                                    background: "transparent",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    color: "var(--m-text-soft)",
+                                    transition: "all 0.15s ease",
+                                    fontFamily: "inherit",
+                                  }}
+                                >
+                                  {btn.icon}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Floating Queue */}
       <FloatingQueue jobs={jobs} onDismiss={dismissJob} />
