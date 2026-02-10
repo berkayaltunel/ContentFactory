@@ -46,10 +46,10 @@ async def analyze_account(request: AccountAnalysisRequest, user=Depends(require_
             raise HTTPException(status_code=404, detail=f"@{username} bulunamadı")
 
         # Tweet'leri çek
-        tweets = scraper.get_user_tweets(username, count=50)
+        tweets = scraper.get_user_tweets(username, count=200)
 
         # AI analizi
-        tweet_texts = [t.get('content', '') for t in tweets[:30]]
+        tweet_texts = [t.get('content', '') for t in tweets[:100]]
         tweet_summary = "\n---\n".join(tweet_texts)
 
         lang = "Türkçe" if request.language != "en" else "English"
