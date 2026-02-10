@@ -23,6 +23,7 @@ class ProfileResponse(BaseModel):
     id: str
     name: str
     source_ids: List[str]
+    twitter_usernames: Optional[List[str]] = None
     style_summary: Optional[dict] = None
     created_at: str
 
@@ -89,13 +90,30 @@ async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabas
     """List all style profiles for this user"""
     result = supabase.table("style_profiles").select("*").eq("user_id", user.id).order("created_at", desc=True).execute()
     
+    # Collect all source_ids to batch-fetch twitter_usernames
+    all_source_ids = set()
+    for row in result.data:
+        for sid in row.get('source_ids', []):
+            all_source_ids.add(sid)
+    
+    # Fetch twitter_usernames for all sources in one query
+    username_map = {}
+    if all_source_ids:
+        or_filter = ",".join(f"id.eq.{sid}" for sid in all_source_ids)
+        sources_result = supabase.table("style_sources").select("id, twitter_username").or_(or_filter).execute()
+        for src in (sources_result.data or []):
+            username_map[src['id']] = src.get('twitter_username', '')
+    
     profiles = []
     for row in result.data:
         fingerprint = row.get('style_fingerprint', {})
+        source_ids = row.get('source_ids', [])
+        twitter_usernames = [username_map[sid] for sid in source_ids if sid in username_map and username_map[sid]]
         profiles.append(ProfileResponse(
             id=row['id'],
             name=row['name'],
-            source_ids=row.get('source_ids', []),
+            source_ids=source_ids,
+            twitter_usernames=twitter_usernames,
             style_summary={
                 "tweet_count": fingerprint.get('tweet_count', 0),
                 "avg_length": fingerprint.get('avg_length', 0),

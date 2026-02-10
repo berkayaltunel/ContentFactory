@@ -238,6 +238,12 @@ export default function DashboardLayout() {
   const { user, signOut, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [connectedAccounts, setConnectedAccounts] = useState([]);
 
@@ -324,10 +330,8 @@ export default function DashboardLayout() {
             to="/dashboard"
             className="flex items-center gap-2 px-3 py-1.5 mr-1"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-              <Layers className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-outfit text-sm font-bold text-white hidden sm:inline">
+            <img src="/logo.png" alt="Type Hype" className="h-9 w-9 rounded-lg object-cover" />
+            <span className="font-outfit text-base font-bold text-white hidden sm:inline">
               Type<span className="text-purple-400">Hype</span>
             </span>
           </NavLink>
@@ -404,7 +408,7 @@ export default function DashboardLayout() {
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all duration-300">
+                <button className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all duration-300 focus:outline-none focus-visible:outline-none">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
                     <AvatarImage 
                       src={primaryAvatarUrl || user.avatar_url} 

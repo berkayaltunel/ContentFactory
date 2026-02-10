@@ -154,18 +154,40 @@ def embed_tweets_for_source_sync(source_id: str) -> int:
     return total
 
 
-def get_similar_tweets(query_text: str, source_ids: list[str], limit: int = 30, threshold: float = 0.3) -> list[dict]:
-    """Find similar tweets using pgvector cosine similarity.
+def _compute_combined_score(similarity: float, likes: int, retweets: int) -> float:
+    """Combine similarity score with engagement metrics.
+    
+    Formula: 0.6 * similarity + 0.4 * normalized_engagement
+    Engagement is log-scaled to prevent outliers from dominating.
+    """
+    import math
+    engagement = likes + (retweets * 2)  # retweets worth more
+    # Log scale: log(1+engagement) / log(1+1000) to normalize roughly 0-1
+    norm_engagement = math.log1p(engagement) / math.log1p(1000)
+    norm_engagement = min(norm_engagement, 1.0)
+    return 0.6 * similarity + 0.4 * norm_engagement
+
+
+def _is_reply(content: str) -> bool:
+    """Check if a tweet is a reply (starts with @mention)."""
+    return content.strip().startswith("@")
+
+
+def get_similar_tweets(query_text: str, source_ids: list[str], limit: int = 20, threshold: float = 0.3, content_type: str = "tweet") -> list[dict]:
+    """Find similar tweets using pgvector cosine similarity with engagement weighting and diversity sampling.
     
     Args:
         query_text: Text to find similar tweets for
         source_ids: List of source IDs to search within
-        limit: Max number of results
+        limit: Max number of results to return
         threshold: Minimum similarity threshold
+        content_type: 'tweet' or 'reply' - filters examples by type
     
     Returns:
-        List of tweet dicts with similarity scores
+        List of tweet dicts with similarity scores and engagement data
     """
+    import random
+    
     if not source_ids:
         return []
     
@@ -177,7 +199,13 @@ def get_similar_tweets(query_text: str, source_ids: list[str], limit: int = 30, 
     # If few tweets, return all (no need for similarity search)
     if total_count <= 50:
         result = supabase.table("source_tweets").select("id, content, likes, retweets, source_id").or_(or_filter).order("likes", desc=True).limit(50).execute()
-        return [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": 1.0} for t in (result.data or [])]
+        tweets = [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": 1.0} for t in (result.data or [])]
+        # Filter by content type
+        if content_type == "reply":
+            tweets = [t for t in tweets if _is_reply(t["content"])] or tweets
+        else:
+            tweets = [t for t in tweets if not _is_reply(t["content"])] or tweets
+        return tweets[:limit]
     
     # Embed the query
     try:
@@ -187,20 +215,63 @@ def get_similar_tweets(query_text: str, source_ids: list[str], limit: int = 30, 
         result = supabase.table("source_tweets").select("id, content, likes, retweets, source_id").or_(or_filter).order("likes", desc=True).limit(limit).execute()
         return [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": 0.0} for t in (result.data or [])]
     
+    # Fetch top 50 candidates for diversity sampling
+    fetch_count = max(limit * 3, 50)
+    
     # Call the pgvector similarity function
     try:
         result = supabase.rpc("match_source_tweets", {
             "query_embedding": query_embedding,
             "match_source_ids": source_ids,
             "match_threshold": threshold,
-            "match_count": limit
+            "match_count": fetch_count
         }).execute()
         
-        return [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": t.get("similarity", 0)} for t in (result.data or [])]
+        candidates = [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": t.get("similarity", 0)} for t in (result.data or [])]
     except Exception as e:
         logger.error(f"Similarity search failed: {e}")
-        result = supabase.table("source_tweets").select("id, content, likes, retweets, source_id").or_(or_filter).order("likes", desc=True).limit(limit).execute()
-        return [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": 0.0} for t in (result.data or [])]
+        result = supabase.table("source_tweets").select("id, content, likes, retweets, source_id").or_(or_filter).order("likes", desc=True).limit(fetch_count).execute()
+        candidates = [{"content": t["content"], "likes": t.get("likes", 0), "retweets": t.get("retweets", 0), "similarity": 0.0} for t in (result.data or [])]
+    
+    if not candidates:
+        return []
+    
+    # (b) Tweet type filtering
+    if content_type == "reply":
+        filtered = [t for t in candidates if _is_reply(t["content"])]
+    else:
+        filtered = [t for t in candidates if not _is_reply(t["content"])]
+    # Fallback to all if filter yields too few
+    if len(filtered) < 5:
+        filtered = candidates
+    
+    # (a) Engagement weighting - compute combined scores
+    for t in filtered:
+        t["combined_score"] = _compute_combined_score(t["similarity"], t["likes"], t["retweets"])
+    
+    # Sort by combined score
+    filtered.sort(key=lambda t: t["combined_score"], reverse=True)
+    
+    # (b) Diversity sampling: from top candidates, randomly sample `limit`
+    # Take top pool (2x limit) then randomly pick from it
+    pool_size = min(len(filtered), limit * 2)
+    pool = filtered[:pool_size]
+    
+    if len(pool) <= limit:
+        selected = pool
+    else:
+        # Always include top 5 (best matches), randomly sample rest
+        top_guaranteed = pool[:5]
+        rest_pool = pool[5:]
+        random_picks = random.sample(rest_pool, min(limit - 5, len(rest_pool)))
+        selected = top_guaranteed + random_picks
+    
+    # Sort final selection by combined_score for prompt coherence
+    selected.sort(key=lambda t: t["combined_score"], reverse=True)
+    
+    logger.info(f"RAG: {len(candidates)} candidates → {len(filtered)} after type filter → {len(selected)} selected (type={content_type})")
+    
+    return selected
 
 
 if __name__ == "__main__":

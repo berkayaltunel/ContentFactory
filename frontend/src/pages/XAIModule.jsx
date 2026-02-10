@@ -162,15 +162,16 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
             background: "var(--m-popup-bg)",
             border: "1px solid var(--m-border)",
             borderRadius: "16px",
-            padding: "20px",
+            padding: "14px 16px",
             backdropFilter: "blur(20px)",
-            maxHeight: "60vh",
-            overflowY: "auto",
             boxShadow: "var(--m-shadow)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0",
           }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--m-text)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text)" }}>
               Üretim Ayarları
             </span>
             <button
@@ -186,45 +187,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
             </button>
           </div>
 
-          {/* Mode Toggle */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
-              Mod
-            </label>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {["classic", "apex"].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => onSettingsChange({ ...settings, mode: m })}
-                  style={{
-                    padding: "6px 16px",
-                    borderRadius: "999px",
-                    border: settings.mode === m ? "none" : "1px solid var(--m-border)",
-                    background: m === "apex" && settings.mode === m
-                      ? "linear-gradient(135deg, #eab308, #f97316)"
-                      : settings.mode === m
-                      ? "var(--m-pill-active-bg)"
-                      : "transparent",
-                    color: settings.mode === m ? (m === "apex" ? "var(--m-text)" : "var(--m-pill-active-text)") : "var(--m-text-soft)",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {m === "apex" && <Zap size={14} />}
-                  {m === "classic" ? "Klasik" : "APEX"}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Persona */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+          <div className="mb-2.5">
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
               Karakter
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -250,8 +215,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
           </div>
 
           {/* Tone */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+          <div className="mb-2">
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
               Ton
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -277,8 +242,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
           </div>
 
           {/* Length */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+          <div className="mb-2">
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
               Uzunluk
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -304,8 +269,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
           </div>
 
           {/* Knowledge */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+          <div className="mb-2">
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
               Knowledge Mode
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -331,8 +296,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
           </div>
 
           {/* Language */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+          <div className="mb-2">
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
               Dil
             </label>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -359,7 +324,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Variant Count */}
           <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
               Varyant Sayısı
             </label>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -405,8 +370,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Reply-specific: Reply Mode */}
           {activeTab === "reply" && (
-            <div className="mb-4 mt-4">
-              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <div className="mb-2 mt-2">
+              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
                 Reply Modu
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -434,8 +399,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Article-specific: Style */}
           {activeTab === "article" && (
-            <div className="mb-4 mt-4">
-              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <div className="mb-2 mt-2">
+              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
                 Makale Stili
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -496,7 +461,16 @@ function StyleProfileBadge() {
           whiteSpace: "nowrap",
         }}
       >
-        <Dna size={14} />
+        {activeProfile?.twitter_usernames?.[0] ? (
+          <img
+            src={`https://unavatar.io/x/${activeProfile.twitter_usernames[0]}`}
+            alt=""
+            style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover" }}
+            onError={(e) => { e.target.style.display = "none"; }}
+          />
+        ) : (
+          <Dna size={14} />
+        )}
         {activeProfile ? activeProfile.name.split(" ")[0] : "Stil"}
         <ChevronDown size={12} style={{ opacity: 0.5 }} />
       </button>
@@ -537,20 +511,29 @@ function StyleProfileBadge() {
                 textAlign: "left",
               }}
             >
-              <div style={{
-                width: "24px",
-                height: "24px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #a855f7, #ec4899)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}>
-                <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--m-text)" }}>
-                  {profile.name?.charAt(0)?.toUpperCase() || "S"}
-                </span>
-              </div>
+              {profile.twitter_usernames?.[0] ? (
+                <img
+                  src={`https://unavatar.io/x/${profile.twitter_usernames[0]}`}
+                  alt=""
+                  style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                  onError={(e) => { e.target.onerror = null; e.target.src = ""; e.target.style.display = "none"; }}
+                />
+              ) : (
+                <div style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #a855f7, #ec4899)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--m-text)" }}>
+                    {profile.name?.charAt(0)?.toUpperCase() || "S"}
+                  </span>
+                </div>
+              )}
               <span style={{ flex: 1 }}>{profile.name}</span>
               {profile.id === activeProfileId && <Check size={14} />}
             </button>
@@ -750,9 +733,9 @@ const promoCards = [
     type: "style",
   },
   {
-    title: "APEX Mode",
-    desc: "Viral potansiyeli en yüksek içerikler için APEX modunu dene.",
-    type: "apex",
+    title: "Ultra Mode",
+    desc: "Viral potansiyeli en yüksek içerikler için ⚡ Ultra modunu dene.",
+    type: "ultra",
   },
   {
     title: "Thread Gücü",
@@ -1038,7 +1021,7 @@ export default function XAIModule() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
         color: "var(--m-text)",
         padding: "24px 16px",
@@ -1056,6 +1039,9 @@ export default function XAIModule() {
           pointerEvents: "none",
         }}
       />
+
+      {/* Vertical spacer - pushes content toward center */}
+      <div style={{ height: "15vh", flexShrink: 0 }} />
 
       {/* Style Profile Badge (top) */}
       <div
@@ -1130,6 +1116,14 @@ export default function XAIModule() {
           transition: "all 0.6s ease 0.3s",
         }}
       >
+        {/* Ultra glow wrapper */}
+        <div
+          className={settings.mode === "apex" ? "ultra-glow-border" : ""}
+          style={{
+            borderRadius: "18px",
+            position: "relative",
+          }}
+        >
         <div
           style={{
             background: "var(--m-input-bg)",
@@ -1211,34 +1205,6 @@ export default function XAIModule() {
           >
             {/* Left Icons */}
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              {/* Image Upload */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  border: "1px solid var(--m-icon-btn-border)",
-                  background: imageUrl ? "var(--m-surface-hover)" : "transparent",
-                  color: imageUrl ? "var(--m-accent)" : "var(--m-icon-color)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                title="Görsel ekle"
-              >
-                <Image size={18} />
-              </button>
-
               {/* Link (for fetch tweet) */}
               {needsUrl && (
                 <button
@@ -1262,6 +1228,28 @@ export default function XAIModule() {
                   {fetching ? <Loader2 size={18} className="animate-spin" /> : <Link size={18} />}
                 </button>
               )}
+
+              {/* Ultra Mode Toggle */}
+              <button
+                onClick={() => setSettings((s) => ({ ...s, mode: s.mode === "apex" ? "classic" : "apex" }))}
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  border: settings.mode === "apex" ? "1px solid rgba(234, 179, 8, 0.4)" : "1px solid var(--m-icon-btn-border)",
+                  background: settings.mode === "apex" ? "rgba(234, 179, 8, 0.12)" : "transparent",
+                  color: settings.mode === "apex" ? "#eab308" : "var(--m-icon-color)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  boxShadow: settings.mode === "apex" ? "0 0 12px rgba(234, 179, 8, 0.2)" : "none",
+                }}
+                title={settings.mode === "apex" ? "Ultra mod aktif" : "Ultra moda geç"}
+              >
+                <Zap size={18} style={{ fill: settings.mode === "apex" ? "#eab308" : "none" }} />
+              </button>
 
               {/* Settings */}
               <button
@@ -1331,6 +1319,7 @@ export default function XAIModule() {
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -1586,21 +1575,10 @@ export default function XAIModule() {
       <FloatingQueue jobs={jobs} onDismiss={dismissJob} />
 
       {/* Bottom Promo Card */}
-      {jobs.length === 0 && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "32px",
-            left: "50%",
-            transform: `translateX(-50%) ${isLoaded ? "translateY(0)" : "translateY(20px)"}`,
-            opacity: isLoaded ? 1 : 0,
-            transition: "all 0.6s ease 0.6s",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "14px",
-          }}
-        >
+      {/* Promo cards removed - saved for landing page */}
+      {false && (
+        <div>
+          {/* placeholder */}
           <div
             style={{
               background: "var(--m-card-bg)",
@@ -1715,6 +1693,7 @@ export default function XAIModule() {
       <style>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
         ::placeholder { color: var(--m-text-faint); }
+        textarea:focus { outline: none !important; box-shadow: none !important; border-color: transparent !important; ring: none !important; }
         textarea::-webkit-scrollbar { width: 4px; }
         textarea::-webkit-scrollbar-track { background: transparent; }
         textarea::-webkit-scrollbar-thumb { background: var(--m-scrollbar); border-radius: 4px; }
@@ -1729,6 +1708,42 @@ export default function XAIModule() {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @property --ultra-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+        @keyframes ultra-rotate {
+          from { --ultra-angle: 0deg; }
+          to { --ultra-angle: 360deg; }
+        }
+        .ultra-glow-border {
+          position: relative;
+          background: transparent;
+        }
+        .ultra-glow-border::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 18px;
+          padding: 2px;
+          background: conic-gradient(
+            from var(--ultra-angle, 0deg),
+            #a855f7,
+            #3b82f6,
+            #06b6d4,
+            #ec4899,
+            #ef4444,
+            #f97316,
+            #a855f7
+          );
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          animation: ultra-rotate 6s linear infinite;
+          pointer-events: none;
+        }
+        /* glow removed - border only */
       `}</style>
     </div>
   );

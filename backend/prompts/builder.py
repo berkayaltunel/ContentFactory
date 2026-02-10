@@ -290,11 +290,10 @@ def build_apex_section() -> str:
 
 
 def build_example_tweets_section(example_tweets: list) -> str:
-    """Build example tweets section for few-shot RAG."""
+    """Build example tweets section for few-shot RAG with engagement metadata."""
     if not example_tweets:
         return ""
     
-    # Limit to 10 most relevant (they're already sorted by similarity)
     tweets_to_use = example_tweets[:20]
     
     section = """
@@ -302,13 +301,26 @@ def build_example_tweets_section(example_tweets: list) -> str:
 
 Aşağıdakiler bu kişinin gerçekten yazdığı tweet'ler. Bunları oku ve bu kişi gibi yaz.
 Kopyalama, yeniden yaz. Ama aynı kişi yazmış gibi hissettir.
+Özellikle yüksek etkileşim alan tweet'lerin yapısını ve tonunu referans al.
 
 """
     for i, tweet in enumerate(tweets_to_use, 1):
         content = tweet.get("content", "") if isinstance(tweet, dict) else str(tweet)
         if len(content) > 500:
             content = content[:497] + "..."
-        section += f"{i}. {content}\n"
+        
+        # Add engagement metadata
+        if isinstance(tweet, dict):
+            likes = tweet.get("likes", 0)
+            retweets = tweet.get("retweets", 0)
+            engagement_tag = ""
+            if likes >= 100 or retweets >= 20:
+                engagement_tag = f" [🔥 {likes} beğeni, {retweets} RT]"
+            elif likes > 0:
+                engagement_tag = f" [{likes} beğeni]"
+            section += f"{i}. {content}{engagement_tag}\n"
+        else:
+            section += f"{i}. {content}\n"
     
     return section
 
