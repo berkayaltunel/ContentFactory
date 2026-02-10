@@ -54,7 +54,13 @@ def _is_allowed_origin(origin: str) -> bool:
 STATE_CHANGING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 # Paths exempt from anti-curl / custom header check
-EXEMPT_PATHS = {"/api/", "/api/health", "/api/cookies/telegram-update"}
+EXEMPT_PATHS = {
+    "/api/", "/api/health", "/api/cookies/telegram-update",
+    # Cron-triggered endpoints (authenticated via X-Cron-Secret)
+    "/api/trends/auto-refresh",
+    "/api/favorites/auto-purge",
+    "/api/cookies/health",
+}
 
 # Suspicious User-Agent patterns
 SUSPICIOUS_UA_PATTERNS = [
