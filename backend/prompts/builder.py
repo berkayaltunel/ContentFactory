@@ -273,16 +273,13 @@ def build_style_clone_section(style_prompt: str) -> str:
     section = f"""
 ## 🎯 STİL KLONLAMA AKTİF
 
-{STYLE_CLONE_INTEGRATION}
-
-### KLONLANACAK STİL PROFİLİ:
+### Bu kişinin yazım DNA'sı:
 {style_prompt}
 
 ### ÖNEMLİ:
-Bu stil profili, tüm diğer ayarların (persona, ton) ÜSTÜNDEDİR.
-Persona ve ton ayarlarını bu stile göre YORUMLA.
-Kullanıcının sesini, tonunu, formatting tercihlerini YAKALA.
-Birebir kopyalama değil, özü yakalama.
+Bu kişi gibi yaz. Onun ağzından çıkmış gibi hissettir.
+Persona ve ton ayarlarını bu stile göre yorumla.
+Yapay veya "AI yazmış" hissi verme. Doğal ol.
 """
     return section
 
@@ -297,25 +294,21 @@ def build_example_tweets_section(example_tweets: list) -> str:
     if not example_tweets:
         return ""
     
+    # Limit to 10 most relevant (they're already sorted by similarity)
+    tweets_to_use = example_tweets[:10]
+    
     section = """
-## 📝 GERÇEK ÖRNEK TWEET'LER (Stil Referansı)
+## 📝 BU KİŞİNİN GERÇEK TWEET'LERİ
 
-Aşağıdaki tweet'ler, klonlanacak stilin GERÇEK örnekleri. Bu tweet'lerdeki:
-- Cümle yapılarını
-- Kelime seçimlerini
-- Ton ve enerjiyi
-- Uzunluk ve formatting tercihlerini
-- Hook tarzlarını
-TAKLİT ET. Birebir kopyalama değil, aynı "ses"i yakala.
+Aşağıdakiler bu kişinin gerçekten yazdığı tweet'ler. Bunları oku ve bu kişi gibi yaz.
+Kopyalama, yeniden yaz. Ama aynı kişi yazmış gibi hissettir.
 
-### Örnekler:
 """
-    for i, tweet in enumerate(example_tweets[:30], 1):
+    for i, tweet in enumerate(tweets_to_use, 1):
         content = tweet.get("content", "") if isinstance(tweet, dict) else str(tweet)
-        # Truncate very long tweets
         if len(content) > 500:
             content = content[:497] + "..."
-        section += f"\n{i}. {content}"
+        section += f"{i}. {content}\n"
     
     return section
 
