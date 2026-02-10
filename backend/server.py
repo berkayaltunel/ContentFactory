@@ -449,14 +449,16 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
                 source_ids = result.data[0].get('source_ids', [])
                 if source_ids:
                     try:
+                        logger.info(f"RAG: Fetching similar tweets for topic='{request.topic}' from {len(source_ids)} sources")
                         from embed_tweets import get_similar_tweets
                         example_tweets = get_similar_tweets(
                             query_text=request.topic,
                             source_ids=source_ids,
                             limit=30
                         )
+                        logger.info(f"RAG: Found {len(example_tweets)} similar tweets")
                     except Exception as e:
-                        logger.warning(f"Similar tweets fetch failed (continuing without): {e}")
+                        logger.warning(f"RAG: Similar tweets fetch failed (continuing without): {e}")
         
         # Analyze image if provided
         image_context = None
