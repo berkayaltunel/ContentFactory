@@ -73,7 +73,7 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
     
     # Fetch tweets in background (for now, sync)
     logger.info(f"Fetching tweets for @{username}")
-    tweets = scraper.get_user_tweets(username, count=50)
+    tweets = scraper.get_user_tweets(username, count=200)
     
     # Save tweets
     tweet_records = []
@@ -107,6 +107,14 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
         "tweet_count": len(tweet_records),
         "last_scraped_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", source_id).execute()
+    
+    # Auto-embed tweets
+    try:
+        from embed_tweets import embed_tweets_for_source_sync
+        embed_tweets_for_source_sync(source_id)
+        logger.info(f"Auto-embedded tweets for source {source_id}")
+    except Exception as e:
+        logger.warning(f"Auto-embed failed for source {source_id}: {e}")
     
     return SourceResponse(
         id=source_id,
@@ -181,7 +189,7 @@ async def refresh_source(source_id: str, user=Depends(require_auth), supabase=De
     username = source['twitter_username']
     
     # Fetch new tweets
-    tweets = scraper.get_user_tweets(username, count=50)
+    tweets = scraper.get_user_tweets(username, count=200)
     
     # Delete old tweets
     supabase.table("source_tweets").delete().eq("source_id", source_id).execute()
@@ -214,5 +222,13 @@ async def refresh_source(source_id: str, user=Depends(require_auth), supabase=De
         "tweet_count": len(tweet_records),
         "last_scraped_at": datetime.now(timezone.utc).isoformat()
     }).eq("id", source_id).execute()
+    
+    # Auto-embed tweets
+    try:
+        from embed_tweets import embed_tweets_for_source_sync
+        embed_tweets_for_source_sync(source_id)
+        logger.info(f"Auto-embedded tweets for refreshed source {source_id}")
+    except Exception as e:
+        logger.warning(f"Auto-embed failed for source {source_id}: {e}")
     
     return {"success": True, "tweet_count": len(tweet_records)}
