@@ -32,12 +32,12 @@ const BI = ({ Icon, className = "" }) => (
 
 const navItems = [
   { path: "/dashboard", label: "Home", icon: Home, exact: true },
-  { path: "/dashboard/x-ai", label: "X", icon: (p) => <BI Icon={FaXTwitter} {...p} /> },
-  { path: "/dashboard/youtube", label: "YouTube", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
-  { path: "/dashboard/instaflow", label: "Instagram", icon: (p) => <BI Icon={FaInstagram} {...p} /> },
-  { path: "/dashboard/tiktrend", label: "TikTok", icon: (p) => <BI Icon={FaTiktok} {...p} /> },
-  { path: "/dashboard/linkshare", label: "LinkedIn", icon: (p) => <BI Icon={FaLinkedinIn} {...p} /> },
-  { path: "/dashboard/blog", label: "Blog", icon: (p) => <BI Icon={HiDocumentText} {...p} /> },
+  { path: "/dashboard/create?platform=twitter", label: "X", icon: (p) => <BI Icon={FaXTwitter} {...p} /> },
+  { path: "/dashboard/create?platform=youtube", label: "YouTube", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
+  { path: "/dashboard/create?platform=instagram", label: "Instagram", icon: (p) => <BI Icon={FaInstagram} {...p} /> },
+  { path: "/dashboard/create?platform=tiktok", label: "TikTok", icon: (p) => <BI Icon={FaTiktok} {...p} /> },
+  { path: "/dashboard/create?platform=linkedin", label: "LinkedIn", icon: (p) => <BI Icon={FaLinkedinIn} {...p} /> },
+  { path: "/dashboard/create?platform=blog", label: "Blog", icon: (p) => <BI Icon={HiDocumentText} {...p} /> },
 ];
 
 const moreItems = [
@@ -305,8 +305,14 @@ export default function DashboardLayout() {
   };
 
   const isActive = (item) => {
-    if (item.exact) return location.pathname === item.path;
-    return location.pathname.startsWith(item.path);
+    const [itemPath, itemSearch] = item.path.split("?");
+    if (item.exact) return location.pathname === itemPath;
+    if (itemSearch) {
+      const params = new URLSearchParams(itemSearch);
+      const currentParams = new URLSearchParams(location.search);
+      return location.pathname === itemPath && [...params.entries()].every(([k, v]) => currentParams.get(k) === v);
+    }
+    return location.pathname.startsWith(itemPath);
   };
 
   // Check if any "more" item is active

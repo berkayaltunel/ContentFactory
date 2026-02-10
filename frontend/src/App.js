@@ -25,6 +25,7 @@ import CoachPage from "@/pages/CoachPage";
 import TrendDashboardPage from "@/pages/TrendDashboardPage";
 import AccountAnalysisPage from "@/pages/AccountAnalysisPage";
 import DashboardHome from "@/pages/DashboardHome";
+import CreateHub from "@/pages/CreateHub";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<ProfileProvider><DashboardLayout /></ProfileProvider>}>
                   <Route index element={<DashboardHome />} />
+                  <Route path="create" element={<CreateHub />} />
                   <Route path="x-ai" element={<XAIModule />} />
                   <Route path="x-ai-v1" element={<XAIModuleV4 />} />
                   <Route path="x-ai-v2" element={<XAIModuleV2 />} />
