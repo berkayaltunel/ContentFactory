@@ -34,12 +34,12 @@ const LIIcon = (props) => <BrandIcon Icon={FaLinkedinIn} {...props} />;
 const BlogIcon = (props) => <BrandIcon Icon={HiDocumentText} {...props} />;
 
 const moduleItems = [
-  { path: "/dashboard/x-ai", label: "X", icon: XIcon, color: "text-foreground" },
-  { path: "/dashboard/youtube", label: "YouTube", icon: YTIcon, color: "text-red-500" },
-  { path: "/dashboard/instaflow", label: "Instagram", icon: IGIcon, color: "text-pink-500" },
-  { path: "/dashboard/tiktrend", label: "TikTok", icon: TTIcon, color: "text-foreground" },
-  { path: "/dashboard/linkshare", label: "LinkedIn", icon: LIIcon, color: "text-[#0A66C2]" },
-  { path: "/dashboard/blog", label: "Blog", icon: BlogIcon, color: "text-orange-500" },
+  { path: "/dashboard/create?platform=twitter", label: "X", icon: XIcon, color: "text-foreground" },
+  { path: "/dashboard/create?platform=youtube", label: "YouTube", icon: YTIcon, color: "text-red-500" },
+  { path: "/dashboard/create?platform=instagram", label: "Instagram", icon: IGIcon, color: "text-pink-500" },
+  { path: "/dashboard/create?platform=tiktok", label: "TikTok", icon: TTIcon, color: "text-foreground" },
+  { path: "/dashboard/create?platform=linkedin", label: "LinkedIn", icon: LIIcon, color: "text-[#0A66C2]" },
+  { path: "/dashboard/create?platform=blog", label: "Blog", icon: BlogIcon, color: "text-orange-500" },
 ];
 
 const toolItems = [
@@ -216,7 +216,7 @@ export default function DashboardLayout() {
               <Button
                 size="sm"
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-9 text-sm font-medium shimmer-btn"
-                onClick={() => navigate('/dashboard/x-ai')}
+                onClick={() => navigate('/dashboard/create?platform=twitter')}
               >
                 <Sparkles className="h-4 w-4 mr-1.5" />
                 Yeni İçerik Üret

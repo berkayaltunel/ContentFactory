@@ -271,15 +271,17 @@ def build_style_clone_section(style_prompt: str) -> str:
         return ""
     
     section = f"""
-## 🎯 STİL KLONLAMA AKTİF
+## 🎯 STİL KLONLAMA AKTİF (EN YÜKSEK ÖNCELİK)
 
 ### Bu kişinin yazım DNA'sı:
 {style_prompt}
 
-### ÖNEMLİ:
-Bu kişi gibi yaz. Onun ağzından çıkmış gibi hissettir.
-Persona ve ton ayarlarını bu stile göre yorumla.
-Yapay veya "AI yazmış" hissi verme. Doğal ol.
+### STİL + AYAR KURALLARI:
+1. **Stil DNA'sı baskındır**: Kelime seçimi, cümle yapısı, ritim bu kişinin tarzında olmalı
+2. **Persona içerik açısını belirler**: Stil DNA'sı nasıl yazılacağını, persona ne söyleneceğini belirler
+3. **Ton yapıyı belirler**: Stil DNA'sı kelimeleri, ton paragraf/cümle formatını belirler
+4. **Çakışma durumunda**: Stil DNA'sı > Persona > Ton sıralaması geçerli
+5. Yapay veya "AI yazmış" hissi verme. Bu kişinin ağzından çıkmış gibi hissettir.
 """
     return section
 

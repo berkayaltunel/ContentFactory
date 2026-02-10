@@ -828,7 +828,7 @@ export default function StyleLabPage() {
 
   const handleUseProfile = (profile) => {
     // Navigate to X AI with profile selected
-    window.location.href = `/dashboard/x-ai?style=${profile.id}`;
+    window.location.href = `/dashboard/create?platform=twitter&style=${profile.id}`;
   };
 
   if (loading) {

@@ -1,5 +1,6 @@
 """İçerik dönüştürme route'ları.
 POST /api/repurpose/video-script - Tweet/içeriği video script'e çevir
+POST /api/repurpose/image-prompt - İçerikten görsel prompt üret (Nano Banana Pro)
 """
 from fastapi import APIRouter, HTTPException, Depends
 from middleware.auth import require_auth
@@ -89,3 +90,54 @@ async def convert_to_video_script(request: VideoScriptRequest, _=Depends(rate_li
     except Exception as e:
         logger.error(f"Video script error: {e}")
         return VideoScriptResponse(success=False, error="Bir hata oluştu. Lütfen tekrar deneyin.")
+
+
+# ---- Image Prompt Generation ----
+
+class ImagePromptRequest(BaseModel):
+    content: str
+    platform: str = "twitter"
+
+
+class ImagePromptResponse(BaseModel):
+    success: bool
+    prompt_json: Optional[dict] = None
+    error: Optional[str] = None
+
+
+@router.post("/image-prompt", response_model=ImagePromptResponse)
+async def generate_image_prompt(request: ImagePromptRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+    """İçerikten Nano Banana Pro formatında görsel prompt üret"""
+    try:
+        from server import openai_client, MODEL_CONTENT
+        from prompts.image_prompt import build_image_prompt
+
+        if not openai_client:
+            raise HTTPException(status_code=500, detail="OpenAI API key yapılandırılmamış")
+
+        prompt = build_image_prompt(
+            content=request.content,
+            platform=request.platform
+        )
+
+        response = openai_client.chat.completions.create(
+            model=MODEL_CONTENT,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": "Görsel prompt üret. Sadece JSON döndür."}
+            ],
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+
+        raw = response.choices[0].message.content.strip()
+        data = json.loads(raw)
+
+        return ImagePromptResponse(success=True, prompt_json=data)
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Image prompt JSON parse error: {e}")
+        return ImagePromptResponse(success=False, error="Prompt parse hatası")
+    except Exception as e:
+        logger.error(f"Image prompt error: {e}")
+        return ImagePromptResponse(success=False, error="Bir hata oluştu. Lütfen tekrar deneyin.")

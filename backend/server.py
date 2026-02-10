@@ -115,6 +115,7 @@ class QuoteGenerateRequest(BaseModel):
     knowledge: Optional[str] = None
     language: str = "auto"
     additional_context: Optional[str] = None
+    direction: Optional[str] = None  # Kullanıcının yönlendirmesi (ör: "buna katılmıyorum")
 
 class ReplyGenerateRequest(BaseModel):
     tweet_url: str
@@ -127,6 +128,7 @@ class ReplyGenerateRequest(BaseModel):
     knowledge: Optional[str] = None
     language: str = "auto"
     additional_context: Optional[str] = None
+    direction: Optional[str] = None  # Kullanıcının yönlendirmesi
 
 class ArticleGenerateRequest(BaseModel):
     topic: str
@@ -199,14 +201,7 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
         try:
             variant_prompt = user_prompt
             if variants > 1:
-                approaches = [
-                    "Kişisel deneyim/gözlem açısından yaz. 'Ben...' veya 'Gördüğüm kadarıyla...' ile başla.",
-                    "Contrarian/karşıt bir açıdan yaz. Herkesin kabul ettiği bir şeyi sorgula.",
-                    "Spesifik bir veri, rakam veya örnek üzerinden git. Somut ol.",
-                    "Kısa ve keskin bir iddia ortaya koy. Açıklama yapma, sadece söyle.",
-                    "Bir karşılaştırma veya analoji üzerinden anlat."
-                ]
-                variant_prompt += f"\n\nBu {i+1}. varyant. Yaklaşım: {approaches[i % len(approaches)]}"
+                variant_prompt += f"\n\nBu {i+1}. varyant. Aynı konu, aynı ton, aynı karakter ama farklı bir ifade ve hook kullan. Önceki varyantlardan farklı kelimeler ve cümle yapıları seç."
 
             response = openai_client.chat.completions.create(
                 model=MODEL_CONTENT,
@@ -214,7 +209,7 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": variant_prompt}
                 ],
-                temperature=0.85 + (i * 0.05),
+                temperature=0.8 + (i * 0.05),
                 max_tokens=3000
             )
 
@@ -538,6 +533,12 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
                 error="Tweet içeriği gerekli. Lütfen tweet'i çekin."
             )
 
+        # Direction varsa additional_context'e ekle
+        quote_context = request.additional_context or ""
+        if request.direction:
+            direction_text = f"\n\nKullanıcının yönlendirmesi: {request.direction}"
+            quote_context = f"{quote_context}{direction_text}" if quote_context else request.direction
+
         system_prompt = build_final_prompt(
             content_type="quote",
             persona=request.persona,
@@ -546,7 +547,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
             length=request.length,
             language=request.language,
             original_tweet=request.tweet_content,
-            additional_context=request.additional_context
+            additional_context=quote_context if quote_context else None
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
@@ -597,6 +598,12 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
                 error="Tweet içeriği gerekli. Lütfen tweet'i çekin."
             )
 
+        # Direction varsa additional_context'e ekle
+        reply_context = request.additional_context or ""
+        if request.direction:
+            direction_text = f"\n\nKullanıcının yönlendirmesi: {request.direction}"
+            reply_context = f"{reply_context}{direction_text}" if reply_context else request.direction
+
         system_prompt = build_final_prompt(
             content_type="reply",
             persona=request.persona,
@@ -606,7 +613,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
             language=request.language,
             original_tweet=request.tweet_content,
             reply_mode=request.reply_mode,
-            additional_context=request.additional_context
+            additional_context=reply_context if reply_context else None
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)

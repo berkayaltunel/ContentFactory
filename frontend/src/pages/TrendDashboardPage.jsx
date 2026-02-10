@@ -184,12 +184,12 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
   // Platform → route mapping
   const PLATFORM_ROUTES = {
-    twitter: "/dashboard/x-ai",
-    blog: "/dashboard/blog",
-    linkedin: "/dashboard/linkshare",
-    instagram: "/dashboard/instaflow",
-    youtube: "/dashboard/youtube",
-    tiktok: "/dashboard/tiktrend",
+    twitter: "/dashboard/create?platform=twitter",
+    blog: "/dashboard/create?platform=blog",
+    linkedin: "/dashboard/create?platform=linkedin",
+    instagram: "/dashboard/create?platform=instagram",
+    youtube: "/dashboard/create?platform=youtube",
+    tiktok: "/dashboard/create?platform=tiktok",
   };
 
   // Navigate to the module with topic + rich trend context
@@ -208,7 +208,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
     const context = encodeURIComponent(contextParts.join("\n\n"));
     onOpenChange(false);
-    navigate(`${route}?topic=${topic}&trend_context=${context}`);
+    navigate(`${route}&topic=${topic}&trend_context=${context}`);
   };
 
   // Trend değişince state'i sıfırla (otomatik üretim yok, kullanıcı seçsin)

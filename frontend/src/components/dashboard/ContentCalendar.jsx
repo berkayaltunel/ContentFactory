@@ -430,7 +430,7 @@ export default function ContentCalendar({ embedded = false }) {
                   </p>
                   <Button
                     size="sm"
-                    onClick={() => navigate("/dashboard/x-ai")}
+                    onClick={() => navigate("/dashboard/create?platform=twitter")}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl gap-1.5"
                   >
                     <Sparkles className="h-3.5 w-3.5" /> İçerik Üret

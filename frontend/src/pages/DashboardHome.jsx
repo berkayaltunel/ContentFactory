@@ -252,7 +252,7 @@ export default function DashboardHome() {
 
   const handleTopicSubmit = () => {
     if (topicInput.trim()) {
-      navigate(`/dashboard/x-ai?topic=${encodeURIComponent(topicInput.trim())}`);
+      navigate(`/dashboard/create?platform=twitter&topic=${encodeURIComponent(topicInput.trim())}`);
     }
   };
 
@@ -276,12 +276,12 @@ export default function DashboardHome() {
   ];
 
   const platforms = [
-    { icon: FaXTwitter,     label: "X",         path: "/dashboard/x-ai",      gradient: "from-neutral-700 to-neutral-900" },
-    { icon: FaYoutube,      label: "YouTube",    path: "/dashboard/youtube",   gradient: "from-red-500 to-red-700" },
-    { icon: FaInstagram,    label: "Instagram",  path: "/dashboard/instaflow", gradient: "from-pink-500 via-purple-500 to-orange-500" },
-    { icon: FaTiktok,       label: "TikTok",     path: "/dashboard/tiktrend",  gradient: "from-cyan-400 to-pink-500" },
-    { icon: FaLinkedinIn,   label: "LinkedIn",   path: "/dashboard/linkshare", gradient: "from-blue-600 to-blue-800" },
-    { icon: HiDocumentText, label: "Blog",       path: "/dashboard/blog",      gradient: "from-orange-500 to-amber-600" },
+    { icon: FaXTwitter,     label: "X",         path: "/dashboard/create?platform=twitter",    gradient: "from-neutral-700 to-neutral-900" },
+    { icon: FaYoutube,      label: "YouTube",    path: "/dashboard/create?platform=youtube",    gradient: "from-red-500 to-red-700" },
+    { icon: FaInstagram,    label: "Instagram",  path: "/dashboard/create?platform=instagram",  gradient: "from-pink-500 via-purple-500 to-orange-500" },
+    { icon: FaTiktok,       label: "TikTok",     path: "/dashboard/create?platform=tiktok",     gradient: "from-cyan-400 to-pink-500" },
+    { icon: FaLinkedinIn,   label: "LinkedIn",   path: "/dashboard/create?platform=linkedin",   gradient: "from-blue-600 to-blue-800" },
+    { icon: HiDocumentText, label: "Blog",       path: "/dashboard/create?platform=blog",       gradient: "from-orange-500 to-amber-600" },
   ];
 
   return (
@@ -491,7 +491,7 @@ export default function DashboardHome() {
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => navigate("/dashboard/x-ai")}
+                  onClick={() => navigate("/dashboard/create?platform=twitter")}
                   className="w-full h-9 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-medium"
                 >
                   Bu Stille Üret <ArrowRight className="h-3 w-3 ml-1" />
@@ -581,7 +581,7 @@ export default function DashboardHome() {
             </p>
             <Button
               size="sm"
-              onClick={() => navigate(`/dashboard/x-ai?topic=${encodeURIComponent(dailyPrompt)}`)}
+              onClick={() => navigate(`/dashboard/create?platform=twitter?topic=${encodeURIComponent(dailyPrompt)}`)}
               className="w-full h-9 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-medium"
             >
               <Sparkles className="h-3.5 w-3.5 mr-1" /> Bu Konuda Üret

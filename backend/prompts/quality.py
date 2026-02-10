@@ -18,67 +18,39 @@ BANNED_PATTERNS = """
 """
 
 APEX_MODE = """
-## ⚡ APEX MOD - MAXIMUM VIRAL
+## ⚡ ULTRA MOD AKTIF
 
-APEX modu aktif olduğunda, her şey bir üst seviyede olmalı.
-Normal içeriğin "good" ise, APEX "exceptional" olmalı.
+Normal moddan tamamen farklı yaz. Bu mod için kurallar:
 
-### APEX GEREKSİNİMLERİ:
+### İLK CÜMLE TESTİ:
+İlk cümleyi oku ve şunu sor: "Bunu timeline'da görsem durur muyum?"
+Cevap hayırsa, yeniden yaz. İlk cümle ya bir iddia ya bir soru ya bir çelişki olmalı.
+Açıklama ile başlama. Sonuç ile başla.
 
-1. **SCROLL-STOPPER HOOK**
-   Normal hook yetmez. İlk cümle MUTLAKA:
-   - Şok edici veya beklenmedik olmalı
-   - "WTF" veya "BUNU OKUMALIYIM" dedirtmeli
-   - İnsanları fiziksel olarak duraksatmalı
-   - 3 saniyede yakalamali
+### YAZI MİMARİSİ:
+- Cümle 1: Okuyucuyu yakala (iddia, soru, çelişki, şok)
+- Gövde: Her cümle bir sonrakini okutacak tension yarat
+- Son cümle: Mic drop. Quotable olsun, screenshot'lansın.
 
-2. **ENGAGEMENT TRIGGER**
-   Her APEX içeriği şunlardan en az birini tetiklemeli:
-   - SAVE: "Bunu kaydetmeliyim" (değerli, referans)
-   - REPLY: "Buna bir şey söylemeliyim" (tartışma, soru)
-   - RETWEET: "Bunu herkes görmeli" (powerful, universal)
-   - QUOTE: "Buna kendi yorumumu eklemeliyim" (provocative)
+### ULTRA FARK:
+Normal mod bilgi verir. Ultra mod HİSSETTİRİR.
+- "AI sektörü büyüyor" → NORMAL
+- "3 ay önce 'AI bizi işsiz bırakacak' diyenler şimdi AI ile freelance yapıyor" → ULTRA
+Somut, spesifik, kişisel, unexpected.
 
-3. **UNIQUENESS**
-   - Template değil, fresh perspective
-   - Daha önce görülmemiş açı
-   - Cliché olmayan ifadeler
-   - Özgün voice
+### KESİN YASAKLAR:
+- Liste formatı (1. 2. 3. şeklinde sıralama)
+- "İşte X şey" kalıbı
+- Generic tavsiyeler (herkesin bildiği şeyler)
+- Akademik/formal dil
+- Sıradan hook'lar
 
-4. **SHAREABILITY**
-   - "Bunu X'e göstermeliyim" dürtüsü
-   - Screenshot'lanabilir quote'lar
-   - Memorable punchline'lar
-   - Relatable ama unique
-
-5. **MEMORABILITY**
-   - Akılda kalıcı ifadeler
-   - Quotable cümleler
-   - Tekrar edilebilir one-liner'lar
-   - 24 saat sonra hatırlanır
-
-6. **SCREEN TIME**
-   - Her cümle bir sonrakini okutmalı
-   - Open loops ve payoffs
-   - Tension ve release
-   - Pace management
-
-### APEX'TE YASAK:
-- Generic açılışlar ("Bugün size anlatacağım...")
-- Tahmin edilebilir yapılar
-- Sıradan tavsiyeler
-- Safe oynamak
-- Template hissi
-- Boring transitions
-- Weak endings
-
-### APEX PUNCHLINE KONTROL:
-Son cümle/paragraf:
-- Memorable mı?
-- Quotable mı?
-- Action trigger ediyor mu?
-- İçeriği güçlü kapatıyor mu?
-- "Mic drop" hissi veriyor mu?
+### ULTRA CHECKLIST (hepsini geç):
+☐ İlk cümle scroll durduruyor mu?
+☐ En az 1 beklenmedik açı var mı?
+☐ Son cümle akılda kalıcı mı?
+☐ Birileri bunu screenshot'layıp paylaşır mı?
+☐ Template hissi veriyor mu? (veriyorsa yeniden yaz)
 """
 
 STYLE_CLONE_INTEGRATION = """

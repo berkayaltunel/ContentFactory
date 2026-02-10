@@ -298,6 +298,11 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                 </button>
               ))}
             </div>
+            {personas.find((p) => p.id === settings.persona)?.desc && (
+              <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                {personas.find((p) => p.id === settings.persona).desc}
+              </p>
+            )}
           </div>
 
           {/* Tone */}
@@ -325,6 +330,11 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                 </button>
               ))}
             </div>
+            {tones.find((t) => t.id === settings.tone)?.desc && (
+              <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                {tones.find((t) => t.id === settings.tone).desc}
+              </p>
+            )}
           </div>
 
           {/* Length */}
@@ -379,6 +389,11 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                 </button>
               ))}
             </div>
+            {knowledgeModes.find((k) => k.id === settings.knowledge)?.desc && settings.knowledge && (
+              <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                {knowledgeModes.find((k) => k.id === settings.knowledge).desc}
+              </p>
+            )}
           </div>
 
           {/* Language */}
@@ -968,8 +983,17 @@ export default function XAIModule() {
   useEffect(() => {
     const topic = searchParams.get("topic") || "";
     const context = searchParams.get("trend_context") || "";
+    const platformParam = searchParams.get("platform");
+    const styleParam = searchParams.get("style");
     if (topic) setInputValue(topic);
     if (context) setInputValue((prev) => prev ? `${prev}\n\n${context}` : context);
+    if (platformParam && ["twitter","youtube","instagram","tiktok","linkedin","blog"].includes(platformParam)) {
+      setActivePlatform(platformParam);
+    }
+    if (styleParam) {
+      setSelectedStyleProfile(styleParam);
+      setUseStyleProfile(true);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -1814,8 +1838,28 @@ export default function XAIModule() {
                               {[
                                 { icon: "📋", label: "Kopyala", action: () => { navigator.clipboard.writeText(variant.content); toast.success("Kopyalandı!"); } },
                                 { icon: "♡", label: "Favori", action: () => { api.post(`${API}/favorites/toggle`, { content: variant.content, type: gen.type || "tweet", generation_id: gen.id, variant_index: idx }).then(() => toast.success("Favori güncellendi")).catch(() => toast.error("Hata")); } },
-                                { icon: "📹", label: "Video Script", action: () => toast.info("Video script için ana üretimden kullanın") },
-                                { icon: "🖼️", label: "Görsel Prompt", action: () => toast.info("Görsel prompt için ana üretimden kullanın") },
+                                { icon: "📹", label: "Video Script", action: async () => {
+                                  try {
+                                    toast.info("Video script üretiliyor...");
+                                    const res = await api.post(`${API}/repurpose/video-script`, { content: variant.content, duration: "30", platform: "reels" });
+                                    if (res.data.success) {
+                                      const scriptText = res.data.script.map(s => `[${s.time}] ${s.spoken_text}\n📝 ${s.text_overlay}\n🎬 ${s.visual_note}`).join("\n\n");
+                                      const fullText = `🎬 Video Script (30s Reels)\n\n${scriptText}\n\n🎵 Müzik: ${res.data.music_mood}\n#️⃣ ${res.data.hashtags?.join(" ")}`;
+                                      navigator.clipboard.writeText(fullText);
+                                      toast.success("Video script kopyalandı!");
+                                    } else { toast.error(res.data.error || "Hata"); }
+                                  } catch { toast.error("Video script üretilemedi"); }
+                                }},
+                                { icon: "🖼️", label: "Görsel Prompt", action: async () => {
+                                  try {
+                                    toast.info("Görsel prompt üretiliyor...");
+                                    const res = await api.post(`${API}/repurpose/image-prompt`, { content: variant.content, platform: activePlatform || "twitter" });
+                                    if (res.data.success) {
+                                      navigator.clipboard.writeText(JSON.stringify(res.data.prompt_json, null, 2));
+                                      toast.success("Görsel prompt JSON kopyalandı!");
+                                    } else { toast.error(res.data.error || "Hata"); }
+                                  } catch { toast.error("Görsel prompt üretilemedi"); }
+                                }},
                                 { icon: "🐦", label: "Tweetle", action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(variant.content)}`, "_blank") },
                               ].map((btn) => (
                                 <button

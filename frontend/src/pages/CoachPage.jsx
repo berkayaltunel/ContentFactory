@@ -311,7 +311,7 @@ export default function CoachPage() {
                           onClick={() => {
                             const params = new URLSearchParams();
                             if (insight.action) params.set("topic", insight.action);
-                            navigate(`/dashboard/x-ai${params.toString() ? `?${params.toString()}` : ""}`);
+                            navigate(`/dashboard/create?platform=twitter${params.toString() ? `?${params.toString()}` : ""}`);
                           }}
                         >
                           {insight.action}
@@ -331,7 +331,7 @@ export default function CoachPage() {
           <CardContent className="p-8 text-center">
             <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">{insights.message}</p>
-            <Button className="mt-4" onClick={() => navigate("/dashboard/x-ai")}>
+            <Button className="mt-4" onClick={() => navigate("/dashboard/create?platform=twitter")}>
               İçerik Üretmeye Başla
             </Button>
           </CardContent>
@@ -376,7 +376,7 @@ export default function CoachPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/dashboard/x-ai?topic=${encodeURIComponent(day.topic_suggestion)}${day.persona ? `&persona=${encodeURIComponent(day.persona)}` : ""}${day.tone ? `&tone=${encodeURIComponent(day.tone)}` : ""}`)}
+                    onClick={() => navigate(`/dashboard/create?platform=twitter?topic=${encodeURIComponent(day.topic_suggestion)}${day.persona ? `&persona=${encodeURIComponent(day.persona)}` : ""}${day.tone ? `&tone=${encodeURIComponent(day.tone)}` : ""}`)}
                     className="shrink-0"
                   >
                     Yaz

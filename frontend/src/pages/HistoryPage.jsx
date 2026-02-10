@@ -111,6 +111,25 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
               })}
             </span>
           </div>
+
+          {/* Original tweet for quote/reply */}
+          {(gen.type === "quote" || gen.type === "reply") && gen.tweet_content && (
+            <div className="mb-3 p-3 rounded-lg border border-border/50 bg-secondary/20">
+              <div className="flex items-center gap-2 mb-1.5">
+                {gen.type === "quote" ? (
+                  <Twitter className="h-3.5 w-3.5 text-sky-400" />
+                ) : (
+                  <Send className="h-3.5 w-3.5 text-green-400" />
+                )}
+                {gen.tweet_url && (
+                  <a href={gen.tweet_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[200px]">
+                    {gen.tweet_url.match(/@?(\w+)\/status/)?.[1] ? `@${gen.tweet_url.match(/@?(\w+)\/status/)[1]}` : "Orijinal tweet"}
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground line-clamp-3">{gen.tweet_content}</p>
+            </div>
+          )}
           {!selectionMode && (
             <Button
               variant="ghost"
