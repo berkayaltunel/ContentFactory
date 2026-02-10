@@ -10,6 +10,7 @@ import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import XAIModule from "@/pages/XAIModule";
+import XAIModuleV2 from "@/pages/XAIModuleV2";
 import YouTubeModule from "@/pages/YouTubeModule";
 import InstaFlowModule from "@/pages/InstaFlowModule";
 import TikTrendModule from "@/pages/TikTrendModule";
@@ -44,7 +45,8 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<ProfileProvider><DashboardLayout /></ProfileProvider>}>
                   <Route index element={<DashboardHome />} />
-                  <Route path="x-ai" element={<XAIModule />} />
+                  <Route path="x-ai" element={<XAIModuleV2 />} />
+                  <Route path="x-ai-v1" element={<XAIModule />} />
                   <Route path="youtube" element={<YouTubeModule />} />
                   <Route path="instaflow" element={<InstaFlowModule />} />
                   <Route path="tiktrend" element={<TikTrendModule />} />
