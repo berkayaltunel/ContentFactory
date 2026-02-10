@@ -1231,9 +1231,6 @@ export default function XAIModule() {
       {/* Vertical spacer - pushes content toward center */}
       <div style={{ height: "15vh", flexShrink: 0 }} />
 
-      {/* Onboarding Tip (below navbar) */}
-      <OnboardingTip isLoaded={isLoaded} />
-
       {/* Style Profile Badge (top) */}
       <div
         style={{
@@ -1269,8 +1266,6 @@ export default function XAIModule() {
           {settingsSummary}
         </span>
       </div>
-
-      {/* Onboarding Tip Banner (Accordion) */}
       {/* Main Heading */}
       <h1
         style={{
