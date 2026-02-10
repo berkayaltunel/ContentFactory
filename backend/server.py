@@ -1040,6 +1040,10 @@ api_router.include_router(account_analysis_router)
 from routes.media import router as media_router
 api_router.include_router(media_router)
 
+# Include accounts router
+from routes.accounts import router as accounts_router
+api_router.include_router(accounts_router)
+
 # Include settings router
 from routes.settings import router as settings_router
 api_router.include_router(settings_router)

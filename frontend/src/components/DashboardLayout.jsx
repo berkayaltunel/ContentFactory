@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun, Moon, Settings, Layers, LogOut, User, History, Heart,
   ChevronDown, Sparkles, Dna, TrendingUp, BarChart3, FileText,
-  Home, MoreHorizontal, Search
+  Home, MoreHorizontal, Search, Check, Star, Pencil, Trash2, X
 } from "lucide-react";
 import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
 import { HiDocumentText } from "react-icons/hi2";
@@ -89,6 +89,148 @@ function PillNavItem({ item, isActive }) {
   );
 }
 
+/* ── Platform Config ──────────────────────────────── */
+
+const PLATFORMS = [
+  { id: "twitter", label: "Twitter / X", Icon: FaXTwitter, avatarUrl: (u) => `https://unavatar.io/x/${u}` },
+  { id: "instagram", label: "Instagram", Icon: FaInstagram, avatarUrl: (u) => `https://unavatar.io/instagram/${u}` },
+  { id: "youtube", label: "YouTube", Icon: FaYoutube, avatarUrl: (u) => `https://unavatar.io/youtube/${u}` },
+  { id: "tiktok", label: "TikTok", Icon: FaTiktok, avatarUrl: null },
+  { id: "linkedin", label: "LinkedIn", Icon: FaLinkedinIn, avatarUrl: null },
+];
+
+/* ── Connected Accounts Section ──────────────────── */
+
+function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) {
+  const [editingPlatform, setEditingPlatform] = useState(null);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (editingPlatform && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editingPlatform]);
+
+  const accountMap = {};
+  (accounts || []).forEach((a) => { accountMap[a.platform] = a; });
+
+  const handleStartEdit = (platformId, currentUsername) => {
+    setEditingPlatform(platformId);
+    setEditValue(currentUsername || "");
+  };
+
+  const handleSave = async (platformId) => {
+    const val = editValue.trim().replace(/^@/, "");
+    if (!val) {
+      setEditingPlatform(null);
+      return;
+    }
+    await onSave(platformId, val);
+    setEditingPlatform(null);
+  };
+
+  return (
+    <div className="px-3 py-2">
+      <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">Hesaplarım</p>
+      <div className="space-y-1">
+        {PLATFORMS.map(({ id, label, Icon, avatarUrl }) => {
+          const acct = accountMap[id];
+          const isEditing = editingPlatform === id;
+
+          return (
+            <div
+              key={id}
+              className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors group"
+            >
+              {/* Platform avatar or icon */}
+              {acct && avatarUrl ? (
+                <img
+                  src={avatarUrl(acct.username)}
+                  alt=""
+                  className="w-6 h-6 rounded-full object-cover shrink-0 border border-white/10"
+                  onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                />
+              ) : null}
+              <div
+                className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0"
+                style={{ display: acct && avatarUrl ? "none" : "flex" }}
+              >
+                <Icon className="w-3 h-3 text-white/60" />
+              </div>
+
+              {isEditing ? (
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  <span className="text-white/40 text-xs">@</span>
+                  <input
+                    ref={inputRef}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value.replace(/^@/, ""))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSave(id);
+                      if (e.key === "Escape") setEditingPlatform(null);
+                    }}
+                    className="flex-1 bg-transparent border-none outline-none text-white text-xs min-w-0"
+                    placeholder="kullanıcı adı"
+                  />
+                  <button
+                    onClick={() => handleSave(id)}
+                    className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center hover:bg-green-500/30 transition-colors"
+                  >
+                    <Check className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => setEditingPlatform(null)}
+                    className="w-5 h-5 rounded-full bg-white/10 text-white/40 flex items-center justify-center hover:bg-white/20 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-1 flex-1 min-w-0 cursor-pointer"
+                  onClick={() => handleStartEdit(id, acct?.username)}
+                >
+                  {acct ? (
+                    <>
+                      <span className="text-xs text-white/70 truncate">@{acct.username}</span>
+                      {acct.is_primary && <Star className="w-3 h-3 text-yellow-400 shrink-0 fill-yellow-400" />}
+                    </>
+                  ) : (
+                    <span className="text-xs text-white/30">Ekle</span>
+                  )}
+                </div>
+              )}
+
+              {/* Actions (visible on hover) */}
+              {acct && !isEditing && (
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {!acct.is_primary && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onSetPrimary(id); }}
+                      className="w-5 h-5 rounded-full hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-yellow-400 transition-colors"
+                      title="Ana hesap yap"
+                    >
+                      <Star className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+                    className="w-5 h-5 rounded-full hover:bg-red-500/10 flex items-center justify-center text-white/30 hover:text-red-400 transition-colors"
+                    title="Kaldır"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main Layout ─────────────────────────────────── */
 
 export default function DashboardLayout() {
@@ -97,17 +239,54 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [twitterUsername, setTwitterUsername] = useState(null);
+  const [connectedAccounts, setConnectedAccounts] = useState([]);
 
-  // Fetch twitter_username from settings
-  useEffect(() => {
+  // Fetch connected accounts
+  const fetchAccounts = useCallback(async () => {
     if (!isAuthenticated) return;
-    api.get(`${API}/settings`).then((res) => {
-      if (res.data?.twitter_username) {
-        setTwitterUsername(res.data.twitter_username);
-      }
-    }).catch(() => {});
+    try {
+      const res = await api.get(`${API}/accounts`);
+      setConnectedAccounts(res.data || []);
+    } catch {}
   }, [isAuthenticated]);
+
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+
+  // Derive primary account & avatar
+  const primaryAccount = connectedAccounts.find((a) => a.is_primary);
+  const primaryAvatarUrl = primaryAccount
+    ? PLATFORMS.find((p) => p.id === primaryAccount.platform)?.avatarUrl?.(primaryAccount.username)
+    : null;
+
+  const handleSaveAccount = async (platform, username) => {
+    try {
+      await api.put(`${API}/accounts/${platform}`, { username });
+      await fetchAccounts();
+      toast.success("Hesap kaydedildi");
+    } catch {
+      toast.error("Kaydedilemedi");
+    }
+  };
+
+  const handleDeleteAccount = async (platform) => {
+    try {
+      await api.delete(`${API}/accounts/${platform}`);
+      await fetchAccounts();
+      toast.success("Hesap kaldırıldı");
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const handleSetPrimary = async (platform) => {
+    try {
+      await api.patch(`${API}/accounts/${platform}/primary`);
+      await fetchAccounts();
+      toast.success("Ana hesap değiştirildi");
+    } catch {
+      toast.error("Değiştirilemedi");
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -228,7 +407,7 @@ export default function DashboardLayout() {
                 <button className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all duration-300">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
                     <AvatarImage 
-                      src={twitterUsername ? `https://unavatar.io/x/${twitterUsername}` : user.avatar_url} 
+                      src={primaryAvatarUrl || user.avatar_url} 
                       alt={user.name}
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
@@ -251,6 +430,16 @@ export default function DashboardLayout() {
                   <p className="text-sm font-medium text-white">{user.name}</p>
                   <p className="text-xs text-white/50 truncate">{user.email}</p>
                 </div>
+
+                {/* Connected Accounts */}
+                <ConnectedAccountsSection
+                  accounts={connectedAccounts}
+                  onSave={handleSaveAccount}
+                  onDelete={handleDeleteAccount}
+                  onSetPrimary={handleSetPrimary}
+                />
+
+                <DropdownMenuSeparator className="bg-white/10" />
 
                 {profileMenuItems.map((item) => {
                   const Icon = item.icon;

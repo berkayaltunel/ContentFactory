@@ -143,37 +143,6 @@ const TypeHypeLogo = () => (
 // ══════════════════════════════════════════
 
 function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab }) {
-  const [twitterInput, setTwitterInput] = useState("");
-  const [twitterSaved, setTwitterSaved] = useState(false);
-  const [twitterLoading, setTwitterLoading] = useState(false);
-  const [twitterPreview, setTwitterPreview] = useState(null);
-
-  // Load saved twitter username on open
-  useEffect(() => {
-    if (!open) return;
-    api.get(`${API}/settings`).then((res) => {
-      const u = res.data?.twitter_username || "";
-      setTwitterInput(u);
-      setTwitterPreview(u || null);
-      setTwitterSaved(false);
-    }).catch(() => {});
-  }, [open]);
-
-  const handleSaveTwitter = async () => {
-    setTwitterLoading(true);
-    try {
-      await api.patch(`${API}/settings`, { twitter_username: twitterInput.trim() });
-      setTwitterSaved(true);
-      setTwitterPreview(twitterInput.trim() || null);
-      toast.success("Twitter hesabı kaydedildi!");
-      setTimeout(() => setTwitterSaved(false), 2000);
-    } catch {
-      toast.error("Kaydedilemedi");
-    } finally {
-      setTwitterLoading(false);
-    }
-  };
-
   if (!open) return null;
 
   const currentLengths = activeTab === "reply" ? replyLengths : 
@@ -215,83 +184,6 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
             >
               <X size={16} />
             </button>
-          </div>
-
-          {/* Twitter Username */}
-          <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
-              Twitter Hesabın
-            </label>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              {/* Avatar Preview */}
-              {twitterPreview && (
-                <img
-                  src={`https://unavatar.io/x/${twitterPreview}`}
-                  alt=""
-                  onError={(e) => { e.target.style.display = "none"; }}
-                  style={{
-                    width: "30px",
-                    height: "30px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    border: "1px solid var(--m-border)",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                flex: 1,
-                border: "1px solid var(--m-border)",
-                borderRadius: "999px",
-                padding: "0 12px",
-                background: "transparent",
-              }}>
-                <span style={{ fontSize: "13px", color: "var(--m-text-muted)", marginRight: "2px" }}>@</span>
-                <input
-                  type="text"
-                  value={twitterInput}
-                  onChange={(e) => {
-                    setTwitterInput(e.target.value.replace(/^@/, ""));
-                    setTwitterSaved(false);
-                  }}
-                  onBlur={() => setTwitterPreview(twitterInput.trim() || null)}
-                  placeholder="kullanıcı adı"
-                  style={{
-                    flex: 1,
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    color: "var(--m-text)",
-                    fontSize: "13px",
-                    padding: "7px 0",
-                    fontFamily: "inherit",
-                  }}
-                />
-              </div>
-              <button
-                onClick={handleSaveTwitter}
-                disabled={twitterLoading}
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  border: twitterSaved ? "1px solid var(--m-green-border, #22c55e33)" : "1px solid var(--m-border)",
-                  background: twitterSaved ? "var(--m-green-soft, #22c55e15)" : "transparent",
-                  color: twitterSaved ? "var(--m-green, #22c55e)" : "var(--m-text-soft)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                  transition: "all 0.2s ease",
-                }}
-                title="Kaydet"
-              >
-                <Check size={14} />
-              </button>
-            </div>
           </div>
 
           {/* Mode Toggle */}
