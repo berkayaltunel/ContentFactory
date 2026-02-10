@@ -118,7 +118,7 @@ export default function DashboardLayout() {
   const profileIsActive = profileMenuItems.some((item) => location.pathname.startsWith(item.path));
 
   return (
-    <div className="min-h-screen bg-[#F0F0F3] dark:bg-background">
+    <div className="min-h-screen bg-background">
       {/* ── Floating Top Nav Bar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-4 pointer-events-none">
         <nav

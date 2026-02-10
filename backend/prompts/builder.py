@@ -292,6 +292,34 @@ def build_apex_section() -> str:
     return APEX_MODE
 
 
+def build_example_tweets_section(example_tweets: list) -> str:
+    """Build example tweets section for few-shot RAG."""
+    if not example_tweets:
+        return ""
+    
+    section = """
+## 📝 GERÇEK ÖRNEK TWEET'LER (Stil Referansı)
+
+Aşağıdaki tweet'ler, klonlanacak stilin GERÇEK örnekleri. Bu tweet'lerdeki:
+- Cümle yapılarını
+- Kelime seçimlerini
+- Ton ve enerjiyi
+- Uzunluk ve formatting tercihlerini
+- Hook tarzlarını
+TAKLİT ET. Birebir kopyalama değil, aynı "ses"i yakala.
+
+### Örnekler:
+"""
+    for i, tweet in enumerate(example_tweets[:30], 1):
+        content = tweet.get("content", "") if isinstance(tweet, dict) else str(tweet)
+        # Truncate very long tweets
+        if len(content) > 500:
+            content = content[:497] + "..."
+        section += f"\n{i}. {content}"
+    
+    return section
+
+
 def build_final_prompt(
     content_type: str,
     topic: str = None,
@@ -306,7 +334,8 @@ def build_final_prompt(
     references: list = None,
     additional_context: str = None,
     is_apex: bool = False,
-    style_prompt: str = None
+    style_prompt: str = None,
+    example_tweets: list = None
 ) -> str:
     """
     Build the complete prompt by combining all layers.
@@ -377,6 +406,10 @@ Bunun yerine spesifik, somut, günlük dilde yaz."""
     # 4. Style Clone (Highest priority if present)
     if style_prompt:
         sections.append(build_style_clone_section(style_prompt))
+    
+    # 4.5. Example Tweets (Few-shot RAG)
+    if example_tweets:
+        sections.append(build_example_tweets_section(example_tweets))
     
     # 5. Persona
     sections.append(build_persona_section(persona))

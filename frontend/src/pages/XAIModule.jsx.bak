@@ -159,18 +159,17 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
       >
         <div
           style={{
-            background: "var(--m-popup-bg)",
-            border: "1px solid var(--m-border)",
+            background: "rgba(30,30,30,0.98)",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "16px",
             padding: "20px",
             backdropFilter: "blur(20px)",
             maxHeight: "60vh",
             overflowY: "auto",
-            boxShadow: "var(--m-shadow)",
           }}
         >
           <div className="flex items-center justify-between mb-4">
-            <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--m-text)" }}>
+            <span style={{ fontSize: "14px", fontWeight: "600", color: "#fff" }}>
               Üretim Ayarları
             </span>
             <button
@@ -178,7 +177,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
               style={{
                 background: "transparent",
                 border: "none",
-                color: "var(--m-text-muted)",
+                color: "rgba(255,255,255,0.4)",
                 cursor: "pointer",
               }}
             >
@@ -188,7 +187,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Mode Toggle */}
           <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Mod
             </label>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -199,13 +198,13 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   style={{
                     padding: "6px 16px",
                     borderRadius: "999px",
-                    border: settings.mode === m ? "none" : "1px solid var(--m-border)",
+                    border: settings.mode === m ? "none" : "1px solid rgba(255,255,255,0.12)",
                     background: m === "apex" && settings.mode === m
                       ? "linear-gradient(135deg, #eab308, #f97316)"
                       : settings.mode === m
-                      ? "var(--m-pill-active-bg)"
+                      ? "rgba(255,255,255,0.9)"
                       : "transparent",
-                    color: settings.mode === m ? (m === "apex" ? "var(--m-text)" : "var(--m-pill-active-text)") : "var(--m-text-soft)",
+                    color: settings.mode === m ? (m === "apex" ? "#fff" : "#1a1a1a") : "rgba(255,255,255,0.6)",
                     fontSize: "13px",
                     fontWeight: "500",
                     cursor: "pointer",
@@ -224,7 +223,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Persona */}
           <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Karakter
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -235,9 +234,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   style={{
                     padding: "6px 14px",
                     borderRadius: "999px",
-                    border: settings.persona === p.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.persona === p.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.persona === p.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                    border: settings.persona === p.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                    background: settings.persona === p.id ? "rgba(255,255,255,0.9)" : "transparent",
+                    color: settings.persona === p.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                     fontSize: "13px",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -251,7 +250,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Tone */}
           <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Ton
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -262,9 +261,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   style={{
                     padding: "6px 14px",
                     borderRadius: "999px",
-                    border: settings.tone === t.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.tone === t.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.tone === t.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                    border: settings.tone === t.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                    background: settings.tone === t.id ? "rgba(255,255,255,0.9)" : "transparent",
+                    color: settings.tone === t.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                     fontSize: "13px",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -278,7 +277,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Length */}
           <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Uzunluk
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -289,9 +288,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   style={{
                     padding: "6px 14px",
                     borderRadius: "999px",
-                    border: settings.length === l.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.length === l.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.length === l.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                    border: settings.length === l.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                    background: settings.length === l.id ? "rgba(255,255,255,0.9)" : "transparent",
+                    color: settings.length === l.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                     fontSize: "12px",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -305,7 +304,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Knowledge */}
           <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Knowledge Mode
             </label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -316,9 +315,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   style={{
                     padding: "6px 14px",
                     borderRadius: "999px",
-                    border: settings.knowledge === k.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.knowledge === k.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.knowledge === k.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                    border: settings.knowledge === k.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                    background: settings.knowledge === k.id ? "rgba(255,255,255,0.9)" : "transparent",
+                    color: settings.knowledge === k.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                     fontSize: "13px",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -332,7 +331,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Language */}
           <div className="mb-4">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Dil
             </label>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -343,9 +342,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   style={{
                     padding: "6px 14px",
                     borderRadius: "999px",
-                    border: settings.language === l.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.language === l.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.language === l.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                    border: settings.language === l.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                    background: settings.language === l.id ? "rgba(255,255,255,0.9)" : "transparent",
+                    color: settings.language === l.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                     fontSize: "13px",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -359,7 +358,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
 
           {/* Variant Count */}
           <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+            <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
               Varyant Sayısı
             </label>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -369,9 +368,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   width: "32px",
                   height: "32px",
                   borderRadius: "50%",
-                  border: "1px solid var(--m-border)",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   background: "transparent",
-                  color: "var(--m-text-soft)",
+                  color: "rgba(255,255,255,0.6)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -380,7 +379,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
               >
                 <Minus size={14} />
               </button>
-              <span style={{ fontSize: "18px", fontWeight: "600", color: "var(--m-text)", width: "24px", textAlign: "center" }}>
+              <span style={{ fontSize: "18px", fontWeight: "600", color: "#fff", width: "24px", textAlign: "center" }}>
                 {settings.variants}
               </span>
               <button
@@ -389,9 +388,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                   width: "32px",
                   height: "32px",
                   borderRadius: "50%",
-                  border: "1px solid var(--m-border)",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   background: "transparent",
-                  color: "var(--m-text-soft)",
+                  color: "rgba(255,255,255,0.6)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -406,7 +405,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
           {/* Reply-specific: Reply Mode */}
           {activeTab === "reply" && (
             <div className="mb-4 mt-4">
-              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
                 Reply Modu
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -417,9 +416,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                     style={{
                       padding: "6px 14px",
                       borderRadius: "999px",
-                      border: settings.replyMode === rm.id ? "none" : "1px solid var(--m-border)",
-                      background: settings.replyMode === rm.id ? "var(--m-pill-active-bg)" : "transparent",
-                      color: settings.replyMode === rm.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                      border: settings.replyMode === rm.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                      background: settings.replyMode === rm.id ? "rgba(255,255,255,0.9)" : "transparent",
+                      color: settings.replyMode === rm.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                       fontSize: "13px",
                       cursor: "pointer",
                       transition: "all 0.2s ease",
@@ -435,7 +434,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
           {/* Article-specific: Style */}
           {activeTab === "article" && (
             <div className="mb-4 mt-4">
-              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "8px", display: "block" }}>
+              <label style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", marginBottom: "8px", display: "block" }}>
                 Makale Stili
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -446,9 +445,9 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                     style={{
                       padding: "6px 14px",
                       borderRadius: "999px",
-                      border: settings.articleStyle === as.id ? "none" : "1px solid var(--m-border)",
-                      background: settings.articleStyle === as.id ? "var(--m-pill-active-bg)" : "transparent",
-                      color: settings.articleStyle === as.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                      border: settings.articleStyle === as.id ? "none" : "1px solid rgba(255,255,255,0.12)",
+                      background: settings.articleStyle === as.id ? "rgba(255,255,255,0.9)" : "transparent",
+                      color: settings.articleStyle === as.id ? "#1a1a1a" : "rgba(255,255,255,0.6)",
                       fontSize: "13px",
                       cursor: "pointer",
                       transition: "all 0.2s ease",
@@ -487,9 +486,9 @@ function StyleProfileBadge() {
           gap: "6px",
           padding: "6px 14px",
           borderRadius: "999px",
-          border: activeProfile ? "1px solid var(--m-purple-border)" : "1px solid var(--m-border)",
-          background: activeProfile ? "var(--m-purple-soft)" : "transparent",
-          color: activeProfile ? "var(--m-purple)" : "var(--m-text-muted)",
+          border: activeProfile ? "1px solid rgba(168,85,247,0.3)" : "1px solid rgba(255,255,255,0.12)",
+          background: activeProfile ? "rgba(168,85,247,0.1)" : "transparent",
+          color: activeProfile ? "#c084fc" : "rgba(255,255,255,0.5)",
           fontSize: "13px",
           cursor: "pointer",
           transition: "all 0.2s ease",
@@ -507,14 +506,13 @@ function StyleProfileBadge() {
             position: "absolute",
             bottom: "calc(100% + 8px)",
             left: "0",
-            background: "var(--m-popup-bg)",
-            border: "1px solid var(--m-border)",
+            background: "rgba(30,30,30,0.98)",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "12px",
             padding: "8px",
             minWidth: "220px",
             backdropFilter: "blur(20px)",
             zIndex: 100,
-            boxShadow: "var(--m-shadow)",
           }}
         >
           {profiles.map((profile) => (
@@ -529,8 +527,8 @@ function StyleProfileBadge() {
                 padding: "8px 12px",
                 borderRadius: "8px",
                 border: "none",
-                background: profile.id === activeProfileId ? "var(--m-purple-soft)" : "transparent",
-                color: profile.id === activeProfileId ? "var(--m-purple)" : "var(--m-text-soft)",
+                background: profile.id === activeProfileId ? "rgba(168,85,247,0.15)" : "transparent",
+                color: profile.id === activeProfileId ? "#c084fc" : "rgba(255,255,255,0.7)",
                 fontSize: "13px",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -547,7 +545,7 @@ function StyleProfileBadge() {
                 justifyContent: "center",
                 flexShrink: 0,
               }}>
-                <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--m-text)" }}>
+                <span style={{ fontSize: "10px", fontWeight: "700", color: "#fff" }}>
                   {profile.name?.charAt(0)?.toUpperCase() || "S"}
                 </span>
               </div>
@@ -556,7 +554,7 @@ function StyleProfileBadge() {
             </button>
           ))}
 
-          <div style={{ borderTop: "1px solid var(--m-border-light)", margin: "4px 0", paddingTop: "4px" }}>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "4px 0", paddingTop: "4px" }}>
             <button
               onClick={() => { setActiveProfile(null); setShowDropdown(false); }}
               style={{
@@ -568,7 +566,7 @@ function StyleProfileBadge() {
                 borderRadius: "8px",
                 border: "none",
                 background: "transparent",
-                color: "var(--m-text-muted)",
+                color: "rgba(255,255,255,0.4)",
                 fontSize: "13px",
                 cursor: "pointer",
               }}
@@ -587,7 +585,7 @@ function StyleProfileBadge() {
                 borderRadius: "8px",
                 border: "none",
                 background: "transparent",
-                color: "var(--m-purple)",
+                color: "#a855f7",
                 fontSize: "13px",
                 cursor: "pointer",
               }}
@@ -709,8 +707,8 @@ function TweetPreviewCard({ tweet }) {
 
   return (
     <div style={{
-      background: "var(--m-surface)",
-      border: "1px solid var(--m-border-light)",
+      background: "rgba(255,255,255,0.03)",
+      border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "12px",
       padding: "14px 16px",
       marginBottom: "12px",
@@ -722,13 +720,13 @@ function TweetPreviewCard({ tweet }) {
         )}
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontWeight: "600", fontSize: "13px", color: "var(--m-text)" }}>{tweet.author?.name}</span>
-            <span style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>@{tweet.author?.username}</span>
+            <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{tweet.author?.name}</span>
+            <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>@{tweet.author?.username}</span>
           </div>
-          <p style={{ fontSize: "13px", color: "var(--m-text-soft)", marginTop: "4px", whiteSpace: "pre-wrap", lineHeight: "1.5" }}>
+          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.8)", marginTop: "4px", whiteSpace: "pre-wrap", lineHeight: "1.5" }}>
             {tweet.text}
           </p>
-          <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "12px", color: "var(--m-text-faint)" }}>
+          <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "12px", color: "rgba(255,255,255,0.35)" }}>
             <span>💬 {fmt(tweet.metrics?.replies)}</span>
             <span>🔁 {fmt(tweet.metrics?.retweets)}</span>
             <span>❤️ {fmt(tweet.metrics?.likes)}</span>
@@ -1006,17 +1004,16 @@ export default function XAIModule() {
     <div
       style={{
         minHeight: "100vh",
-        background: "var(--m-bg)",
+        background: "#1a1a1a",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-        color: "var(--m-text)",
+        color: "#ffffff",
         padding: "24px 16px",
         position: "relative",
         overflow: "hidden",
-        transition: "background 0.35s ease, color 0.35s ease, border-color 0.35s ease",
       }}
     >
       {/* Subtle background grain */}
@@ -1024,7 +1021,7 @@ export default function XAIModule() {
         style={{
           position: "fixed",
           inset: 0,
-          background: "var(--m-grain)",
+          background: "radial-gradient(ellipse at 50% 0%, rgba(60,60,70,0.25) 0%, transparent 60%)",
           pointerEvents: "none",
         }}
       />
@@ -1035,11 +1032,11 @@ export default function XAIModule() {
           display: "flex",
           alignItems: "center",
           gap: "0",
-          background: "var(--m-border-light)",
+          background: "rgba(255,255,255,0.06)",
           borderRadius: "999px",
           padding: "6px 4px",
           marginBottom: "32px",
-          border: "1px solid var(--m-border-light)",
+          border: "1px solid rgba(255,255,255,0.08)",
           opacity: isLoaded ? 1 : 0,
           transform: isLoaded ? "translateY(0)" : "translateY(-8px)",
           transition: "all 0.5s ease 0.1s",
@@ -1050,13 +1047,13 @@ export default function XAIModule() {
           style={{
             width: "1px",
             height: "14px",
-            background: "var(--m-border)",
+            background: "rgba(255,255,255,0.15)",
           }}
         />
         <span
           style={{
             fontSize: "13px",
-            color: "var(--m-text-muted)",
+            color: "rgba(255,255,255,0.4)",
             padding: "4px 14px",
             letterSpacing: "0.01em",
           }}
@@ -1104,13 +1101,11 @@ export default function XAIModule() {
       >
         <div
           style={{
-            background: "var(--m-input-bg)",
-            border: "1px solid var(--m-input-border)",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
             borderRadius: "16px",
             padding: "16px 18px 12px",
             position: "relative",
-            boxShadow: "var(--m-shadow)",
-            transition: "background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease",
           }}
         >
           {/* Image Preview */}
@@ -1132,7 +1127,7 @@ export default function XAIModule() {
                   borderRadius: "50%",
                   background: "#ef4444",
                   border: "none",
-                  color: "var(--m-text)",
+                  color: "#fff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1162,14 +1157,14 @@ export default function XAIModule() {
               background: "transparent",
               border: "none",
               outline: "none",
-              color: "var(--m-text)",
+              color: "#ffffff",
               fontSize: "15px",
               lineHeight: "1.55",
               resize: "none",
               fontFamily: "inherit",
               padding: "0",
               marginBottom: "14px",
-              caretColor: "var(--m-caret)",
+              caretColor: "#5BA4F5",
             }}
           />
 
@@ -1197,9 +1192,9 @@ export default function XAIModule() {
                   width: "36px",
                   height: "36px",
                   borderRadius: "50%",
-                  border: "1px solid var(--m-icon-btn-border)",
-                  background: imageUrl ? "var(--m-surface-hover)" : "transparent",
-                  color: imageUrl ? "var(--m-accent)" : "var(--m-icon-color)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: imageUrl ? "rgba(91,164,245,0.15)" : "transparent",
+                  color: imageUrl ? "#5BA4F5" : "rgba(255,255,255,0.45)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1220,9 +1215,9 @@ export default function XAIModule() {
                     width: "36px",
                     height: "36px",
                     borderRadius: "50%",
-                    border: fetched ? "1px solid var(--m-green-border)" : "1px solid var(--m-border)",
-                    background: fetched ? "var(--m-green-soft)" : "transparent",
-                    color: fetched ? "var(--m-green)" : "var(--m-text-muted)",
+                    border: fetched ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(255,255,255,0.12)",
+                    background: fetched ? "rgba(34,197,94,0.15)" : "transparent",
+                    color: fetched ? "#22c55e" : "rgba(255,255,255,0.45)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1242,9 +1237,9 @@ export default function XAIModule() {
                   width: "36px",
                   height: "36px",
                   borderRadius: "50%",
-                  border: "1px solid var(--m-icon-btn-border)",
-                  background: settingsOpen ? "var(--m-surface-hover)" : "transparent",
-                  color: "var(--m-icon-color)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: settingsOpen ? "rgba(255,255,255,0.1)" : "transparent",
+                  color: "rgba(255,255,255,0.45)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1269,11 +1264,11 @@ export default function XAIModule() {
                   borderRadius: "50%",
                   border: "none",
                   background: inputValue.trim() || fetched
-                    ? "var(--m-send-bg)"
-                    : "var(--m-send-bg-idle)",
+                    ? "rgba(255,255,255,0.9)"
+                    : "rgba(255,255,255,0.1)",
                   color: inputValue.trim() || fetched
-                    ? "var(--m-send-text)"
-                    : "var(--m-send-text-idle)",
+                    ? "#1a1a1a"
+                    : "rgba(255,255,255,0.25)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1346,12 +1341,12 @@ export default function XAIModule() {
                 padding: "9px 18px",
                 borderRadius: "999px",
                 border: isActive
-                  ? "1px solid var(--m-text-faint)"
-                  : "1px solid var(--m-border)",
-                background: isActive ? "var(--m-surface-hover)" : "transparent",
+                  ? "1px solid rgba(255,255,255,0.3)"
+                  : "1px solid rgba(255,255,255,0.12)",
+                background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
                 color: isActive
-                  ? "var(--m-text)"
-                  : "var(--m-text-soft)",
+                  ? "rgba(255,255,255,0.95)"
+                  : "rgba(255,255,255,0.7)",
                 fontSize: "13.5px",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
@@ -1379,12 +1374,12 @@ export default function XAIModule() {
             padding: "9px 18px",
             borderRadius: "999px",
             border: activeTab === "article"
-              ? "1px solid var(--m-text-faint)"
-              : "1px solid var(--m-border)",
-            background: activeTab === "article" ? "var(--m-surface-hover)" : "transparent",
+              ? "1px solid rgba(255,255,255,0.3)"
+              : "1px solid rgba(255,255,255,0.12)",
+            background: activeTab === "article" ? "rgba(255,255,255,0.1)" : "transparent",
             color: activeTab === "article"
-              ? "var(--m-text)"
-              : "var(--m-text-soft)",
+              ? "rgba(255,255,255,0.95)"
+              : "rgba(255,255,255,0.7)",
             fontSize: "13.5px",
             cursor: "pointer",
             transition: "all 0.2s ease",
@@ -1435,8 +1430,8 @@ export default function XAIModule() {
         >
           <div
             style={{
-              background: "var(--m-card-bg)",
-              border: "1px solid var(--m-border-light)",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: "14px",
               padding: "20px 24px",
               display: "flex",
@@ -1445,8 +1440,7 @@ export default function XAIModule() {
               maxWidth: "440px",
               width: "max-content",
               cursor: "pointer",
-              boxShadow: "var(--m-shadow)",
-              transition: "background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease",
+              transition: "all 0.2s ease",
             }}
           >
             <div style={{ flex: 1 }}>
@@ -1455,7 +1449,7 @@ export default function XAIModule() {
                   fontSize: "15px",
                   fontWeight: "600",
                   marginBottom: "5px",
-                  color: "var(--m-text)",
+                  color: "#ffffff",
                 }}
               >
                 {promoCards[activeCard].title}
@@ -1463,7 +1457,7 @@ export default function XAIModule() {
               <div
                 style={{
                   fontSize: "13px",
-                  color: "var(--m-text-muted)",
+                  color: "rgba(255,255,255,0.45)",
                   lineHeight: "1.45",
                 }}
               >
@@ -1477,7 +1471,7 @@ export default function XAIModule() {
                 height: "64px",
                 background: "rgba(0,0,0,0.4)",
                 borderRadius: "8px",
-                border: "1px solid var(--m-border-light)",
+                border: "1px solid rgba(255,255,255,0.08)",
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
@@ -1487,7 +1481,7 @@ export default function XAIModule() {
               <div
                 style={{
                   height: "14px",
-                  background: "var(--m-surface)",
+                  background: "rgba(255,255,255,0.05)",
                   display: "flex",
                   alignItems: "center",
                   gap: "3px",
@@ -1497,7 +1491,7 @@ export default function XAIModule() {
                 <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#FF5F57" }} />
                 <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#FEBC2E" }} />
                 <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#28C840" }} />
-                <span style={{ marginLeft: "6px", width: "30px", height: "3px", background: "var(--m-border)", borderRadius: "2px" }} />
+                <span style={{ marginLeft: "6px", width: "30px", height: "3px", background: "rgba(255,255,255,0.12)", borderRadius: "2px" }} />
               </div>
               <div
                 style={{
@@ -1523,7 +1517,7 @@ export default function XAIModule() {
                   height: i === activeCard ? "8px" : "6px",
                   borderRadius: "50%",
                   border: "none",
-                  background: i === activeCard ? "var(--m-text-soft)" : "var(--m-border)",
+                  background: i === activeCard ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
                   cursor: "pointer",
                   padding: 0,
                   transition: "all 0.3s ease",
@@ -1546,11 +1540,11 @@ export default function XAIModule() {
       {/* Global Styles */}
       <style>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        ::placeholder { color: var(--m-text-faint); }
+        ::placeholder { color: rgba(255,255,255,0.3); }
         textarea::-webkit-scrollbar { width: 4px; }
         textarea::-webkit-scrollbar-track { background: transparent; }
-        textarea::-webkit-scrollbar-thumb { background: var(--m-scrollbar); border-radius: 4px; }
-        button:hover { filter: brightness(var(--m-hover-brightness)); }
+        textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        button:hover { filter: brightness(1.15); }
         @media (max-width: 640px) {
           h1 { font-size: 26px !important; }
         }

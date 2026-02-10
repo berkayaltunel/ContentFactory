@@ -47,8 +47,8 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<ProfileProvider><DashboardLayout /></ProfileProvider>}>
                   <Route index element={<DashboardHome />} />
-                  <Route path="x-ai" element={<XAIModuleV4 />} />
-                  <Route path="x-ai-v1" element={<XAIModule />} />
+                  <Route path="x-ai" element={<XAIModule />} />
+                  <Route path="x-ai-v1" element={<XAIModuleV4 />} />
                   <Route path="x-ai-v2" element={<XAIModuleV2 />} />
                   <Route path="x-ai-v3" element={<XAIModuleV3 />} />
                   <Route path="youtube" element={<YouTubeModule />} />

@@ -217,6 +217,14 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
                     "last_scraped_at": datetime.now(timezone.utc).isoformat()
                 }).eq("id", source_id).execute()
                 
+                # Auto-embed tweets
+                try:
+                    from embed_tweets import embed_tweets_for_source_sync
+                    embed_tweets_for_source_sync(source_id)
+                    logger.info(f"@{username}: {len(tweets)} tweets saved & embedded")
+                except Exception as e:
+                    logger.warning(f"Auto-embed failed for @{username}: {e}")
+                
                 logger.info(f"@{username}: {len(tweets)} tweets saved")
                 
         except Exception as e:

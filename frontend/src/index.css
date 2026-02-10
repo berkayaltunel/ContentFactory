@@ -8,8 +8,9 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Design System: Manus-style pure white light mode */
+    --background: 0 0% 100%;     /* #FFFFFF — pure white like Manus */
+    --foreground: 0 0% 10%;      /* #1A1A1A */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
@@ -29,6 +30,41 @@
     --ring: 0 0% 3.9%;
     --radius: 0.5rem;
     
+    /* Manus UI Colors (light) — pure white like manus.im */
+    --m-bg: #FFFFFF;
+    --m-text: #1A1A1A;
+    --m-text-soft: rgba(0,0,0,0.6);
+    --m-text-muted: rgba(0,0,0,0.45);
+    --m-text-faint: rgba(0,0,0,0.32);
+    --m-surface: rgba(0,0,0,0.04);
+    --m-surface-hover: rgba(0,0,0,0.08);
+    --m-border: rgba(0,0,0,0.1);
+    --m-border-light: rgba(0,0,0,0.06);
+    --m-input-bg: #FFFFFF;
+    --m-input-border: rgba(0,0,0,0.1);
+    --m-card-bg: #FFFFFF;
+    --m-pill-active-bg: #1a1a1a;
+    --m-pill-active-text: #ffffff;
+    --m-send-bg: #1a1a1a;
+    --m-send-bg-idle: rgba(0,0,0,0.08);
+    --m-send-text: #ffffff;
+    --m-send-text-idle: rgba(0,0,0,0.2);
+    --m-grain: none;
+    --m-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    --m-popup-bg: #FFFFFF;
+    --m-accent: #8B5CF6;
+    --m-caret: #8B5CF6;
+    --m-purple: #7c3aed;
+    --m-purple-soft: rgba(139,92,246,0.1);
+    --m-purple-border: rgba(139,92,246,0.2);
+    --m-green: #22C55E;
+    --m-green-soft: rgba(34,197,94,0.08);
+    --m-green-border: rgba(34,197,94,0.15);
+    --m-icon-color: rgba(0,0,0,0.4);
+    --m-icon-btn-border: rgba(0,0,0,0.08);
+    --m-scrollbar: rgba(0,0,0,0.1);
+    --m-hover-brightness: 0.92;
+
     /* Module Colors */
     --youtube: 0 100% 50%;
     --instagram: 340 82% 52%;
@@ -39,7 +75,7 @@
   }
 
   .dark {
-    --background: 240 6% 4%;
+    --background: 0 0% 10.2%;
     --foreground: 0 0% 98%;
     --card: 240 4% 7%;
     --card-foreground: 0 0% 98%;
@@ -58,6 +94,41 @@
     --border: 240 4% 16%;
     --input: 240 4% 16%;
     --ring: 0 0% 83.1%;
+
+    /* Manus UI Colors (dark) */
+    --m-bg: hsl(var(--background));
+    --m-text: hsl(var(--foreground));
+    --m-text-soft: rgba(255,255,255,0.7);
+    --m-text-muted: rgba(255,255,255,0.45);
+    --m-text-faint: rgba(255,255,255,0.3);
+    --m-surface: rgba(255,255,255,0.05);
+    --m-surface-hover: rgba(255,255,255,0.1);
+    --m-border: rgba(255,255,255,0.1);
+    --m-border-light: rgba(255,255,255,0.08);
+    --m-input-bg: rgba(255,255,255,0.05);
+    --m-input-border: rgba(255,255,255,0.1);
+    --m-card-bg: rgba(255,255,255,0.06);
+    --m-pill-active-bg: rgba(255,255,255,0.9);
+    --m-pill-active-text: #1a1a1a;
+    --m-send-bg: rgba(255,255,255,0.9);
+    --m-send-bg-idle: rgba(255,255,255,0.1);
+    --m-send-text: #1a1a1a;
+    --m-send-text-idle: rgba(255,255,255,0.25);
+    --m-grain: radial-gradient(ellipse at 50% 0%, rgba(60,60,70,0.25) 0%, transparent 60%);
+    --m-shadow: none;
+    --m-popup-bg: rgba(30,30,30,0.98);
+    --m-accent: #5BA4F5;
+    --m-caret: #5BA4F5;
+    --m-purple: #c084fc;
+    --m-purple-soft: rgba(168,85,247,0.1);
+    --m-purple-border: rgba(168,85,247,0.3);
+    --m-green: #22c55e;
+    --m-green-soft: rgba(34,197,94,0.15);
+    --m-green-border: rgba(34,197,94,0.3);
+    --m-icon-color: rgba(255,255,255,0.45);
+    --m-icon-btn-border: rgba(255,255,255,0.12);
+    --m-scrollbar: rgba(255,255,255,0.1);
+    --m-hover-brightness: 1.15;
   }
 }
 
@@ -67,7 +138,7 @@
   }
   
   html {
-    @apply dark;
+    /* Theme managed by ThemeProvider - do not hardcode dark here */
   }
   
   body {

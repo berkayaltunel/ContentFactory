@@ -85,6 +85,12 @@ class StatusCheckCreate(BaseModel):
     client_name: str
 
 # Content Generation Models
+class SimilarTweetsRequest(BaseModel):
+    query: str
+    style_profile_id: Optional[str] = None
+    source_ids: Optional[List[str]] = None
+    limit: int = 30
+
 class TweetGenerateRequest(BaseModel):
     topic: str
     mode: str = "classic"
@@ -394,6 +400,32 @@ async def fetch_tweet(url: str):
         logger.error(f"Tweet fetch error: {str(e)}")
         raise HTTPException(status_code=500, detail="Tweet çekilemedi. Lütfen tekrar deneyin.")
 
+# ==================== SIMILAR TWEETS (RAG) ====================
+
+@api_router.post("/similar-tweets")
+async def find_similar_tweets(request: SimilarTweetsRequest, user=Depends(require_auth)):
+    """Find similar tweets using embedding similarity search"""
+    from embed_tweets import get_similar_tweets
+    
+    source_ids = request.source_ids or []
+    
+    # If style_profile_id provided, get source_ids from profile
+    if request.style_profile_id and not source_ids:
+        profile = supabase.table("style_profiles").select("source_ids").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
+        if profile.data:
+            source_ids = profile.data[0].get("source_ids", [])
+    
+    # If still no source_ids, get all user's sources
+    if not source_ids:
+        sources = supabase.table("style_sources").select("id").eq("user_id", user.id).execute()
+        source_ids = [s["id"] for s in (sources.data or [])]
+    
+    if not source_ids:
+        return {"tweets": [], "count": 0}
+    
+    tweets = get_similar_tweets(request.query, source_ids, limit=request.limit)
+    return {"tweets": tweets, "count": len(tweets)}
+
 # ==================== CONTENT GENERATION ROUTES ====================
 
 @api_router.post("/generate/tweet", response_model=GenerationResponse)
@@ -403,14 +435,28 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         # Input sanitization
         sanitize_generation_request(request)
 
-        # Fetch style prompt if style_profile_id provided (scoped to current user)
+        # Fetch style prompt and similar tweets if style_profile_id provided
         style_prompt = None
+        example_tweets = None
         if request.style_profile_id:
             from services.style_analyzer import analyzer
             result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
             if result.data:
                 fingerprint = result.data[0].get('style_fingerprint', {})
                 style_prompt = analyzer.generate_style_prompt(fingerprint)
+                
+                # Fetch similar tweets for few-shot RAG
+                source_ids = result.data[0].get('source_ids', [])
+                if source_ids:
+                    try:
+                        from embed_tweets import get_similar_tweets
+                        example_tweets = get_similar_tweets(
+                            query_text=request.topic,
+                            source_ids=source_ids,
+                            limit=30
+                        )
+                    except Exception as e:
+                        logger.warning(f"Similar tweets fetch failed (continuing without): {e}")
         
         # Analyze image if provided
         image_context = None
@@ -435,7 +481,8 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             language=request.language,
             additional_context=combined_context if combined_context else None,
             is_apex=(request.mode == "ultra" or request.mode == "apex"),
-            style_prompt=style_prompt
+            style_prompt=style_prompt,
+            example_tweets=example_tweets
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
