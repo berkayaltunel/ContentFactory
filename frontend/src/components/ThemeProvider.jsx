@@ -1,33 +1,20 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
 
 const ThemeProviderContext = createContext({
   theme: "dark",
   setTheme: () => null,
 });
 
-export function ThemeProvider({
-  children,
-  defaultTheme = "dark",
-  storageKey = "ui-theme",
-  ...props
-}) {
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem(storageKey) || defaultTheme
-  );
-
+export function ThemeProvider({ children, ...props }) {
   useEffect(() => {
     const root = window.document.documentElement;
-
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-  }, [theme]);
+    root.classList.remove("light");
+    root.classList.add("dark");
+  }, []);
 
   const value = {
-    theme,
-    setTheme: (theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
+    theme: "dark",
+    setTheme: () => {},
   };
 
   return (

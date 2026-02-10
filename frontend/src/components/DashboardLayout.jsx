@@ -468,14 +468,6 @@ export default function DashboardLayout() {
                 <DropdownMenuSeparator className="bg-white/10" />
 
                 <DropdownMenuItem
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                  <span className="text-sm">{theme === "dark" ? "Aydınlık Mod" : "Karanlık Mod"}</span>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
                   onClick={() => setSettingsOpen(true)}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
                 >
@@ -530,13 +522,8 @@ export default function DashboardLayout() {
           <div className="space-y-6 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Tema</label>
-              <div className="flex gap-2">
-                <Button variant={theme === "dark" ? "default" : "outline"} size="sm" onClick={() => setTheme("dark")}>
-                  <Moon className="h-4 w-4 mr-2" /> Karanlık
-                </Button>
-                <Button variant={theme === "light" ? "default" : "outline"} size="sm" onClick={() => setTheme("light")}>
-                  <Sun className="h-4 w-4 mr-2" /> Aydınlık
-                </Button>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Moon className="h-4 w-4" /> Karanlık Mod (aktif)
               </div>
             </div>
             <div className="space-y-2">

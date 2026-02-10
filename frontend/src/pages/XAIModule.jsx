@@ -24,6 +24,7 @@ import {
   Wand2,
   Copy,
   TrendingUp,
+  Lightbulb,
   MessageSquare,
   Quote,
   FileText,
@@ -196,6 +197,15 @@ const PLATFORM_PLACEHOLDERS = {
   },
 };
 
+const PLATFORM_HEADINGS = {
+  twitter: "Timeline seni hatırlasın, sadece scroll'lamasın.",
+  youtube: "İzleyici \"abone ol\"a kendi uzanacak.",
+  instagram: "Scroll'u durduran sen ol.",
+  tiktok: "1 saniye. Ya hook'larsın ya kaybolursun.",
+  linkedin: "Bağlantıların seni okusun, sadece kabul etmesin.",
+  blog: "Okuyanın hayatında bir şey değişsin.",
+};
+
 // ══════════════════════════════════════════
 // SVG Icons (Manus-style)
 // ══════════════════════════════════════════
@@ -217,12 +227,20 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
                          activeTab === "article" ? articleLengths : tweetLengths;
 
   return (
-    <div 
-      className="fixed inset-0 z-50"
-      onClick={onClose}
-    >
+    <>
+      {/* Backdrop */}
       <div 
-        className="absolute bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[640px] px-4"
+        className="fixed inset-0 z-40"
+        onClick={onClose}
+      />
+      {/* Popup */}
+      <div 
+        style={{
+          position: "relative",
+          zIndex: 50,
+          width: "100%",
+          marginTop: "8px",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -232,7 +250,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
             borderRadius: "16px",
             padding: "14px 16px",
             backdropFilter: "blur(20px)",
-            boxShadow: "var(--m-shadow)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
             display: "flex",
             flexDirection: "column",
             gap: "0",
@@ -493,6 +511,97 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════
+// ONBOARDING TIP (Accordion)
+// ══════════════════════════════════════════
+
+function OnboardingTip({ isLoaded }) {
+  const [open, setOpen] = useState(false);
+  const genCount = parseInt(localStorage.getItem("typehype-gen-count") || "0", 10);
+  if (genCount >= 50) return null;
+
+  const steps = [
+    { emoji: "🔍", text: "Beğendiğin bir hesap bul (alanında ses getiren biri)" },
+    { emoji: "🧬", text: "Style Lab'a ekle, Hype yazım stilini analiz etsin" },
+    { emoji: "✍️", text: "O stilde, senin konularında içerik üret" },
+    { emoji: "🚀", text: "Paylaş, büyü, takipçi kazan" },
+    { emoji: "📊", text: "20-30 paylaşımdan sonra kendi hesabını ekle" },
+    { emoji: "🎯", text: "Artık Hype SENİN stilini biliyor" },
+  ];
+
+  return (
+    <div
+      style={{
+        maxWidth: "680px",
+        width: "100%",
+        marginBottom: "16px",
+      }}
+    >
+      {/* Toggle Button */}
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "8px 14px",
+          borderRadius: open ? "10px 10px 0 0" : "10px",
+          transition: "border-radius 0.2s ease",
+          background: "rgba(234, 179, 8, 0.05)",
+          border: "1px solid rgba(234, 179, 8, 0.12)",
+          borderBottom: open ? "none" : "1px solid rgba(234, 179, 8, 0.12)",
+          cursor: "pointer",
+          textAlign: "left",
+          fontFamily: "inherit",
+        }}
+      >
+        <Lightbulb size={14} style={{ color: "rgba(234, 179, 8, 0.5)", flexShrink: 0 }} />
+        <span style={{ fontSize: "12px", color: "var(--m-text-muted)", flex: 1 }}>
+          Henüz stilin yok mu? Birinin stilini çal, içerik üretmeye başla.
+        </span>
+        {open ? <ChevronUp size={14} style={{ color: "var(--m-text-faint)", flexShrink: 0 }} /> : <ChevronDown size={14} style={{ color: "var(--m-text-faint)", flexShrink: 0 }} />}
+      </button>
+
+      {/* Expanded Content */}
+      <div
+        style={{
+          maxHeight: open ? "400px" : "0",
+          overflow: "hidden",
+          transition: "max-height 0.3s ease",
+        }}
+      >
+        <div
+          style={{
+            padding: "14px 16px",
+            borderRadius: "0 0 10px 10px",
+            background: "rgba(234, 179, 8, 0.03)",
+            border: "1px solid rgba(234, 179, 8, 0.12)",
+            borderTop: "none",
+          }}
+        >
+          <p style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "12px", lineHeight: "1.5" }}>
+            Hype, beğendiğin hesapların yazım DNA'sını çözüyor. Yeni hesapta yeterli veri yok ama çözüm basit:
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+            {steps.map((step, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <span style={{ fontSize: "12px", flexShrink: 0, width: "20px" }}>{step.emoji}</span>
+                <span style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>{step.text}</span>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ fontSize: "11px", color: "var(--m-text-faint)", fontStyle: "italic" }}>
+            Kısaca: önce başkasının silahıyla savaş, sonra kendininkini yap.
+          </p>
         </div>
       </div>
     </div>
@@ -829,6 +938,7 @@ export default function XAIModule() {
   const [tweetData, setTweetData] = useState(null);
   const [fetching, setFetching] = useState(false);
   const [fetched, setFetched] = useState(false);
+  const [fetchPhase, setFetchPhase] = useState("link"); // "link" | "prompt"
   const [imageUrl, setImageUrl] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -916,7 +1026,9 @@ export default function XAIModule() {
         setTweetData(response.data.tweet);
         setTweetUrl(url);
         setFetched(true);
-        toast.success("Tweet çekildi!");
+        setFetchPhase("prompt");
+        setInputValue("");
+        toast.success("Tweet çekildi! Şimdi yorumunu yaz veya direkt gönder.");
       } else {
         toast.error("Tweet çekilemedi");
       }
@@ -956,11 +1068,11 @@ export default function XAIModule() {
     }
 
     // For quote/reply, need fetched tweet
-    if ((activeTab === "quote" || activeTab === "reply") && !fetched) {
+    if ((activeTab === "quote" || activeTab === "reply") && !fetched && fetchPhase === "link") {
       // Try to fetch first
       if (input.match(/x\.com|twitter\.com/)) {
         await handleFetchTweet();
-        return; // User will click again after fetch
+        return; // Input will clear, user writes direction then sends
       }
       toast.error("Önce tweet linkini yapıştır");
       return;
@@ -1010,7 +1122,8 @@ export default function XAIModule() {
         endpoint = `${API}/generate/quote`;
         body = {
           tweet_url: tweetUrl,
-          tweet_content: tweetData?.text || input,
+          tweet_content: tweetData?.text || "",
+          direction: input || null,
           length: settings.length,
           variants: settings.variants,
           persona: settings.persona,
@@ -1023,7 +1136,8 @@ export default function XAIModule() {
         endpoint = `${API}/generate/reply`;
         body = {
           tweet_url: tweetUrl,
-          tweet_content: tweetData?.text || input,
+          tweet_content: tweetData?.text || "",
+          direction: input || null,
           length: settings.length,
           reply_mode: settings.replyMode,
           variants: settings.variants,
@@ -1057,6 +1171,9 @@ export default function XAIModule() {
           generationId: response.data.generation_id,
         });
         toast.success("İçerik üretildi!");
+        // Increment generation counter for onboarding tip
+        const gc = parseInt(localStorage.getItem("typehype-gen-count") || "0", 10);
+        localStorage.setItem("typehype-gen-count", String(gc + 1));
       } else {
         updateJob(jobId, { status: "error" });
         toast.error(response.data.error || "Üretim başarısız");
@@ -1067,10 +1184,18 @@ export default function XAIModule() {
     } finally {
       setGenerating(false);
     }
-  }, [inputValue, activeTab, settings, fetched, tweetUrl, tweetData, activeProfileId, imageUrl, imageBase64, updateJob]);
+  }, [inputValue, activeTab, settings, fetched, fetchPhase, tweetUrl, tweetData, activeProfileId, imageUrl, imageBase64, updateJob]);
 
   // Placeholder based on active tab
-  const placeholders = PLATFORM_PLACEHOLDERS[activePlatform] || PLATFORM_PLACEHOLDERS.twitter;
+  const basePlaceholders = PLATFORM_PLACEHOLDERS[activePlatform] || PLATFORM_PLACEHOLDERS.twitter;
+  const placeholders = {
+    ...basePlaceholders,
+    // Override quote/reply placeholders when tweet is fetched
+    ...(fetchPhase === "prompt" && {
+      quote: "Bu tweet hakkında ne söylemek istersin? (boş bırakabilirsin)",
+      reply: "Nasıl bir yanıt vermek istersin? (boş bırakabilirsin)",
+    }),
+  };
 
   const needsUrl = activeTab === "quote" || activeTab === "reply";
   const isUrlInput = needsUrl && inputValue.match(/x\.com|twitter\.com/);
@@ -1105,6 +1230,9 @@ export default function XAIModule() {
 
       {/* Vertical spacer - pushes content toward center */}
       <div style={{ height: "15vh", flexShrink: 0 }} />
+
+      {/* Onboarding Tip (below navbar) */}
+      <OnboardingTip isLoaded={isLoaded} />
 
       {/* Style Profile Badge (top) */}
       <div
@@ -1142,6 +1270,7 @@ export default function XAIModule() {
         </span>
       </div>
 
+      {/* Onboarding Tip Banner (Accordion) */}
       {/* Main Heading */}
       <h1
         style={{
@@ -1158,13 +1287,35 @@ export default function XAIModule() {
           transition: "all 0.6s ease 0.2s",
         }}
       >
-        Ne yazmak istersin?
+        {PLATFORM_HEADINGS[activePlatform] || "Ne yazmak istersin?"}
       </h1>
 
       {/* Fetched Tweet Preview */}
       {fetched && tweetData && (
         <div style={{ width: "100%", maxWidth: "680px", marginBottom: "12px" }}>
           <TweetPreviewCard tweet={tweetData} />
+          <button
+            onClick={() => {
+              setFetched(false);
+              setFetchPhase("link");
+              setTweetData(null);
+              setTweetUrl("");
+              setInputValue("");
+            }}
+            style={{
+              marginTop: "8px",
+              padding: "6px 14px",
+              borderRadius: "999px",
+              border: "1px solid var(--m-border)",
+              background: "transparent",
+              color: "var(--m-text-muted)",
+              fontSize: "12px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            ← Farklı tweet seç
+          </button>
         </div>
       )}
 
@@ -1415,6 +1566,7 @@ export default function XAIModule() {
                     setActivePlatform(p.id);
                     setActiveTab(PLATFORM_CONTENT_TYPES[p.id][0].id);
                     setFetched(false);
+                    setFetchPhase("link");
                     setTweetData(null);
                     setTweetUrl("");
                   }}
@@ -1443,6 +1595,15 @@ export default function XAIModule() {
 
         </div>
         </div>
+
+        {/* Settings Popup - below input */}
+        <SettingsPopup
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          settings={settings}
+          onSettingsChange={setSettings}
+          activeTab={activeTab}
+        />
       </div>
 
       {/* Quick Action Chips (Content Type Tabs) */}
@@ -1468,6 +1629,7 @@ export default function XAIModule() {
               onClick={() => {
                 setActiveTab(ct.id);
                 setFetched(false);
+                setFetchPhase("link");
                 setTweetData(null);
                 setTweetUrl("");
                 if (ct.id === "thread") {
@@ -1801,15 +1963,6 @@ export default function XAIModule() {
           </div>
         </div>
       )}
-
-      {/* Settings Popup */}
-      <SettingsPopup
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        settings={settings}
-        onSettingsChange={setSettings}
-        activeTab={activeTab}
-      />
 
       {/* Global Styles */}
       <style>{`
