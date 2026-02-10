@@ -131,79 +131,42 @@ const BlogLogo = () => (
 // THEMES (Manus birebir)
 // ══════════════════════════════════════════
 
-const themes = {
-  dark: {
-    bg: "#1a1a1a",
-    radial: "rgba(60,60,70,0.25)",
-    grain: "none",
-    text: "#e5e5e5",
-    textSoft: "#b0b0b0",
-    textMuted: "#707070",
-    textFaint: "#484848",
-    border: "#2a2a2a",
-    borderLight: "rgba(255,255,255,0.06)",
-    surface: "rgba(255,255,255,0.03)",
-    surfaceHover: "rgba(255,255,255,0.07)",
-    inputBg: "rgba(255,255,255,0.04)",
-    inputBorder: "rgba(255,255,255,0.10)",
-    popupBg: "rgba(20,20,20,0.95)",
-    cardBg: "rgba(255,255,255,0.03)",
-    shadow: "0 2px 12px rgba(0,0,0,0.3)",
-    caret: "#a78bfa",
-    accent: "#a78bfa",
-    sendBg: "#e5e5e5",
-    sendText: "#0d0d0d",
-    sendBgIdle: "rgba(255,255,255,0.08)",
-    sendTextIdle: "#484848",
-    scrollbar: "rgba(255,255,255,0.08)",
-    hoverBrightness: "1.15",
-    purple: "#a78bfa",
-    purpleSoft: "rgba(167,139,250,0.12)",
-    purpleBorder: "rgba(167,139,250,0.3)",
-    greenSoft: "rgba(34,197,94,0.12)",
-    greenBorder: "rgba(34,197,94,0.3)",
-    green: "#22c55e",
-    pillActiveBg: "rgba(255,255,255,0.12)",
-    pillActiveText: "#e5e5e5",
-    iconBtnBorder: "rgba(255,255,255,0.10)",
-    iconColor: "#707070",
-  },
-  light: {
-    bg: "#f9f9f9",
-    radial: "rgba(200,200,210,0.15)",
-    grain: "none",
-    text: "#1a1a1a",
-    textSoft: "#444444",
-    textMuted: "#888888",
-    textFaint: "#bbbbbb",
-    border: "#e5e5e5",
-    borderLight: "rgba(0,0,0,0.06)",
-    surface: "rgba(0,0,0,0.02)",
-    surfaceHover: "rgba(0,0,0,0.04)",
-    inputBg: "#ffffff",
-    inputBorder: "rgba(0,0,0,0.10)",
-    popupBg: "#ffffff",
-    cardBg: "#ffffff",
-    shadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
-    caret: "#7c3aed",
-    accent: "#7c3aed",
-    sendBg: "#1a1a1a",
-    sendText: "#ffffff",
-    sendBgIdle: "rgba(0,0,0,0.06)",
-    sendTextIdle: "#bbbbbb",
-    scrollbar: "rgba(0,0,0,0.08)",
-    hoverBrightness: "0.92",
-    purple: "#7c3aed",
-    purpleSoft: "rgba(124,58,237,0.10)",
-    purpleBorder: "rgba(124,58,237,0.25)",
-    greenSoft: "rgba(34,197,94,0.10)",
-    greenBorder: "rgba(34,197,94,0.25)",
-    green: "#16a34a",
-    pillActiveBg: "rgba(0,0,0,0.08)",
-    pillActiveText: "#1a1a1a",
-    iconBtnBorder: "rgba(0,0,0,0.10)",
-    iconColor: "#888888",
-  },
+// Use CSS variables from index.css (single source of truth for light/dark)
+// This wrapper maps t.xxx to var(--m-xxx) so both CreateHub and XAIModule use same colors
+const cssTheme = {
+  bg: "var(--m-bg)",
+  radial: "var(--m-grain)", // reuse grain slot for radial
+  text: "var(--m-text)",
+  textSoft: "var(--m-text-soft)",
+  textMuted: "var(--m-text-muted)",
+  textFaint: "var(--m-text-faint)",
+  border: "var(--m-border)",
+  borderLight: "var(--m-border-light)",
+  surface: "var(--m-surface)",
+  surfaceHover: "var(--m-surface-hover)",
+  inputBg: "var(--m-input-bg)",
+  inputBorder: "var(--m-input-border)",
+  popupBg: "var(--m-popup-bg)",
+  cardBg: "var(--m-card-bg)",
+  shadow: "var(--m-shadow)",
+  caret: "var(--m-caret)",
+  accent: "var(--m-accent)",
+  sendBg: "var(--m-send-bg)",
+  sendText: "var(--m-send-text)",
+  sendBgIdle: "var(--m-send-bg-idle)",
+  sendTextIdle: "var(--m-send-text-idle)",
+  scrollbar: "var(--m-scrollbar)",
+  hoverBrightness: "var(--m-hover-brightness)",
+  purple: "var(--m-purple)",
+  purpleSoft: "var(--m-purple-soft)",
+  purpleBorder: "var(--m-purple-border)",
+  greenSoft: "var(--m-green-soft)",
+  greenBorder: "var(--m-green-border)",
+  green: "var(--m-green)",
+  pillActiveBg: "var(--m-pill-active-bg)",
+  pillActiveText: "var(--m-pill-active-text)",
+  iconBtnBorder: "var(--m-icon-btn-border)",
+  iconColor: "var(--m-icon-color)",
 };
 
 // ══════════════════════════════════════════
@@ -783,7 +746,7 @@ export default function CreateHub() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const t = isDark ? themes.dark : themes.light;
+  const t = cssTheme; // Single source: CSS variables handle light/dark automatically
 
   // State
   const [selectedPlatform, setSelectedPlatform] = useState(searchParams.get("platform") || "twitter");
@@ -1061,7 +1024,7 @@ export default function CreateHub() {
       }}
     >
       {/* Background radial */}
-      <div style={{ position: "fixed", inset: 0, background: `radial-gradient(ellipse at 50% 0%, ${t.radial} 0%, transparent 60%)`, pointerEvents: "none", transition: "background 0.4s ease" }} />
+      {/* Subtle radial gradient overlay - hidden, bg comes from CSS vars */}
 
       {/* Spacer */}
       <div style={{ height: "12vh", flexShrink: 0 }} />
