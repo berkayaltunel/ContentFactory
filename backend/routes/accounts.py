@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
 from middleware.auth import require_auth
 from datetime import datetime, timezone
 import uuid
 import logging
+import httpx
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 logger = logging.getLogger(__name__)
@@ -87,3 +89,30 @@ async def set_primary(platform: str, user=Depends(require_auth), supabase=Depend
     supabase.table("connected_accounts").update({"is_primary": True}).eq("id", existing.data[0]["id"]).execute()
     
     return {"success": True, "primary": platform}
+
+
+# ── Avatar Proxy (for platforms unavatar.io doesn't support) ──
+
+@router.get("/avatar/instagram/{username}", include_in_schema=False)
+async def instagram_avatar(username: str):
+    """Proxy Instagram profile picture via Instagram GraphQL API"""
+    username = username.strip().lstrip("@")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}",
+                headers={
+                    "User-Agent": "Instagram 219.0.0.12.117",
+                    "X-IG-App-ID": "936619743392459",
+                }
+            )
+            if r.status_code == 200:
+                data = r.json()
+                pic_url = data.get("data", {}).get("user", {}).get("profile_pic_url_hd") or \
+                          data.get("data", {}).get("user", {}).get("profile_pic_url", "")
+                if pic_url:
+                    return RedirectResponse(url=pic_url, status_code=302)
+    except Exception as e:
+        logger.warning(f"Instagram avatar fetch failed for @{username}: {e}")
+    
+    raise HTTPException(status_code=404, detail="Avatar not found")

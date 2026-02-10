@@ -93,9 +93,9 @@ function PillNavItem({ item, isActive }) {
 
 const PLATFORMS = [
   { id: "twitter", label: "Twitter / X", Icon: FaXTwitter, avatarUrl: (u) => `https://unavatar.io/x/${u}` },
-  { id: "instagram", label: "Instagram", Icon: FaInstagram, avatarUrl: (u) => `https://unavatar.io/instagram/${u}` },
+  { id: "instagram", label: "Instagram", Icon: FaInstagram, avatarUrl: (u) => `${process.env.REACT_APP_API_URL || "https://api.typehype.io"}/api/accounts/avatar/instagram/${u}` },
   { id: "youtube", label: "YouTube", Icon: FaYoutube, avatarUrl: (u) => `https://unavatar.io/youtube/${u}` },
-  { id: "tiktok", label: "TikTok", Icon: FaTiktok, avatarUrl: null },
+  { id: "tiktok", label: "TikTok", Icon: FaTiktok, avatarUrl: (u) => `https://unavatar.io/tiktok/${u}` },
   { id: "linkedin", label: "LinkedIn", Icon: FaLinkedinIn, avatarUrl: null },
 ];
 

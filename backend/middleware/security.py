@@ -103,7 +103,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     )
 
         # --- 2. Anti-curl: Custom header check (skip exempt paths and OPTIONS) ---
-        if request.method != "OPTIONS" and path not in EXEMPT_PATHS and path.startswith("/api/"):
+        if request.method != "OPTIONS" and path not in EXEMPT_PATHS and not path.startswith("/api/accounts/avatar/") and path.startswith("/api/"):
             x_th_client = request.headers.get("x-th-client", "")
             if not x_th_client:
                 logger.warning(f"Anti-curl blocked: missing X-TH-Client header, path={path}, UA={request.headers.get('user-agent', '')[:50]}")
