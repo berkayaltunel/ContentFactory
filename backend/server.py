@@ -454,7 +454,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
                         example_tweets = get_similar_tweets(
                             query_text=request.topic,
                             source_ids=source_ids,
-                            limit=10
+                            limit=20
                         )
                         logger.info(f"RAG: Found {len(example_tweets)} similar tweets")
                     except Exception as e:

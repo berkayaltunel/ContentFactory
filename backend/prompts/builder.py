@@ -295,7 +295,7 @@ def build_example_tweets_section(example_tweets: list) -> str:
         return ""
     
     # Limit to 10 most relevant (they're already sorted by similarity)
-    tweets_to_use = example_tweets[:10]
+    tweets_to_use = example_tweets[:20]
     
     section = """
 ## 📝 BU KİŞİNİN GERÇEK TWEET'LERİ
