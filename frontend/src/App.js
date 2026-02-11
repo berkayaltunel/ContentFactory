@@ -17,6 +17,7 @@ import CoachPage from "@/pages/CoachPage";
 import TrendDashboardPage from "@/pages/TrendDashboardPage";
 import AccountAnalysisPage from "@/pages/AccountAnalysisPage";
 import DashboardHome from "@/pages/DashboardHome";
+import YouTubeStudioPage from "@/pages/YouTubeStudioPage";
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="contentfactory-theme">
@@ -45,6 +46,7 @@ function App() {
                   <Route path="coach" element={<CoachPage />} />
                   <Route path="trends" element={<TrendDashboardPage />} />
                   <Route path="account-analysis" element={<AccountAnalysisPage />} />
+                  <Route path="youtube-studio" element={<YouTubeStudioPage />} />
                 </Route>
               </Route>
 

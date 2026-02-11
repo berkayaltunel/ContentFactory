@@ -41,6 +41,7 @@ const navItems = [
 ];
 
 const moreItems = [
+  { path: "/dashboard/youtube-studio", label: "YouTube Studio", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
   { path: "/dashboard/style-lab", label: "Style Lab", icon: Dna },
   { path: "/dashboard/trends", label: "Trendler", icon: TrendingUp },
   { path: "/dashboard/account-analysis", label: "Hesap Analizi", icon: BarChart3 },

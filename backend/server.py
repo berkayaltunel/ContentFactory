@@ -1068,6 +1068,10 @@ api_router.include_router(cookies_router)
 from routes.admin import router as admin_router
 api_router.include_router(admin_router)
 
+# Include YouTube Studio router
+from routes.youtube_studio import router as youtube_studio_router
+api_router.include_router(youtube_studio_router)
+
 # Include the router in the main app
 app.include_router(api_router)
 
