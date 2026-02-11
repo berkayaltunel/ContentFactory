@@ -1305,9 +1305,13 @@ export default function YouTubeStudioPage() {
         </div>
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content - tüm tab'lar mount, aktif olmayan gizli (state korunur) */}
       <div className="max-w-4xl">
-        <ActiveComponent />
+        {Object.entries(TAB_COMPONENTS).map(([id, Component]) => (
+          <div key={id} style={{ display: activeTab === id ? "block" : "none" }}>
+            <Component />
+          </div>
+        ))}
       </div>
     </div>
   );
