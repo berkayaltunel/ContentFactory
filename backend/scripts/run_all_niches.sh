@@ -1,6 +1,6 @@
 #!/bin/bash
 # Tüm niche'leri sırayla çalıştır (rate limit'e dikkat)
-# Her niche arasında 10 dakika bekleme
+# Her niche arasında 15 dakika bekleme (Twitter rate limit window = 15 min)
 
 set -e
 cd /opt/contentfactory/backend
@@ -25,10 +25,10 @@ for niche in "${NICHES[@]}"; do
     
     echo "$(date) - ✅ $niche tamamlandı"
     
-    # Son niche değilse 10 dakika bekle (rate limit soğuması)
+    # Son niche değilse 15 dakika bekle (rate limit penceresi = 15 min)
     if [ "$niche" != "${NICHES[-1]}" ]; then
-        echo "$(date) - ⏳ Rate limit soğuması: 10 dakika bekleniyor..."
-        sleep 600
+        echo "$(date) - ⏳ Rate limit soğuması: 15 dakika bekleniyor..."
+        sleep 900
     fi
 done
 

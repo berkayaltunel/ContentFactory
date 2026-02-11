@@ -186,8 +186,12 @@ class TwitterGraphQL:
             logger.error(f"Bird CLI error: {e}")
             return None
 
-    async def _graphql_request(self, query_id: str, operation: str, variables: dict, features: Optional[dict] = None, max_retries: int = 3) -> Optional[dict]:
-        """Make a direct GraphQL request to Twitter with 429 retry/backoff."""
+    async def _graphql_request(self, query_id: str, operation: str, variables: dict, features: Optional[dict] = None, max_retries: int = 5) -> Optional[dict]:
+        """Make a direct GraphQL request to Twitter with 429 retry/backoff.
+        
+        Rate limit window is ~15 min. Backoff: 60s → 120s → 180s → 240s → 300s
+        Total max wait: ~15 min (enough to outlast a rate limit window)
+        """
         import asyncio as _asyncio
 
         if features is None:
@@ -210,8 +214,10 @@ class TwitterGraphQL:
                     if resp.status_code == 200:
                         return resp.json()
                     elif resp.status_code == 429:
-                        # Rate limited - exponential backoff
-                        wait_secs = min(30 * (2 ** attempt), 120)  # 30s, 60s, 120s
+                        if attempt >= max_retries:
+                            break  # Don't sleep on last attempt
+                        # Rate limited - linear backoff starting at 60s, max 300s
+                        wait_secs = min(60 + (60 * attempt), 300)  # 60, 120, 180, 240, 300
                         logger.warning(f"⏳ Rate limited (429), waiting {wait_secs}s (attempt {attempt + 1}/{max_retries + 1})")
                         await _asyncio.sleep(wait_secs)
                         continue
