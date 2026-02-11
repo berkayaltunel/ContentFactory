@@ -1821,6 +1821,12 @@ export default function XAIModule() {
                     setFetchPhase("link");
                     setTweetData(null);
                     setTweetUrl("");
+                    // Navbar sync: URL'deki platform parametresini güncelle
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("platform", p.id);
+                      return next;
+                    }, { replace: true });
                   }}
                   style={{
                     width: "26px",
