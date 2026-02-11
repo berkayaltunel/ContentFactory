@@ -491,7 +491,7 @@ export default function DashboardHome() {
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => navigate("/dashboard/create?platform=twitter")}
+                  onClick={() => navigate(`/dashboard/create?platform=twitter&style=${activeProfile.id}`)}
                   className="w-full h-9 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-medium"
                 >
                   Bu Stille Üret <ArrowRight className="h-3 w-3 ml-1" />
