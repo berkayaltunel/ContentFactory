@@ -157,9 +157,9 @@ const PLATFORM_CONTENT_TYPES = {
     { id: "carousel", icon: Quote, label: "Carousel" },
   ],
   blog: [
-    { id: "article", icon: FileText, label: "Blog Yazısı" },
-    { id: "listicle", icon: MessageSquare, label: "Listicle" },
-    { id: "tutorial", icon: Quote, label: "Tutorial" },
+    { id: "blog-article", icon: FileText, label: "Blog Yazısı" },
+    { id: "blog-listicle", icon: MessageSquare, label: "Listicle" },
+    { id: "blog-tutorial", icon: Quote, label: "Tutorial" },
   ],
 };
 
@@ -220,7 +220,45 @@ const TypeHypeLogo = () => (
 // SETTINGS POPUP
 // ══════════════════════════════════════════
 
-function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab }) {
+// LinkedIn ayarları
+const linkedinPersonas = [
+  { id: "thought_leader", label: "Vizyon Lideri", desc: "Sektörün geleceğini gören, trendleri yorumlayan" },
+  { id: "storyteller", label: "Hikayeci", desc: "İş deneyimlerini hikayeye dönüştüren" },
+  { id: "data_driven", label: "Veri Odaklı", desc: "Rakamlarla konuşan, analitik düşünen" },
+  { id: "motivator", label: "Motivatör", desc: "Kariyer ve iş hayatında motive eden mentor" },
+];
+const linkedinFormats = [
+  { id: "standard", label: "Standart", desc: "Klasik LinkedIn post formatı" },
+  { id: "listicle", label: "Liste", desc: "Numaralı/madde işaretli format" },
+  { id: "story", label: "Hikaye", desc: "Kişisel deneyim anlatısı" },
+  { id: "carousel_text", label: "Carousel", desc: "Slide bazlı metin formatı" },
+  { id: "poll", label: "Anket", desc: "Tartışma başlatıcı soru formatı" },
+  { id: "micro", label: "Kısa", desc: "2-3 cümlelik kısa post" },
+];
+
+// Blog ayarları
+const blogStyles = [
+  { id: "informative", label: "Bilgilendirici", desc: "Eğitici, net, araştırmaya dayalı" },
+  { id: "personal", label: "Kişisel", desc: "Kişisel deneyim ve bakış açısı" },
+  { id: "technical", label: "Teknik", desc: "How-to, adım adım rehber" },
+  { id: "opinion", label: "Fikir Yazısı", desc: "Güçlü görüş ve argüman" },
+  { id: "listicle", label: "Listicle", desc: "N tane madde formatı" },
+  { id: "case_study", label: "Case Study", desc: "Gerçek örnek analizi" },
+];
+const blogFrameworks = [
+  { id: "answer_first", label: "Answer-First", desc: "Sonuçla başla, detay sonra" },
+  { id: "pas", label: "PAS", desc: "Problem → Ajite → Çözüm" },
+  { id: "aida", label: "AIDA", desc: "Dikkat → İlgi → İstek → Aksiyon" },
+  { id: "storytelling", label: "Storytelling", desc: "Hikaye anlatım yapısı" },
+];
+const blogLevels = [
+  { id: "quick", label: "Quick Take", desc: "500-800 kelime" },
+  { id: "standard", label: "Standard", desc: "1000-1500 kelime" },
+  { id: "deep_dive", label: "Deep Dive", desc: "2000-3000 kelime" },
+  { id: "ultimate", label: "Ultimate", desc: "3000+ kelime rehber" },
+];
+
+function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, activePlatform }) {
   if (!open) return null;
 
   const currentLengths = activeTab === "reply" ? replyLengths : 
@@ -422,6 +460,143 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab })
               ))}
             </div>
           </div>
+
+          {/* LinkedIn-specific settings */}
+          {activePlatform === "linkedin" && (
+            <>
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
+                  LinkedIn Persona
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {linkedinPersonas.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => onSettingsChange({ ...settings, linkedinPersona: p.id })}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px",
+                        border: settings.linkedinPersona === p.id ? "none" : "1px solid var(--m-border)",
+                        background: settings.linkedinPersona === p.id ? "var(--m-pill-active-bg)" : "transparent",
+                        color: settings.linkedinPersona === p.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
+                      }}
+                    >{p.label}</button>
+                  ))}
+                </div>
+                {linkedinPersonas.find((p) => p.id === settings.linkedinPersona)?.desc && (
+                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                    {linkedinPersonas.find((p) => p.id === settings.linkedinPersona).desc}
+                  </p>
+                )}
+              </div>
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
+                  Format
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {linkedinFormats.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => onSettingsChange({ ...settings, linkedinFormat: f.id })}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px",
+                        border: settings.linkedinFormat === f.id ? "none" : "1px solid var(--m-border)",
+                        background: settings.linkedinFormat === f.id ? "var(--m-pill-active-bg)" : "transparent",
+                        color: settings.linkedinFormat === f.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
+                      }}
+                    >{f.label}</button>
+                  ))}
+                </div>
+                {linkedinFormats.find((f) => f.id === settings.linkedinFormat)?.desc && (
+                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                    {linkedinFormats.find((f) => f.id === settings.linkedinFormat).desc}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Blog-specific settings */}
+          {activePlatform === "blog" && (
+            <>
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
+                  Yazı Stili
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {blogStyles.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => onSettingsChange({ ...settings, blogStyle: s.id })}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px",
+                        border: settings.blogStyle === s.id ? "none" : "1px solid var(--m-border)",
+                        background: settings.blogStyle === s.id ? "var(--m-pill-active-bg)" : "transparent",
+                        color: settings.blogStyle === s.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
+                      }}
+                    >{s.label}</button>
+                  ))}
+                </div>
+                {blogStyles.find((s) => s.id === settings.blogStyle)?.desc && (
+                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                    {blogStyles.find((s) => s.id === settings.blogStyle).desc}
+                  </p>
+                )}
+              </div>
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
+                  Framework
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {blogFrameworks.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => onSettingsChange({ ...settings, blogFramework: f.id })}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px",
+                        border: settings.blogFramework === f.id ? "none" : "1px solid var(--m-border)",
+                        background: settings.blogFramework === f.id ? "var(--m-pill-active-bg)" : "transparent",
+                        color: settings.blogFramework === f.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
+                      }}
+                    >{f.label}</button>
+                  ))}
+                </div>
+                {blogFrameworks.find((f) => f.id === settings.blogFramework)?.desc && (
+                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                    {blogFrameworks.find((f) => f.id === settings.blogFramework).desc}
+                  </p>
+                )}
+              </div>
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
+                  İçerik Seviyesi
+                </label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {blogLevels.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => onSettingsChange({ ...settings, blogLevel: l.id })}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px",
+                        border: settings.blogLevel === l.id ? "none" : "1px solid var(--m-border)",
+                        background: settings.blogLevel === l.id ? "var(--m-pill-active-bg)" : "transparent",
+                        color: settings.blogLevel === l.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
+                      }}
+                    >{l.label}</button>
+                  ))}
+                </div>
+                {blogLevels.find((l) => l.id === settings.blogLevel)?.desc && (
+                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
+                    {blogLevels.find((l) => l.id === settings.blogLevel).desc}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Variant Count */}
           <div className="mb-2">
@@ -977,6 +1152,13 @@ export default function XAIModule() {
     variants: 3,
     replyMode: "support",
     articleStyle: "authority",
+    // LinkedIn-specific
+    linkedinPersona: "thought_leader",
+    linkedinFormat: "standard",
+    // Blog-specific
+    blogStyle: "informative",
+    blogFramework: "answer_first",
+    blogLevel: "standard",
   });
 
   // Initialize from URL params
@@ -1126,7 +1308,51 @@ export default function XAIModule() {
     try {
       let endpoint, body;
 
-      if (type === "tweet") {
+      if (activePlatform === "linkedin") {
+        endpoint = `${API}/generate/linkedin`;
+        body = {
+          topic: input,
+          format: settings.linkedinFormat,
+          persona: settings.linkedinPersona,
+          language: settings.language,
+          additional_context: null,
+          variants: settings.variants,
+        };
+      } else if (activePlatform === "blog") {
+        endpoint = `${API}/generate/blog/full`;
+        body = {
+          topic: input,
+          style: settings.blogStyle,
+          framework: settings.blogFramework,
+          level: settings.blogLevel,
+          language: settings.language,
+          additional_context: null,
+        };
+      } else if (activePlatform === "instagram") {
+        const igEndpoints = {
+          "caption": "/generate/instagram/caption",
+          "reel-script": "/generate/instagram/reel-script",
+          "story": "/generate/instagram/story-ideas",
+        };
+        endpoint = `${API}${igEndpoints[activeTab] || "/generate/instagram/caption"}`;
+        body = { topic: input, language: settings.language, variants: settings.variants, persona: settings.persona, tone: settings.tone };
+      } else if (activePlatform === "tiktok") {
+        const tkEndpoints = {
+          "hook": "/generate/tiktok/script",
+          "script": "/generate/tiktok/script",
+          "caption": "/generate/tiktok/caption",
+        };
+        endpoint = `${API}${tkEndpoints[activeTab] || "/generate/tiktok/script"}`;
+        body = { topic: input, language: settings.language, variants: settings.variants, persona: settings.persona, tone: settings.tone };
+      } else if (activePlatform === "youtube") {
+        const ytEndpoints = {
+          "video-script": "/generate/youtube/script",
+          "title-desc": "/generate/youtube/title-description",
+          "shorts-script": "/generate/youtube/shorts-script",
+        };
+        endpoint = `${API}${ytEndpoints[activeTab] || "/generate/youtube/script"}`;
+        body = { topic: input, language: settings.language, variants: settings.variants, persona: settings.persona, tone: settings.tone };
+      } else if (type === "tweet") {
         endpoint = `${API}/generate/tweet`;
         body = {
           topic: input,
@@ -1223,7 +1449,11 @@ export default function XAIModule() {
 
   const needsUrl = activeTab === "quote" || activeTab === "reply";
   const isUrlInput = needsUrl && inputValue.match(/x\.com|twitter\.com/);
-  const settingsSummary = `${personas.find((p) => p.id === settings.persona)?.label} · ${tones.find((t) => t.id === settings.tone)?.label} · ${settings.variants}x`;
+  const settingsSummary = activePlatform === "linkedin"
+    ? `${linkedinPersonas.find((p) => p.id === settings.linkedinPersona)?.label} · ${linkedinFormats.find((f) => f.id === settings.linkedinFormat)?.label} · ${settings.variants}x`
+    : activePlatform === "blog"
+    ? `${blogStyles.find((s) => s.id === settings.blogStyle)?.label} · ${blogFrameworks.find((f) => f.id === settings.blogFramework)?.label} · ${blogLevels.find((l) => l.id === settings.blogLevel)?.label}`
+    : `${personas.find((p) => p.id === settings.persona)?.label} · ${tones.find((t) => t.id === settings.tone)?.label} · ${settings.variants}x`;
 
   return (
     <div
@@ -1622,6 +1852,7 @@ export default function XAIModule() {
           settings={settings}
           onSettingsChange={setSettings}
           activeTab={activeTab}
+          activePlatform={activePlatform}
         />
       </div>
 
