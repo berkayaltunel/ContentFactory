@@ -1140,7 +1140,7 @@ export default function XAIModule() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeProfileId, activeProfile } = useProfile();
+  const { activeProfileId, activeProfile, setActiveProfile } = useProfile();
 
   const [settings, setSettings] = useState({
     mode: "classic",
@@ -1173,8 +1173,8 @@ export default function XAIModule() {
       setActivePlatform(platformParam);
     }
     if (styleParam) {
-      setSelectedStyleProfile(styleParam);
-      setUseStyleProfile(true);
+      // Stil profilini aktif et (ProfileContext üzerinden)
+      if (setActiveProfile) setActiveProfile(styleParam);
     }
   }, [searchParams]);
 
