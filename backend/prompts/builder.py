@@ -6,6 +6,13 @@ from .personas import PERSONAS
 from .tones import TONES
 from .knowledge import KNOWLEDGE_MODES
 # Hooks are now integrated into personas, not imported separately
+from .algorithm import (
+    ALGORITHM_KNOWLEDGE,
+    ALGORITHM_KNOWLEDGE_COMPACT,
+    CTA_STRATEGIES,
+    HOOK_FORMULAS,
+    CONTENT_RULES,
+)
 from .quality import (
     QUALITY_CRITERIA,
     BANNED_PATTERNS,
@@ -342,7 +349,8 @@ def build_final_prompt(
     additional_context: str = None,
     is_apex: bool = False,
     style_prompt: str = None,
-    example_tweets: list = None
+    example_tweets: list = None,
+    platform: str = "twitter"
 ) -> str:
     """
     Build the complete prompt by combining all layers.
@@ -393,6 +401,14 @@ Bunun yerine spesifik, somut, günlük dilde yaz."""
     # 1. System Identity (Core AI identity)
     sections.append(SYSTEM_IDENTITY)
     
+    # 2.5. Algorithm Knowledge
+    is_twitter = platform == "twitter" and content_type in ("tweet", "quote", "reply", "article")
+    if is_twitter:
+        sections.append(ALGORITHM_KNOWLEDGE)
+        sections.append(CONTENT_RULES)
+    else:
+        sections.append(ALGORITHM_KNOWLEDGE_COMPACT)
+    
     # 3. Task Definition
     task = TASK_DEFINITIONS.get(content_type, TASK_DEFINITIONS["tweet"])
     if original_tweet and "{original_tweet}" in task:
@@ -420,6 +436,10 @@ Bunun yerine spesifik, somut, günlük dilde yaz."""
     
     # 5. Persona
     sections.append(build_persona_section(persona))
+    
+    # 5.5. Hook Formulas
+    if is_twitter:
+        sections.append(HOOK_FORMULAS)
     
     # 6. Tone
     sections.append(build_tone_section(tone))
@@ -464,6 +484,9 @@ Bunun yerine spesifik, somut, günlük dilde yaz."""
     # 15. Topic
     if topic:
         sections.append(f"## 📌 KONU\n\n{topic}")
+    
+    # 15.5. CTA Strategies
+    sections.append(CTA_STRATEGIES)
     
     # 16. Quality Criteria
     sections.append(QUALITY_CRITERIA)

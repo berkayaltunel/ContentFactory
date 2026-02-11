@@ -51,6 +51,14 @@ Somut, spesifik, kişisel, unexpected.
 ☐ Son cümle akılda kalıcı mı?
 ☐ Birileri bunu screenshot'layıp paylaşır mı?
 ☐ Template hissi veriyor mu? (veriyorsa yeniden yaz)
+
+### ALGORİTMA OPTİMİZASYON (ULTRA'da zorunlu):
+
+☐ **Bookmark CTA var mı?** — İçeriğin bir yerinde doğal bir "kaydet" tetikleyicisi olmalı. Direkt "bookmark yap" deme ama kaydetmeye değer olduğunu hissettir. Örnek: "Bunu bir yere yaz." veya "Save this."
+☐ **Dwell time optimize mi?** — İlk cümle 3 saniye kuralını geçiyor mu? Merak, şok veya story hook kullanıldı mı?
+☐ **Link kuralı:** İçerikte harici link varsa → ana tweet'e KOYMA, reply'a yönlendir. "Detaylar reply'da" gibi bir not ekle.
+☐ **Self-contained mi?** — Okuyucu başka bir yere gitmeden tam değer alıyor mu?
+☐ **Pozitif sentiment mi?** — Yapıcı, bilgi veren, ilham veren ton mu? (Grok pozitif içeriği tercih ediyor)
 """
 
 STYLE_CLONE_INTEGRATION = """

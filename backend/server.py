@@ -480,7 +480,8 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             additional_context=combined_context if combined_context else None,
             is_apex=(request.mode == "ultra" or request.mode == "apex"),
             style_prompt=style_prompt,
-            example_tweets=example_tweets
+            example_tweets=example_tweets,
+            platform="twitter"
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
@@ -547,7 +548,8 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
             length=request.length,
             language=request.language,
             original_tweet=request.tweet_content,
-            additional_context=quote_context if quote_context else None
+            additional_context=quote_context if quote_context else None,
+            platform="twitter"
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
@@ -613,7 +615,8 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
             language=request.language,
             original_tweet=request.tweet_content,
             reply_mode=request.reply_mode,
-            additional_context=reply_context if reply_context else None
+            additional_context=reply_context if reply_context else None,
+            platform="twitter"
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
@@ -671,7 +674,8 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
             language=request.language,
             article_style=request.style,
             references=request.reference_links,
-            additional_context=request.additional_context
+            additional_context=request.additional_context,
+            platform="twitter"
         )
 
         contents, tokens_used = await generate_with_openai(system_prompt, "Makaleyi yaz.", 1, user_id=user.id)
