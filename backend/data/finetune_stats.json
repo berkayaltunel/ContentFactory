@@ -1,0 +1,73 @@
+{
+  "total_examples": 294,
+  "train_count": 264,
+  "val_count": 30,
+  "total_tokens": 65850,
+  "avg_tokens": 224.0,
+  "estimated_cost_3_epoch": 0.59,
+  "niche_distribution": {
+    "tech": 115,
+    "haber": 68,
+    "kripto": 49,
+    "pazarlama": 31,
+    "kisisel_gelisim": 31
+  },
+  "language_distribution": {
+    "tr": 160,
+    "en": 134
+  },
+  "hook_distribution": {
+    "direct": 213,
+    "data": 32,
+    "authority": 17,
+    "question": 9,
+    "challenge": 7,
+    "emotional": 6,
+    "story": 5,
+    "bold_claim": 3,
+    "list": 2
+  },
+  "tone_distribution": {
+    "conversational": 187,
+    "raw": 57,
+    "humorous": 16,
+    "informative": 12,
+    "motivational": 12,
+    "analytical": 9,
+    "controversial": 1
+  },
+  "top_authors": {
+    "Selcoin": 38,
+    "bosunatiklama": 23,
+    "AdamMGrant": 16,
+    "pusholder": 16,
+    "BarisOzcan": 16,
+    "bpthaber": 15,
+    "alexhormozi": 15,
+    "paulg": 14,
+    "naval": 12,
+    "AndrewYNg": 12,
+    "sama": 9,
+    "oozn": 9,
+    "simonsinek": 8,
+    "lexfridman": 7,
+    "OfficialLoganK": 7,
+    "gregisenberg": 7,
+    "MarkManson": 7,
+    "SahilBloom": 6,
+    "cryptokemal": 6,
+    "fkadev": 6
+  },
+  "min_likes": 1000,
+  "filters_applied": {
+    "min_content_length": 30,
+    "max_content_length": 1500,
+    "max_tokens": 4096,
+    "mega_accounts_skipped": [
+      "sundarpichai",
+      "jack",
+      "sataborasu",
+      "elonmusk"
+    ]
+  }
+}
