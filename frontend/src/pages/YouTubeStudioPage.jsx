@@ -383,9 +383,7 @@ function VideoTab() {
           {/* ── Video Info Card ── */}
           {v && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 flex gap-4 items-start">
-              {(v.thumbnails?.high?.url || v.thumbnails?.medium?.url || v.thumbnail) && (
-                <img src={v.thumbnails?.high?.url || v.thumbnails?.medium?.url || v.thumbnail} alt="" className="w-44 rounded-lg aspect-video object-cover shrink-0" />
-              )}
+              <img src={v.thumbnails?.high?.url || v.thumbnails?.medium?.url || v.thumbnail || `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`} alt="" className="w-44 rounded-lg aspect-video object-cover shrink-0" />
               <div className="flex-1 min-w-0">
                 <h3 className="text-white font-semibold text-lg leading-tight line-clamp-2">{v.title}</h3>
                 <p className="text-white/40 text-sm mt-1">{v.channelTitle || v.channel_title}</p>
