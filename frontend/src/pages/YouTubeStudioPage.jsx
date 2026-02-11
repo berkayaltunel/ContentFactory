@@ -9,7 +9,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, X, Upload, TrendingUp, Lightbulb, Search, Globe, GraduationCap, BarChart3, MessageSquare, Users, Image, Sparkles, Compass, Languages } from "lucide-react";
+import { Loader2, Plus, X, Upload, TrendingUp, Lightbulb, Search, Globe, GraduationCap, BarChart3, MessageSquare, Users, Image, Sparkles, Compass, Languages, ThumbsUp, Clock, Star, Eye, MessageCircle, CheckCircle, AlertTriangle, Zap, Target, ArrowRight } from "lucide-react";
 import { FaYoutube } from "react-icons/fa6";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "https://api.typehype.io";
@@ -165,6 +165,23 @@ function ChannelTab() {
   );
 }
 
+/* ── Video Tab Helpers ── */
+const parseDuration = (iso) => {
+  if (!iso) return "—";
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return iso;
+  const h = m[1] ? `${m[1]}:` : "";
+  const min = m[2] || "0";
+  const sec = (m[3] || "0").padStart(2, "0");
+  return h ? `${h}${min.padStart(2, "0")}:${sec}` : `${min}:${sec}`;
+};
+
+const ScoreBadge = ({ score, suffix = "/10" }) => {
+  const n = parseFloat(score);
+  const color = n >= 7 ? "bg-green-500/20 text-green-400 border-green-500/30" : n >= 5 ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" : "bg-red-500/20 text-red-400 border-red-500/30";
+  return <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold border ${color}`}>{score}{suffix}</span>;
+};
+
 /* ══════════════════════════════════════════════════════
    TAB 2: Video Analizi
    ══════════════════════════════════════════════════════ */
@@ -185,6 +202,9 @@ function VideoTab() {
     setLoading(false);
   };
 
+  const a = data?.analysis; // shorthand for ai_analysis
+  const v = data?.video;
+
   return (
     <div>
       <SectionHeading title="Bu video neden tuttu? Ya da neden tutmadı?" subtitle="Video URL'sini gir, performans analizi al." />
@@ -197,15 +217,161 @@ function VideoTab() {
       {loading && <LoadingSpinner />}
       {error && <ErrorCard message={error} />}
       {data && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <MetricCard label="Görüntülenme" value={data.views?.toLocaleString("tr-TR")} />
-            <MetricCard label="Beğeni" value={data.likes?.toLocaleString("tr-TR")} />
-            <MetricCard label="Yorum" value={data.comments?.toLocaleString("tr-TR")} />
-            <MetricCard label="Etkileşim Oranı" value={data.engagement_rate ? `%${data.engagement_rate}` : "—"} />
+        <div className="space-y-4">
+          {/* ── Video Info Card ── */}
+          {v && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 flex gap-4 items-start">
+              {(v.thumbnails?.high?.url || v.thumbnails?.medium?.url || v.thumbnail) && (
+                <img src={v.thumbnails?.high?.url || v.thumbnails?.medium?.url || v.thumbnail} alt="" className="w-44 rounded-lg aspect-video object-cover shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-semibold text-lg leading-tight line-clamp-2">{v.title}</h3>
+                <p className="text-white/40 text-sm mt-1">{v.channelTitle || v.channel_title}</p>
+                <div className="flex items-center gap-4 mt-3 text-sm text-white/50">
+                  <span className="flex items-center gap-1"><Eye className="h-4 w-4" />{Number(v.viewCount || data.views || 0).toLocaleString("tr-TR")}</span>
+                  <span className="flex items-center gap-1"><ThumbsUp className="h-4 w-4" />{Number(v.likeCount || data.likes || 0).toLocaleString("tr-TR")}</span>
+                  <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" />{Number(v.commentCount || data.comments || 0).toLocaleString("tr-TR")}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Metric Cards ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Etkileşim Oranı", value: data.engagement_rate ? `%${data.engagement_rate}` : "—", icon: TrendingUp, gradient: "from-green-500 to-emerald-600" },
+              { label: "Beğeni Oranı", value: data.like_rate ? `%${data.like_rate}` : "—", icon: ThumbsUp, gradient: "from-blue-500 to-cyan-600" },
+              { label: "Süre", value: parseDuration(v?.duration), icon: Clock, gradient: "from-red-500 to-rose-600" },
+              { label: "Performans Skoru", value: data.performance_score != null ? `${data.performance_score}/100` : "—", icon: Star, gradient: "from-yellow-500 to-amber-600" },
+            ].map((m, i) => (
+              <div key={i} className="bg-[#141414] border border-white/10 rounded-xl p-4 flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${m.gradient} flex items-center justify-center shrink-0`}>
+                  <m.icon className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/40 uppercase tracking-wider">{m.label}</p>
+                  <p className="text-xl font-bold text-white">{m.value}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
-        </>
+
+          {/* ── AI Analysis ── */}
+          {a && typeof a === "object" && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-fuchsia-400" />
+                <h2 className="text-xl font-bold text-white">AI Analizi</h2>
+              </div>
+
+              {/* Overall */}
+              {a.overall_assessment && (
+                <p className="text-white/70 leading-relaxed">{a.overall_assessment}</p>
+              )}
+
+              {/* Title Analysis */}
+              {a.title_analysis && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">Başlık Analizi</h3>
+                    {a.title_analysis.score != null && <ScoreBadge score={a.title_analysis.score} />}
+                  </div>
+                  {a.title_analysis.strengths?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-white/40 mb-1 uppercase">Güçlü Yönler</p>
+                      <ul className="space-y-1">{a.title_analysis.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-green-400/80 text-sm"><CheckCircle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
+                    </div>
+                  )}
+                  {a.title_analysis.improvements?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-white/40 mb-1 uppercase">Geliştirilebilir</p>
+                      <ul className="space-y-1">{a.title_analysis.improvements.map((s, i) => <li key={i} className="flex items-start gap-2 text-yellow-400/80 text-sm"><AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
+                    </div>
+                  )}
+                  {a.title_analysis.alternative_titles?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-white/40 mb-1 uppercase">Alternatif Başlıklar</p>
+                      <div className="space-y-1">{a.title_analysis.alternative_titles.map((t, i) => <div key={i} className="flex items-center gap-2 text-sm text-purple-300 bg-purple-500/10 rounded-lg px-3 py-2"><ArrowRight className="h-3 w-3 shrink-0" />{t}</div>)}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SEO Analysis */}
+              {a.seo_analysis && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">SEO Analizi</h3>
+                    {a.seo_analysis.score != null && <ScoreBadge score={a.seo_analysis.score} />}
+                  </div>
+                  {a.seo_analysis.tag_quality && <p className="text-white/60 text-sm">Etiket Kalitesi: <span className="text-white">{a.seo_analysis.tag_quality}</span></p>}
+                  {a.seo_analysis.missing_keywords?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">{a.seo_analysis.missing_keywords.map((k, i) => <span key={i} className="text-xs bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-2.5 py-1">+ {k}</span>)}</div>
+                  )}
+                  {a.seo_analysis.description_tips?.length > 0 && (
+                    <ul className="space-y-1">{a.seo_analysis.description_tips.map((t, i) => <li key={i} className="flex items-start gap-2 text-white/60 text-sm"><Lightbulb className="h-4 w-4 mt-0.5 text-yellow-400 shrink-0" /><span>{t}</span></li>)}</ul>
+                  )}
+                </div>
+              )}
+
+              {/* Engagement Analysis */}
+              {a.engagement_analysis && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">Etkileşim Analizi</h3>
+                  {a.engagement_analysis.quality && <p className="text-white/60 text-sm">Kalite: <span className="text-white font-medium">{a.engagement_analysis.quality}</span></p>}
+                  {a.engagement_analysis.like_to_view_assessment && <p className="text-white/60 text-sm">{a.engagement_analysis.like_to_view_assessment}</p>}
+                  {a.engagement_analysis.comment_engagement && <p className="text-white/60 text-sm">{a.engagement_analysis.comment_engagement}</p>}
+                </div>
+              )}
+
+              {/* Content Tips */}
+              {a.content_tips?.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">İçerik Önerileri</h3>
+                  <ol className="space-y-2">{a.content_tips.map((t, i) => <li key={i} className="flex items-start gap-3 text-white/70 text-sm"><span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white text-xs font-bold shrink-0">{i + 1}</span><span>{t}</span></li>)}</ol>
+                </div>
+              )}
+
+              {/* Viral Potential */}
+              {a.viral_potential && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">Viral Potansiyel</h3>
+                    {a.viral_potential.score != null && <ScoreBadge score={a.viral_potential.score} />}
+                  </div>
+                  {a.viral_potential.factors?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-white/40 mb-1 uppercase">Faktörler</p>
+                      <ul className="space-y-1">{a.viral_potential.factors.map((f, i) => <li key={i} className="flex items-start gap-2 text-green-400/80 text-sm"><Zap className="h-4 w-4 mt-0.5 shrink-0" /><span>{f}</span></li>)}</ul>
+                    </div>
+                  )}
+                  {a.viral_potential.missing_elements?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-white/40 mb-1 uppercase">Eksik Unsurlar</p>
+                      <ul className="space-y-1">{a.viral_potential.missing_elements.map((f, i) => <li key={i} className="flex items-start gap-2 text-red-400/80 text-sm"><Target className="h-4 w-4 mt-0.5 shrink-0" /><span>{f}</span></li>)}</ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Similar Video Ideas */}
+              {a.similar_video_ideas?.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">Benzer Video Fikirleri</h3>
+                  <div className="grid gap-2 md:grid-cols-2">{a.similar_video_ideas.map((idea, i) => (
+                    <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-3">
+                      <p className="text-white font-medium text-sm">{idea.title}</p>
+                      {idea.why && <p className="text-white/40 text-xs mt-1">{idea.why}</p>}
+                    </div>
+                  ))}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fallback: if analysis is string, use old renderer */}
+          {a && typeof a === "string" && <AIResult html={simpleMarkdown(a)} />}
+        </div>
       )}
     </div>
   );
