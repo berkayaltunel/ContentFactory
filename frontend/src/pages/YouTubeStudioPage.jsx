@@ -119,7 +119,7 @@ function ChannelTab() {
     if (!url.trim()) return;
     setLoading(true); setError(null); setData(null);
     try {
-      const res = await apiCall("/api/youtube-studio/channel/analyze", "POST", { channel_url: url });
+      const res = await apiCall("/api/youtube-studio/channel/analyze", "POST", { url: url });
       if (res.error) throw new Error(res.error);
       setData(res);
     } catch (e) { setError(e.message); }
@@ -165,7 +165,7 @@ function VideoTab() {
     if (!url.trim()) return;
     setLoading(true); setError(null); setData(null);
     try {
-      const res = await apiCall("/api/youtube-studio/video/analyze", "POST", { video_url: url });
+      const res = await apiCall("/api/youtube-studio/video/analyze", "POST", { url: url });
       if (res.error) throw new Error(res.error);
       setData(res);
     } catch (e) { setError(e.message); }
@@ -212,7 +212,7 @@ function CommentsTab() {
     if (!url.trim()) return;
     setLoading(true); setError(null); setData(null);
     try {
-      const res = await apiCall("/api/youtube-studio/comments/analyze", "POST", { video_url: url, limit: parseInt(limit) });
+      const res = await apiCall("/api/youtube-studio/comments/analyze", "POST", { url: url, limit: parseInt(limit) });
       if (res.error) throw new Error(res.error);
       setData(res);
     } catch (e) { setError(e.message); }
