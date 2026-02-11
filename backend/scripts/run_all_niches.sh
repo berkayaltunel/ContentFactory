@@ -17,7 +17,7 @@ echo "============================================="
 echo ""
 echo "$(date) - 🚀 haber niche'i (derin tarama, min 20 like)..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche haber --min-likes 100 --max-pages 10 \
+    --niche haber --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/haber_deep.log"
 echo "$(date) - ✅ haber tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -27,7 +27,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 kripto niche'i..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche kripto --min-likes 100 --max-pages 10 \
+    --niche kripto --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/kripto.log"
 echo "$(date) - ✅ kripto tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -37,7 +37,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 mizah niche'i..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche mizah --min-likes 100 --max-pages 10 \
+    --niche mizah --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/mizah.log"
 echo "$(date) - ✅ mizah tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -47,7 +47,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 icerik_uretici niche'i..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche icerik_uretici --min-likes 100 --max-pages 10 \
+    --niche icerik_uretici --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/icerik_uretici.log"
 echo "$(date) - ✅ icerik_uretici tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -57,7 +57,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 finans niche'i..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche finans --min-likes 100 --max-pages 10 \
+    --niche finans --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/finans.log"
 echo "$(date) - ✅ finans tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -67,7 +67,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 tech niche'i (derin tekrar tarama)..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche tech --min-likes 100 --max-pages 10 \
+    --niche tech --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/tech_deep.log"
 echo "$(date) - ✅ tech tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -77,7 +77,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 pazarlama niche'i (derin tekrar tarama)..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche pazarlama --min-likes 100 --max-pages 10 \
+    --niche pazarlama --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/pazarlama_deep.log"
 echo "$(date) - ✅ pazarlama tamamlandı"
 echo "$(date) - ⏳ 15dk bekleniyor..."
@@ -87,7 +87,7 @@ sleep 900
 echo ""
 echo "$(date) - 🚀 kisisel_gelisim niche'i (derin tekrar tarama)..."
 python3 -u scripts/collect_viral_tweets.py \
-    --niche kisisel_gelisim --min-likes 100 --max-pages 10 \
+    --niche kisisel_gelisim --min-likes 1000 --max-pages 10 \
     2>&1 | tee "$LOG_DIR/kisisel_gelisim_deep.log"
 echo "$(date) - ✅ kisisel_gelisim tamamlandı"
 
