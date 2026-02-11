@@ -1139,7 +1139,7 @@ export default function XAIModule() {
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { activeProfileId, activeProfile } = useProfile();
 
   const [settings, setSettings] = useState({
