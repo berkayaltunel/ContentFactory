@@ -18,7 +18,7 @@ const apiCall = async (endpoint, method = "POST", body = null) => {
   const token = localStorage.getItem("access_token");
   const opts = {
     method,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-TH-Client": "web-app" },
   };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${API_BASE}${endpoint}`, opts);
@@ -29,7 +29,7 @@ const apiUpload = async (endpoint, formData) => {
   const token = localStorage.getItem("access_token");
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, "X-TH-Client": "web-app" },
     body: formData,
   });
   return res.json();
