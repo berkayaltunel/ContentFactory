@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
   Plus,
@@ -826,9 +827,9 @@ export default function StyleLabPage() {
     }
   };
 
+  const navigate = useNavigate();
   const handleUseProfile = (profile) => {
-    // Navigate to X AI with profile selected
-    window.location.href = `/dashboard/create?platform=twitter&style=${profile.id}`;
+    navigate(`/dashboard/create?platform=twitter&style=${profile.id}`);
   };
 
   if (loading) {
