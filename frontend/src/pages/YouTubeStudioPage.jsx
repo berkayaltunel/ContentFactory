@@ -47,6 +47,18 @@ const apiUpload = async (endpoint, formData) => {
 
 /* ── Helpers ── */
 
+// AI analysis dict veya string olabilir, her zaman string'e çevir
+const flattenAnalysis = (ai) => {
+  if (!ai) return null;
+  if (typeof ai === "string") return ai;
+  // Dict ise: analysis, summary, feedback, veya tüm value'ları birleştir
+  if (ai.analysis) return typeof ai.analysis === "string" ? ai.analysis : JSON.stringify(ai.analysis, null, 2);
+  if (ai.summary) return typeof ai.summary === "string" ? ai.summary : JSON.stringify(ai.summary, null, 2);
+  if (ai.feedback) return typeof ai.feedback === "string" ? ai.feedback : JSON.stringify(ai.feedback, null, 2);
+  // Tüm key-value'ları markdown listesine çevir
+  return Object.entries(ai).filter(([k]) => k !== "success").map(([k, v]) => `**${k.replace(/_/g, " ")}:** ${typeof v === "object" ? JSON.stringify(v) : v}`).join("\n\n");
+};
+
 const simpleMarkdown = (text) => {
   if (!text) return "";
   return text
@@ -120,8 +132,9 @@ function ChannelTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/channel/analyze", "POST", { url: url });
-      if (res.error) throw new Error(res.error);
-      setData(res);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
+      // Flatten: metrics + ai_analysis -> top level
+      setData({ ...res.metrics, analysis: res.ai_analysis, channel: res.channel, videos_analyzed: res.videos_analyzed });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
@@ -140,12 +153,12 @@ function ChannelTab() {
       {data && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <MetricCard label="Abone" value={data.subscribers?.toLocaleString("tr-TR")} />
+            <MetricCard label="Abone" value={data.subscriber_count?.toLocaleString("tr-TR")} />
             <MetricCard label="Video Sayısı" value={data.video_count?.toLocaleString("tr-TR")} />
             <MetricCard label="Toplam Görüntülenme" value={data.total_views?.toLocaleString("tr-TR")} />
             <MetricCard label="Ort. Görüntülenme" value={data.avg_views?.toLocaleString("tr-TR")} />
           </div>
-          {data.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
         </>
       )}
     </div>
@@ -166,8 +179,8 @@ function VideoTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/video/analyze", "POST", { url: url });
-      if (res.error) throw new Error(res.error);
-      setData(res);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
+      setData({ ...res.metrics, analysis: res.ai_analysis, video: res.video });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
@@ -191,7 +204,7 @@ function VideoTab() {
             <MetricCard label="Yorum" value={data.comments?.toLocaleString("tr-TR")} />
             <MetricCard label="Etkileşim Oranı" value={data.engagement_rate ? `%${data.engagement_rate}` : "—"} />
           </div>
-          {data.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
         </>
       )}
     </div>
@@ -213,8 +226,9 @@ function CommentsTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/comments/analyze", "POST", { url: url, limit: parseInt(limit) });
-      if (res.error) throw new Error(res.error);
-      setData(res);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
+      // summary is AI JSON with sentiment_distribution, categories, analysis etc.
+      setData({ ...res, ...(res.summary || {}), analysis: res.summary?.analysis || res.summary?.summary || (typeof res.summary === "string" ? res.summary : null) });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
@@ -257,7 +271,7 @@ function CommentsTab() {
               ))}
             </div>
           )}
-          {data.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
         </>
       )}
     </div>
@@ -285,8 +299,8 @@ function CompetitorTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/competitor/analyze", "POST", { my_channel: myChannel, competitor_channels: valid });
-      if (res.error) throw new Error(res.error);
-      setData(res);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
+      setData({ ...res, analysis: res.ai_analysis || res.analysis });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
@@ -316,7 +330,7 @@ function CompetitorTab() {
       </div>
       {loading && <LoadingSpinner />}
       {error && <ErrorCard message={error} />}
-      {data?.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+      {data?.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
     </div>
   );
 }
@@ -341,7 +355,7 @@ function ThumbnailTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiUpload("/api/youtube-studio/thumbnail/analyze", formData);
-      if (res.error) throw new Error(res.error);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
       setData(res);
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -383,7 +397,7 @@ function ThumbnailTab() {
             </div>
           )}
           {data.feedback && <AIResult html={simpleMarkdown(data.feedback)} />}
-          {data.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
         </>
       )}
     </div>
@@ -405,7 +419,7 @@ function IdeasTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/ideas/generate", "POST", { mode, topic, count: parseInt(count) });
-      if (res.error) throw new Error(res.error);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
       setData(res);
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -444,7 +458,7 @@ function IdeasTab() {
           ))}
         </div>
       )}
-      {data?.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+      {data?.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
     </div>
   );
 }
@@ -473,7 +487,7 @@ function NicheTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/niche/analyze", "POST", { interests, skills, time_availability: timeAvailability, target_audience: targetAudience });
-      if (res.error) throw new Error(res.error);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
       setData(res);
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -533,7 +547,7 @@ function NicheTab() {
           ))}
         </div>
       )}
-      {data?.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+      {data?.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
     </div>
   );
 }
@@ -628,7 +642,7 @@ function KeywordsTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/keywords/analyze", "POST", { niche, keywords: keywords.split(",").map((k) => k.trim()).filter(Boolean) });
-      if (res.error) throw new Error(res.error);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
       setData(res);
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -670,7 +684,7 @@ function KeywordsTab() {
         </div>
       )}
       {data?.seo_tips && <AIResult html={simpleMarkdown(data.seo_tips)} />}
-      {data?.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+      {data?.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
     </div>
   );
 }
@@ -694,7 +708,7 @@ function TransFlowTab() {
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/translate", "POST", { type, source_lang: sourceLang, target_lang: targetLang, text });
-      if (res.error) throw new Error(res.error);
+      if (res.error || res.detail) throw new Error(res.error || res.detail);
       setData(res);
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -739,7 +753,7 @@ function TransFlowTab() {
         </div>
       )}
       {data?.seo_suggestions && <AIResult html={simpleMarkdown(data.seo_suggestions)} />}
-      {data?.analysis && <AIResult html={simpleMarkdown(data.analysis)} />}
+      {data?.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
     </div>
   );
 }
