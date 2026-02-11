@@ -127,17 +127,23 @@ function ChannelTab() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
+  const fmtNum = (n) => { if (!n) return "—"; n = Number(n); if (n >= 1e6) return (n/1e6).toFixed(1)+"M"; if (n >= 1e3) return (n/1e3).toFixed(1)+"K"; return n.toLocaleString("tr-TR"); };
+
   const analyze = async () => {
     if (!url.trim()) return;
     setLoading(true); setError(null); setData(null);
     try {
       const res = await apiCall("/api/youtube-studio/channel/analyze", "POST", { url: url });
       if (res.error || res.detail) throw new Error(res.error || res.detail);
-      // Flatten: metrics + ai_analysis -> top level
       setData({ ...res.metrics, analysis: res.ai_analysis, channel: res.channel, videos_analyzed: res.videos_analyzed });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
+
+  const ch = data?.channel;
+  const a = data?.analysis;
+  const videos = ch?.videos || data?.videos || [];
+  const priorityColor = (p) => ({ high: "bg-red-500/20 text-red-400 border-red-500/30", medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", low: "bg-green-500/20 text-green-400 border-green-500/30" }[p?.toLowerCase()] || "bg-white/10 text-white/60 border-white/10");
 
   return (
     <div>
@@ -151,15 +157,171 @@ function ChannelTab() {
       {loading && <LoadingSpinner />}
       {error && <ErrorCard message={error} />}
       {data && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <MetricCard label="Abone" value={data.subscriber_count?.toLocaleString("tr-TR")} />
-            <MetricCard label="Video Sayısı" value={data.video_count?.toLocaleString("tr-TR")} />
-            <MetricCard label="Toplam Görüntülenme" value={data.total_views?.toLocaleString("tr-TR")} />
-            <MetricCard label="Ort. Görüntülenme" value={data.avg_views?.toLocaleString("tr-TR")} />
+        <div className="space-y-4">
+          {/* ── Kanal Profil Kartı ── */}
+          {ch && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5 flex items-center gap-4">
+              {ch.thumbnails?.high?.url && (
+                <img src={ch.thumbnails.high.url} alt="" className="w-16 h-16 rounded-full object-cover shrink-0" />
+              )}
+              <div className="min-w-0 flex-1">
+                <h3 className="text-white font-bold text-xl leading-tight">{ch.title}</h3>
+                {ch.customUrl && <p className="text-white/40 text-sm">{ch.customUrl}</p>}
+                {ch.description && <p className="text-white/60 text-sm mt-1 line-clamp-2">{ch.description}</p>}
+              </div>
+              {data.videos_analyzed && (
+                <span className="text-xs text-white/40 bg-white/5 border border-white/10 rounded-full px-3 py-1 shrink-0">{data.videos_analyzed} video analiz edildi</span>
+              )}
+            </div>
+          )}
+
+          {/* ── 4 Metrik Kartı ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-red-500">{fmtNum(data.subscriber_count || ch?.subscriberCount)}</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Abone</p>
+            </div>
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-white">{fmtNum(data.total_views || ch?.viewCount)}</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Toplam İzlenme</p>
+            </div>
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-white">{fmtNum(data.video_count || ch?.videoCount)}</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Video Sayısı</p>
+            </div>
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-2xl font-bold text-green-500">{data.engagement_rate ? `%${data.engagement_rate}` : "—"}</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Etkileşim</p>
+            </div>
           </div>
-          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
-        </>
+
+          {/* ── Ek Metrikler (küçük) ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Ort. Görüntülenme", value: fmtNum(data.avg_views) },
+              { label: "Ort. Beğeni", value: fmtNum(data.avg_likes) },
+              { label: "Ort. Yorum", value: fmtNum(data.avg_comments) },
+              { label: "Performans Skoru", value: data.performance_score != null ? `${data.performance_score}/100` : "—" },
+            ].map((m, i) => (
+              <div key={i} className="bg-[#141414] border border-white/10 rounded-xl p-3 text-center">
+                <p className="text-lg font-semibold text-white">{m.value}</p>
+                <p className="text-xs text-white/40 mt-0.5">{m.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── En İyi Videolar ── */}
+          {videos.length > 0 && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+              <h2 className="text-lg font-bold text-white mb-3">🎬 En İyi Videolar</h2>
+              <div className="space-y-3">
+                {videos.slice(0, 10).map((v, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    {(v.thumbnail || v.thumbnails?.medium?.url || v.thumbnails?.default?.url) && (
+                      <img src={v.thumbnail || v.thumbnails?.medium?.url || v.thumbnails?.default?.url} alt="" className="w-28 aspect-video rounded-lg object-cover shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-sm font-medium line-clamp-2">{v.title}</p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
+                        {(v.views || v.viewCount) && <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{fmtNum(v.views || v.viewCount)}</span>}
+                        {(v.likes || v.likeCount) && <span className="flex items-center gap-1"><ThumbsUp className="h-3 w-3" />{fmtNum(v.likes || v.likeCount)}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── AI Analizi ── */}
+          {a && typeof a === "object" && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5 space-y-5">
+              <h2 className="text-xl font-bold text-white">🔴 AI Analizi</h2>
+
+              {a.overall_assessment && (
+                <p className="text-white/70 leading-relaxed">{a.overall_assessment}</p>
+              )}
+
+              {a.strengths?.length > 0 && (
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-2">💪 Güçlü Yönler</h3>
+                  <ul className="space-y-1.5">{a.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-green-400/80"><CheckCircle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
+                </div>
+              )}
+
+              {a.weaknesses?.length > 0 && (
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-2">⚠️ Zayıf Yönler</h3>
+                  <ul className="space-y-1.5">{a.weaknesses.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-yellow-400/80"><AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
+                </div>
+              )}
+
+              {a.growth_opportunities?.length > 0 && (
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-2">🚀 Büyüme Fırsatları</h3>
+                  <ul className="space-y-1.5">{a.growth_opportunities.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-blue-400/80"><Zap className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
+                </div>
+              )}
+
+              {a.content_strategy && (
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-2">📋 İçerik Stratejisi</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {[
+                      ["En İyi Konular", a.content_strategy.best_performing_topics],
+                      ["Önerilen Sıklık", a.content_strategy.recommended_frequency],
+                      ["Optimal Video Süresi", a.content_strategy.optimal_video_length],
+                      ["Başlık İpuçları", a.content_strategy.title_tips],
+                      ["Thumbnail İpuçları", a.content_strategy.thumbnail_tips],
+                    ].filter(([, v]) => v).map(([label, value], i) => (
+                      <div key={i} className="bg-white/5 rounded-lg p-3">
+                        <p className="text-xs text-white/40 mb-1">{label}</p>
+                        <p className="text-sm text-white/80">{Array.isArray(value) ? value.join(", ") : value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {a.audience_insights && (
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-2">👥 Hedef Kitle</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {[
+                      ["Tahmini Demografi", a.audience_insights.estimated_demographics],
+                      ["Etkileşim Kalitesi", a.audience_insights.engagement_quality],
+                    ].filter(([, v]) => v).map(([label, value], i) => (
+                      <div key={i} className="bg-white/5 rounded-lg p-3">
+                        <p className="text-xs text-white/40 mb-1">{label}</p>
+                        <p className="text-sm text-white/80">{typeof value === "object" ? JSON.stringify(value) : value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {a.action_plan?.length > 0 && (
+                <div>
+                  <h3 className="text-base font-semibold text-white mb-2">📌 Aksiyon Planı</h3>
+                  <div className="space-y-2">
+                    {a.action_plan.map((item, i) => (
+                      <div key={i} className="bg-white/5 rounded-lg p-3 flex items-start gap-3">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border shrink-0 mt-0.5 ${priorityColor(item.priority)}`}>{item.priority}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm text-white font-medium">{item.action}</p>
+                          {item.expected_impact && <p className="text-xs text-white/40 mt-0.5">{item.expected_impact}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fallback: analysis string */}
+          {a && typeof a === "string" && <AIResult html={simpleMarkdown(a)} />}
+        </div>
       )}
     </div>
   );
