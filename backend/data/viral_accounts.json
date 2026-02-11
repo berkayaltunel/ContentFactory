@@ -1,7 +1,7 @@
 {
-  "version": "4.0",
+  "version": "5.0",
   "updated_at": "2026-02-11",
-  "description": "Viral tweet collector — TR + Global hesaplar. v4: Berkay'ın mega global listesi eklendi (~320 hesap)",
+  "description": "Viral tweet collector — TR + Global hesaplar. v5: 82 yeni TR hesap (niche güçlendirme)",
   "notes": {
     "tr_viral_threshold": "TR hesaplar: min 100 like, EN hesaplar: min 500 like",
     "verification": "✅ = API ile doğrulandı, 🔍 = yüksek güvenle eklendi, 🌍 = Berkay global v1",
@@ -9,332 +9,2763 @@
     "cookie_count": 3
   },
   "accounts": [
-
-    {"handle": "sama", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 OpenAI CEO"},
-    {"handle": "karpathy", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 AI researcher, ex-Tesla"},
-    {"handle": "ylecun", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Meta AI chief"},
-    {"handle": "AndrewYNg", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 AI/ML legend"},
-    {"handle": "demishassabis", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 DeepMind CEO"},
-    {"handle": "levelsio", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Indie hacker"},
-    {"handle": "pmarca", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 a16z, Netscape"},
-    {"handle": "GergelyOrosz", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Pragmatic Engineer"},
-    {"handle": "shreyas", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Product, ex-Stripe"},
-    {"handle": "lennysan", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Lenny's Newsletter"},
-    {"handle": "DrJimFan", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 NVIDIA AI researcher"},
-    {"handle": "swyx", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 AI engineer, Latent Space"},
-    {"handle": "rowancheung", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 AI news"},
-    {"handle": "alliekmiller", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 AI business"},
-    {"handle": "OfficialLoganK", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 OpenAI DevRel"},
-    {"handle": "mattshumer_", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 AI builder"},
-    {"handle": "jeremyphoward", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 fast.ai founder"},
-    {"handle": "drfeifei", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Stanford AI, ImageNet"},
-    {"handle": "addyosmani", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Google Chrome eng"},
-    {"handle": "cagan", "niche": "tech", "language": "en", "priority": 1, "note": "🌍 Marty Cagan, product"},
-    {"handle": "elonmusk", "niche": "tech", "language": "en", "priority": 1, "note": "Tech/AI"},
-    {"handle": "lexfridman", "niche": "tech", "language": "en", "priority": 2, "note": "AI podcaster"},
-    {"handle": "paulg", "niche": "tech", "language": "en", "priority": 1, "note": "YC founder"},
-    {"handle": "ID_AA_Carmack", "niche": "tech", "language": "en", "priority": 2, "note": "Game dev legend"},
-    {"handle": "svpino", "niche": "tech", "language": "en", "priority": 2, "note": "ML engineer"},
-
-    {"handle": "hrrcnes", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "egebese", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "sakevoid", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "BeatstoBytes", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "emrullahai", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, AI"},
-    {"handle": "mentalist_ai", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, AI"},
-    {"handle": "parsluci", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "_evliyacelebi", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "dirstream", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "vibeeval", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "FitzGPT", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, AI"},
-    {"handle": "fkadev", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, dev"},
-    {"handle": "oozn", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-    {"handle": "mserdark", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ademilter", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "eserozvataf", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "BarisOzcan", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "mervenoyann", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "serengil", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "dnomak", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "mhk_developer", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "peacecwz", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "urazkaspar", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "fatihhayri", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "GozukaraFurkan", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "lemiorhan", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "gokhansengun", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "eser", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "daron", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "cb_yilmaz", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "armagan", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "yusuf_ai", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "recepilkbahar", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "cihanozhan", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Webtekno", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3, tech haber"},
-    {"handle": "ShiftDeleteNet", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay v3, tech haber"},
-    {"handle": "donanimhaber", "niche": "tech", "language": "tr", "priority": 2, "note": "✅ 115K, tech haber"},
-    {"handle": "ardakutsal", "niche": "tech", "language": "tr", "priority": 2, "note": "✅ 177K, Webrazzi founder"},
-    {"handle": "SerkanUnsal", "niche": "tech", "language": "tr", "priority": 2, "note": "🔍 startups.watch founder"},
-    {"handle": "fatihguzeldev", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, dev"},
-
-    {"handle": "garyvee", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Gary Vaynerchuk"},
-    {"handle": "neilpatel", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 SEO/marketing guru"},
-    {"handle": "ThisIsSethsBlog", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Seth Godin"},
-    {"handle": "AlexHormozi", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Business, offers"},
-    {"handle": "randfish", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Moz/SparkToro founder"},
-    {"handle": "SahilBloom", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Growth, frameworks"},
-    {"handle": "naval", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 AngelList, philosophy"},
-    {"handle": "ShaanVP", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 My First Million pod"},
-    {"handle": "thejustinwelsh", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Solopreneur"},
-    {"handle": "dharmesh", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 HubSpot CTO"},
-    {"handle": "harrydry", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Marketing Examples"},
-    {"handle": "KateBour", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Conversion copywriter"},
-    {"handle": "amandanat", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Marketing strategist"},
-    {"handle": "VeryGoodCopy", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Copywriting newsletter"},
-    {"handle": "jappleby", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Growth marketing"},
-    {"handle": "nathanbaugh27", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 1440 newsletter"},
-    {"handle": "TheSamParr", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 The Hustle founder"},
-    {"handle": "LeilaHormozi", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 Acquisition.com"},
-    {"handle": "larrykim", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 MobileMonkey, PPC"},
-    {"handle": "annhandley", "niche": "pazarlama", "language": "en", "priority": 1, "note": "🌍 MarketingProfs, content"},
-    {"handle": "dickiebush", "niche": "pazarlama", "language": "en", "priority": 1, "note": "Writing, Ship 30"},
-    {"handle": "nicolascole77", "niche": "pazarlama", "language": "en", "priority": 1, "note": "Writing, Ship 30"},
-    {"handle": "danmartell", "niche": "pazarlama", "language": "en", "priority": 2, "note": "SaaS growth"},
-    {"handle": "gregisenberg", "niche": "pazarlama", "language": "en", "priority": 2, "note": "Startup ideas"},
-
-    {"handle": "zagortenay76", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "EmreSokullu", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "sinaafra", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "hasanaslanoba", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "SelcukAtli", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "emrreguney", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "aykutalcelik", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ahmetdurmusoglu", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "sosyalpazarlama", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "batuhanapaydin", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ardamendes", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "webaboracom", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "fatihguner", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ozan_sihay", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "KorayBahar", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ayhankaraman", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "cagrisarigoz", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "egirisim", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "swipeline", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "umitbuget", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kadir_inis", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "semihdev", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "Semih Kışlar, dev/marketing"},
-
-    {"handle": "morganhousel", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Psychology of Money"},
-    {"handle": "CathieDWood", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 ARK Invest CEO"},
-    {"handle": "chamath", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Social Capital"},
-    {"handle": "jimcramer", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 CNBC Mad Money"},
-    {"handle": "AswathDamodaran", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Valuation dean, NYU"},
-    {"handle": "LizAnnSonders", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Schwab chief strategist"},
-    {"handle": "elerianm", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Mohamed El-Erian"},
-    {"handle": "ritholtz", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Barry Ritholtz"},
-    {"handle": "matt_levine", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Bloomberg finance writer"},
-    {"handle": "MebFaber", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Cambria Investments"},
-    {"handle": "KobeissiLetter", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Market analysis"},
-    {"handle": "BrianFeroldi", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Financial education"},
-    {"handle": "awealthofcs", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Wealth of Common Sense"},
-    {"handle": "StockMKTNewz", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Stock market news"},
-    {"handle": "unusual_whales", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Options flow tracker"},
-    {"handle": "C_Barraud", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Macro economist"},
-    {"handle": "ParikPatelCFA", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Finance humor/insight"},
-    {"handle": "Citrini7", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Market analyst"},
-    {"handle": "fluentinfinance", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Finance education"},
-    {"handle": "StockMarketNerd", "niche": "finans", "language": "en", "priority": 1, "note": "🌍 Stock analysis"},
-
-    {"handle": "ProfDemirtas", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "mahfiegilmez", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "muratsagman", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "SantManukyan", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "AtillaYesilada1", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ugurses", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "nurisevgen", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kursadbucak", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ekinegeli1", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "hiakkaya", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "_selcukgecer", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "sozcumuratoglu", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "TanerGenek", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "emrahlafcu", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "iriscibre", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "e507", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ali_hakan_kara", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "baris_soydan", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ttursucu", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "burak_arzova", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ForeksTurkey", "niche": "finans", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "BloombergHT", "niche": "finans", "language": "tr", "priority": 2, "note": "✅ 1.05M, TR finance #1"},
-    {"handle": "paraanaliz", "niche": "finans", "language": "tr", "priority": 2, "note": "✅ 199K, ekonomi platform"},
-
-    {"handle": "VitalikButerin", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Ethereum founder"},
-    {"handle": "saylor", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 MicroStrategy, Bitcoin maxi"},
-    {"handle": "balajis", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Network State, ex-a16z"},
-    {"handle": "CryptoHayes", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Arthur Hayes, BitMEX"},
-    {"handle": "cobie", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Crypto trader/analyst"},
-    {"handle": "zachxbt", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 On-chain detective"},
-    {"handle": "punk6529", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 NFT/crypto thought leader"},
-    {"handle": "LynAldenContact", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Macro + Bitcoin analyst"},
-    {"handle": "APompliano", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Pomp, Bitcoin bull"},
-    {"handle": "nic__carter", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Castle Island, BTC analysis"},
-    {"handle": "WClementeIII", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 On-chain analyst"},
-    {"handle": "haydenzadams", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Uniswap founder"},
-    {"handle": "AndreCronjeTech", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Yearn/Fantom founder"},
-    {"handle": "hosseeb", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Dragonfly Capital"},
-    {"handle": "TrustlessState", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Bankless co-founder"},
-    {"handle": "RyanSAdams", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Bankless co-founder"},
-    {"handle": "laurashin", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Unchained podcast"},
-    {"handle": "blknoiz06", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Crypto trader"},
-    {"handle": "sassal0x", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 The Daily Gwei"},
-    {"handle": "Pentosh1", "niche": "kripto", "language": "en", "priority": 1, "note": "🌍 Crypto trader"},
-
-    {"handle": "Selcoin", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "cryptokemal", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "stevedabitcoin", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "TheBullduck", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kriptoemre", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "burak_tamac", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kivancozbilgic", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Turkelit", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kriptoBi", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kerimcalender", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "erhanunall", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kriptokoin", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Fidelitas_Lex", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Paradotor", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "coinmuhendisim", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Squanch1907", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "BitcoinHaber", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "frt_oz", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "hirozaki2020", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "MeanDrunkWeb3", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, Web3"},
-
-    {"handle": "bpthaber", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "ZamHaberAjans", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "bosunatiklama", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "pusholder", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "ConflictTR", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "ozetgechaber", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "gusholderhaber", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "darkwebhaber", "niche": "haber", "language": "tr", "priority": 1, "note": "Berkay onaylı, güncel haber"},
-    {"handle": "NTV", "niche": "haber", "language": "tr", "priority": 2, "note": "NTV haber"},
-    {"handle": "T24comtr", "niche": "haber", "language": "tr", "priority": 2, "note": "T24 haber"},
-    {"handle": "cumhuriyetgzt", "niche": "haber", "language": "tr", "priority": 3, "note": "Cumhuriyet gazetesi"},
-    {"handle": "BBCTurkce", "niche": "haber", "language": "tr", "priority": 3, "note": "BBC Türkçe"},
-    {"handle": "Hurriyet", "niche": "haber", "language": "tr", "priority": 3, "note": "Hürriyet"},
-    {"handle": "Sozcu_", "niche": "haber", "language": "tr", "priority": 3, "note": "Sözcü gazetesi"},
-    {"handle": "MedyascopeTV", "niche": "haber", "language": "tr", "priority": 3, "note": "Bağımsız medya"},
-    {"handle": "GZT", "niche": "haber", "language": "tr", "priority": 3, "note": "Dijital haber"},
-
-    {"handle": "dril", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Legendary shitposter"},
-    {"handle": "KeatonPatti", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Comedy writer"},
-    {"handle": "jaboukie", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Comedian"},
-    {"handle": "simoncholland", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Dad humor writer"},
-    {"handle": "XplodingUnicorn", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Parenting humor"},
-    {"handle": "badbanana", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Comedy writer"},
-    {"handle": "david8hughes", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 UK humor"},
-    {"handle": "pourmecoffee", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Satirist"},
-    {"handle": "dog_feelings", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Thoughts of Dog"},
-    {"handle": "InternetH0F", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Internet Hall of Fame"},
-    {"handle": "HumansNoContext", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Out of context humans"},
-    {"handle": "aparnapkin", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Aparna Nancherla"},
-    {"handle": "meganamram", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Comedy writer"},
-    {"handle": "electrolemon", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Jonny Sun"},
-    {"handle": "sirjoancornella", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Dark humor comics"},
-    {"handle": "TheOnion", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Satire news"},
-    {"handle": "Wendys", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Brand humor king"},
-    {"handle": "SparkNotes", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Brand humor, gen-z"},
-    {"handle": "MoonPie", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Brand humor"},
-    {"handle": "Ryanair", "niche": "mizah", "language": "en", "priority": 1, "note": "🌍 Savage brand humor"},
-
-    {"handle": "CMYLMZ", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3, komedyen"},
-    {"handle": "cagritaner", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "onudabitirin", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "danlabilic", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ataboradamansen", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Paccoz", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "beyinsiz_adam", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "OdunHerif", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Cedriclaflari", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "cezmikalorifer", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "basaranorhun", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "81MEMMED", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kizlarsozlugu", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "zaytung", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3, hiciv"},
-    {"handle": "argostroloji", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "otekidunyali", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "dayi", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "kutsalmotor", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "beehaber", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ayemebottu", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
-
-    {"handle": "JamesClear", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Atomic Habits"},
-    {"handle": "tferriss", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Tim Ferriss, 4HWW"},
-    {"handle": "simonsinek", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Start With Why"},
-    {"handle": "AdamMGrant", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Org psych, Wharton"},
-    {"handle": "melrobbins", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 5 Second Rule"},
-    {"handle": "ShaneAParrish", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Farnam Street"},
-    {"handle": "IAmMarkManson", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Subtle Art"},
-    {"handle": "thedankoe", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 One-person biz"},
-    {"handle": "ChrisWillx", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Chris Williamson pod"},
-    {"handle": "AliAbdaal", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Productivity YouTuber"},
-    {"handle": "jimkwik", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Brain coach"},
-    {"handle": "briannawiest", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Self-healing author"},
-    {"handle": "george__mack", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Mental models"},
-    {"handle": "FitFounder", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Health + productivity"},
-    {"handle": "SystemSunday", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Systems thinking"},
-    {"handle": "edlatimore", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Self-improvement"},
-    {"handle": "blakeaburge", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Growth mindset"},
-    {"handle": "neuranne", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "🌍 Neuroscience writer"},
-    {"handle": "RyanHoliday", "niche": "kisisel_gelisim", "language": "en", "priority": 1, "note": "Stoicism"},
-
-    {"handle": "muminsekman", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "selcuksirin", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "eraboraerkut", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "ErenBali", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "SerifIzgoren", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "TuncaUcer", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "AkanAbdula", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "BerkanBagci", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "RuzgarMiraOkan", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "SinanCanan", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "beyhanbudak", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "haluk_tatar", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "HikmetAnil", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "daraltilmis", "niche": "kisisel_gelisim", "language": "tr", "priority": 1, "note": "Berkay v3"},
-
-    {"handle": "MrBeast", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 YouTube king"},
-    {"handle": "MKBHD", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Tech reviewer"},
-    {"handle": "CaseyNeistat", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Filmmaker/vlogger"},
-    {"handle": "LinusTech", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 LTT"},
-    {"handle": "iJustine", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Tech/lifestyle"},
-    {"handle": "hubermanlab", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Huberman Lab podcast"},
-    {"handle": "StevenBartlett", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Diary of a CEO"},
-    {"handle": "ColinandSamir", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Creator economy"},
-    {"handle": "mattdavella", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Minimalism filmmaker"},
-    {"handle": "TomFrankly", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Productivity/Notion"},
-    {"handle": "cleoabram", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Tech explainer"},
-    {"handle": "petermckinnon", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Photography/film"},
-    {"handle": "Youshaei", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 YouTube growth"},
-    {"handle": "david_perell", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Write of Passage"},
-    {"handle": "PatFlynn", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Smart Passive Income"},
-    {"handle": "jayclouse", "niche": "icerik_uretici", "language": "en", "priority": 1, "note": "🌍 Creator Science"},
-
-    {"handle": "OguzhanUgur", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "haluklevent", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3, AHBAP"},
-    {"handle": "cuneytozdemir", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "Orkunisitmak", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "enesbatur00", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "140journos", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "23derece", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "degirmencirfan", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "BabalaTv", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "CharmQuell", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "tansu_yegen", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "tolgaozuyilmaz", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"},
-    {"handle": "pressthisbutton", "niche": "icerik_uretici", "language": "tr", "priority": 1, "note": "Berkay v3"}
+    {
+      "handle": "sama",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 OpenAI CEO"
+    },
+    {
+      "handle": "karpathy",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AI researcher, ex-Tesla"
+    },
+    {
+      "handle": "ylecun",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Meta AI chief"
+    },
+    {
+      "handle": "AndrewYNg",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AI/ML legend"
+    },
+    {
+      "handle": "demishassabis",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 DeepMind CEO"
+    },
+    {
+      "handle": "levelsio",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Indie hacker"
+    },
+    {
+      "handle": "pmarca",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 a16z, Netscape"
+    },
+    {
+      "handle": "GergelyOrosz",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Pragmatic Engineer"
+    },
+    {
+      "handle": "shreyas",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Product, ex-Stripe"
+    },
+    {
+      "handle": "lennysan",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Lenny's Newsletter"
+    },
+    {
+      "handle": "DrJimFan",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 NVIDIA AI researcher"
+    },
+    {
+      "handle": "swyx",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AI engineer, Latent Space"
+    },
+    {
+      "handle": "rowancheung",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AI news"
+    },
+    {
+      "handle": "alliekmiller",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AI business"
+    },
+    {
+      "handle": "OfficialLoganK",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 OpenAI DevRel"
+    },
+    {
+      "handle": "mattshumer_",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AI builder"
+    },
+    {
+      "handle": "jeremyphoward",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 fast.ai founder"
+    },
+    {
+      "handle": "drfeifei",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Stanford AI, ImageNet"
+    },
+    {
+      "handle": "addyosmani",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Google Chrome eng"
+    },
+    {
+      "handle": "cagan",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Marty Cagan, product"
+    },
+    {
+      "handle": "elonmusk",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "Tech/AI"
+    },
+    {
+      "handle": "lexfridman",
+      "niche": "tech",
+      "language": "en",
+      "priority": 2,
+      "note": "AI podcaster"
+    },
+    {
+      "handle": "paulg",
+      "niche": "tech",
+      "language": "en",
+      "priority": 1,
+      "note": "YC founder"
+    },
+    {
+      "handle": "ID_AA_Carmack",
+      "niche": "tech",
+      "language": "en",
+      "priority": 2,
+      "note": "Game dev legend"
+    },
+    {
+      "handle": "svpino",
+      "niche": "tech",
+      "language": "en",
+      "priority": 2,
+      "note": "ML engineer"
+    },
+    {
+      "handle": "hrrcnes",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "egebese",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "sakevoid",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "BeatstoBytes",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "emrullahai",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR, AI"
+    },
+    {
+      "handle": "mentalist_ai",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR, AI"
+    },
+    {
+      "handle": "parsluci",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "_evliyacelebi",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "dirstream",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "vibeeval",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "FitzGPT",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR, AI"
+    },
+    {
+      "handle": "fkadev",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR, dev"
+    },
+    {
+      "handle": "oozn",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "mserdark",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ademilter",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "eserozvataf",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "BarisOzcan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "mervenoyann",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "serengil",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "dnomak",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "mhk_developer",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "peacecwz",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "urazkaspar",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "fatihhayri",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "GozukaraFurkan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "lemiorhan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "gokhansengun",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "eser",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "daron",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "cb_yilmaz",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "armagan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "yusuf_ai",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "recepilkbahar",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "cihanozhan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Webtekno",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3, tech haber"
+    },
+    {
+      "handle": "ShiftDeleteNet",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3, tech haber"
+    },
+    {
+      "handle": "donanimhaber",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 2,
+      "note": "✅ 115K, tech haber"
+    },
+    {
+      "handle": "ardakutsal",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 2,
+      "note": "✅ 177K, Webrazzi founder"
+    },
+    {
+      "handle": "SerkanUnsal",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 2,
+      "note": "🔍 startups.watch founder"
+    },
+    {
+      "handle": "fatihguzeldev",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR, dev"
+    },
+    {
+      "handle": "garyvee",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Gary Vaynerchuk"
+    },
+    {
+      "handle": "neilpatel",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 SEO/marketing guru"
+    },
+    {
+      "handle": "ThisIsSethsBlog",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Seth Godin"
+    },
+    {
+      "handle": "AlexHormozi",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Business, offers"
+    },
+    {
+      "handle": "randfish",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Moz/SparkToro founder"
+    },
+    {
+      "handle": "SahilBloom",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Growth, frameworks"
+    },
+    {
+      "handle": "naval",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 AngelList, philosophy"
+    },
+    {
+      "handle": "ShaanVP",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 My First Million pod"
+    },
+    {
+      "handle": "thejustinwelsh",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Solopreneur"
+    },
+    {
+      "handle": "dharmesh",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 HubSpot CTO"
+    },
+    {
+      "handle": "harrydry",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Marketing Examples"
+    },
+    {
+      "handle": "KateBour",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Conversion copywriter"
+    },
+    {
+      "handle": "amandanat",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Marketing strategist"
+    },
+    {
+      "handle": "VeryGoodCopy",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Copywriting newsletter"
+    },
+    {
+      "handle": "jappleby",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Growth marketing"
+    },
+    {
+      "handle": "nathanbaugh27",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 1440 newsletter"
+    },
+    {
+      "handle": "TheSamParr",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 The Hustle founder"
+    },
+    {
+      "handle": "LeilaHormozi",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Acquisition.com"
+    },
+    {
+      "handle": "larrykim",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 MobileMonkey, PPC"
+    },
+    {
+      "handle": "annhandley",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 MarketingProfs, content"
+    },
+    {
+      "handle": "dickiebush",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "Writing, Ship 30"
+    },
+    {
+      "handle": "nicolascole77",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 1,
+      "note": "Writing, Ship 30"
+    },
+    {
+      "handle": "danmartell",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 2,
+      "note": "SaaS growth"
+    },
+    {
+      "handle": "gregisenberg",
+      "niche": "pazarlama",
+      "language": "en",
+      "priority": 2,
+      "note": "Startup ideas"
+    },
+    {
+      "handle": "zagortenay76",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "EmreSokullu",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "sinaafra",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "hasanaslanoba",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "SelcukAtli",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "emrreguney",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "aykutalcelik",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ahmetdurmusoglu",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "sosyalpazarlama",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "batuhanapaydin",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ardamendes",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "webaboracom",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "fatihguner",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ozan_sihay",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "KorayBahar",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ayhankaraman",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "cagrisarigoz",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "egirisim",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "swipeline",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "umitbuget",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kadir_inis",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "semihdev",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "Semih Kışlar, dev/marketing"
+    },
+    {
+      "handle": "morganhousel",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Psychology of Money"
+    },
+    {
+      "handle": "CathieDWood",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 ARK Invest CEO"
+    },
+    {
+      "handle": "chamath",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Social Capital"
+    },
+    {
+      "handle": "jimcramer",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 CNBC Mad Money"
+    },
+    {
+      "handle": "AswathDamodaran",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Valuation dean, NYU"
+    },
+    {
+      "handle": "LizAnnSonders",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Schwab chief strategist"
+    },
+    {
+      "handle": "elerianm",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Mohamed El-Erian"
+    },
+    {
+      "handle": "ritholtz",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Barry Ritholtz"
+    },
+    {
+      "handle": "matt_levine",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Bloomberg finance writer"
+    },
+    {
+      "handle": "MebFaber",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Cambria Investments"
+    },
+    {
+      "handle": "KobeissiLetter",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Market analysis"
+    },
+    {
+      "handle": "BrianFeroldi",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Financial education"
+    },
+    {
+      "handle": "awealthofcs",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Wealth of Common Sense"
+    },
+    {
+      "handle": "StockMKTNewz",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Stock market news"
+    },
+    {
+      "handle": "unusual_whales",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Options flow tracker"
+    },
+    {
+      "handle": "C_Barraud",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Macro economist"
+    },
+    {
+      "handle": "ParikPatelCFA",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Finance humor/insight"
+    },
+    {
+      "handle": "Citrini7",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Market analyst"
+    },
+    {
+      "handle": "fluentinfinance",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Finance education"
+    },
+    {
+      "handle": "StockMarketNerd",
+      "niche": "finans",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Stock analysis"
+    },
+    {
+      "handle": "ProfDemirtas",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "mahfiegilmez",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "muratsagman",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "SantManukyan",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "AtillaYesilada1",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ugurses",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "nurisevgen",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kursadbucak",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ekinegeli1",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "hiakkaya",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "_selcukgecer",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "sozcumuratoglu",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "TanerGenek",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "emrahlafcu",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "iriscibre",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "e507",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ali_hakan_kara",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "baris_soydan",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ttursucu",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "burak_arzova",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ForeksTurkey",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "BloombergHT",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 2,
+      "note": "✅ 1.05M, TR finance #1"
+    },
+    {
+      "handle": "paraanaliz",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 2,
+      "note": "✅ 199K, ekonomi platform"
+    },
+    {
+      "handle": "VitalikButerin",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Ethereum founder"
+    },
+    {
+      "handle": "saylor",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 MicroStrategy, Bitcoin maxi"
+    },
+    {
+      "handle": "balajis",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Network State, ex-a16z"
+    },
+    {
+      "handle": "CryptoHayes",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Arthur Hayes, BitMEX"
+    },
+    {
+      "handle": "cobie",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Crypto trader/analyst"
+    },
+    {
+      "handle": "zachxbt",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 On-chain detective"
+    },
+    {
+      "handle": "punk6529",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 NFT/crypto thought leader"
+    },
+    {
+      "handle": "LynAldenContact",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Macro + Bitcoin analyst"
+    },
+    {
+      "handle": "APompliano",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Pomp, Bitcoin bull"
+    },
+    {
+      "handle": "nic__carter",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Castle Island, BTC analysis"
+    },
+    {
+      "handle": "WClementeIII",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 On-chain analyst"
+    },
+    {
+      "handle": "haydenzadams",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Uniswap founder"
+    },
+    {
+      "handle": "AndreCronjeTech",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Yearn/Fantom founder"
+    },
+    {
+      "handle": "hosseeb",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Dragonfly Capital"
+    },
+    {
+      "handle": "TrustlessState",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Bankless co-founder"
+    },
+    {
+      "handle": "RyanSAdams",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Bankless co-founder"
+    },
+    {
+      "handle": "laurashin",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Unchained podcast"
+    },
+    {
+      "handle": "blknoiz06",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Crypto trader"
+    },
+    {
+      "handle": "sassal0x",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 The Daily Gwei"
+    },
+    {
+      "handle": "Pentosh1",
+      "niche": "kripto",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Crypto trader"
+    },
+    {
+      "handle": "Selcoin",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "cryptokemal",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "stevedabitcoin",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "TheBullduck",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kriptoemre",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "burak_tamac",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kivancozbilgic",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Turkelit",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kriptoBi",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kerimcalender",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "erhanunall",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kriptokoin",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Fidelitas_Lex",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Paradotor",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "coinmuhendisim",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Squanch1907",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "BitcoinHaber",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "frt_oz",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "hirozaki2020",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "MeanDrunkWeb3",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR, Web3"
+    },
+    {
+      "handle": "bpthaber",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "ZamHaberAjans",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "bosunatiklama",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "pusholder",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "ConflictTR",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "ozetgechaber",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "gusholderhaber",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "darkwebhaber",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı, güncel haber"
+    },
+    {
+      "handle": "NTV",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 2,
+      "note": "NTV haber"
+    },
+    {
+      "handle": "T24comtr",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 2,
+      "note": "T24 haber"
+    },
+    {
+      "handle": "cumhuriyetgzt",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 3,
+      "note": "Cumhuriyet gazetesi"
+    },
+    {
+      "handle": "BBCTurkce",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 3,
+      "note": "BBC Türkçe"
+    },
+    {
+      "handle": "Hurriyet",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 3,
+      "note": "Hürriyet"
+    },
+    {
+      "handle": "Sozcu_",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 3,
+      "note": "Sözcü gazetesi"
+    },
+    {
+      "handle": "MedyascopeTV",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 3,
+      "note": "Bağımsız medya"
+    },
+    {
+      "handle": "GZT",
+      "niche": "haber",
+      "language": "tr",
+      "priority": 3,
+      "note": "Dijital haber"
+    },
+    {
+      "handle": "dril",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Legendary shitposter"
+    },
+    {
+      "handle": "KeatonPatti",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Comedy writer"
+    },
+    {
+      "handle": "jaboukie",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Comedian"
+    },
+    {
+      "handle": "simoncholland",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Dad humor writer"
+    },
+    {
+      "handle": "XplodingUnicorn",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Parenting humor"
+    },
+    {
+      "handle": "badbanana",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Comedy writer"
+    },
+    {
+      "handle": "david8hughes",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 UK humor"
+    },
+    {
+      "handle": "pourmecoffee",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Satirist"
+    },
+    {
+      "handle": "dog_feelings",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Thoughts of Dog"
+    },
+    {
+      "handle": "InternetH0F",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Internet Hall of Fame"
+    },
+    {
+      "handle": "HumansNoContext",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Out of context humans"
+    },
+    {
+      "handle": "aparnapkin",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Aparna Nancherla"
+    },
+    {
+      "handle": "meganamram",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Comedy writer"
+    },
+    {
+      "handle": "electrolemon",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Jonny Sun"
+    },
+    {
+      "handle": "sirjoancornella",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Dark humor comics"
+    },
+    {
+      "handle": "TheOnion",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Satire news"
+    },
+    {
+      "handle": "Wendys",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Brand humor king"
+    },
+    {
+      "handle": "SparkNotes",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Brand humor, gen-z"
+    },
+    {
+      "handle": "MoonPie",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Brand humor"
+    },
+    {
+      "handle": "Ryanair",
+      "niche": "mizah",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Savage brand humor"
+    },
+    {
+      "handle": "CMYLMZ",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3, komedyen"
+    },
+    {
+      "handle": "cagritaner",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "onudabitirin",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "danlabilic",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ataboradamansen",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Paccoz",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "beyinsiz_adam",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "OdunHerif",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Cedriclaflari",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "cezmikalorifer",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "basaranorhun",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "81MEMMED",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kizlarsozlugu",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "zaytung",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3, hiciv"
+    },
+    {
+      "handle": "argostroloji",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "otekidunyali",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "dayi",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "kutsalmotor",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "beehaber",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ayemebottu",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay onaylı viral TR"
+    },
+    {
+      "handle": "JamesClear",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Atomic Habits"
+    },
+    {
+      "handle": "tferriss",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Tim Ferriss, 4HWW"
+    },
+    {
+      "handle": "simonsinek",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Start With Why"
+    },
+    {
+      "handle": "AdamMGrant",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Org psych, Wharton"
+    },
+    {
+      "handle": "melrobbins",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 5 Second Rule"
+    },
+    {
+      "handle": "ShaneAParrish",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Farnam Street"
+    },
+    {
+      "handle": "IAmMarkManson",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Subtle Art"
+    },
+    {
+      "handle": "thedankoe",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 One-person biz"
+    },
+    {
+      "handle": "ChrisWillx",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Chris Williamson pod"
+    },
+    {
+      "handle": "AliAbdaal",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Productivity YouTuber"
+    },
+    {
+      "handle": "jimkwik",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Brain coach"
+    },
+    {
+      "handle": "briannawiest",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Self-healing author"
+    },
+    {
+      "handle": "george__mack",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Mental models"
+    },
+    {
+      "handle": "FitFounder",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Health + productivity"
+    },
+    {
+      "handle": "SystemSunday",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Systems thinking"
+    },
+    {
+      "handle": "edlatimore",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Self-improvement"
+    },
+    {
+      "handle": "blakeaburge",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Growth mindset"
+    },
+    {
+      "handle": "neuranne",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Neuroscience writer"
+    },
+    {
+      "handle": "RyanHoliday",
+      "niche": "kisisel_gelisim",
+      "language": "en",
+      "priority": 1,
+      "note": "Stoicism"
+    },
+    {
+      "handle": "muminsekman",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "selcuksirin",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "eraboraerkut",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "ErenBali",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "SerifIzgoren",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "TuncaUcer",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "AkanAbdula",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "BerkanBagci",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "RuzgarMiraOkan",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "SinanCanan",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "beyhanbudak",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "haluk_tatar",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "HikmetAnil",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "daraltilmis",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "MrBeast",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 YouTube king"
+    },
+    {
+      "handle": "MKBHD",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Tech reviewer"
+    },
+    {
+      "handle": "CaseyNeistat",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Filmmaker/vlogger"
+    },
+    {
+      "handle": "LinusTech",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 LTT"
+    },
+    {
+      "handle": "iJustine",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Tech/lifestyle"
+    },
+    {
+      "handle": "hubermanlab",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Huberman Lab podcast"
+    },
+    {
+      "handle": "StevenBartlett",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Diary of a CEO"
+    },
+    {
+      "handle": "ColinandSamir",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Creator economy"
+    },
+    {
+      "handle": "mattdavella",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Minimalism filmmaker"
+    },
+    {
+      "handle": "TomFrankly",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Productivity/Notion"
+    },
+    {
+      "handle": "cleoabram",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Tech explainer"
+    },
+    {
+      "handle": "petermckinnon",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Photography/film"
+    },
+    {
+      "handle": "Youshaei",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 YouTube growth"
+    },
+    {
+      "handle": "david_perell",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Write of Passage"
+    },
+    {
+      "handle": "PatFlynn",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Smart Passive Income"
+    },
+    {
+      "handle": "jayclouse",
+      "niche": "icerik_uretici",
+      "language": "en",
+      "priority": 1,
+      "note": "🌍 Creator Science"
+    },
+    {
+      "handle": "OguzhanUgur",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "haluklevent",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3, AHBAP"
+    },
+    {
+      "handle": "cuneytozdemir",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "Orkunisitmak",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "enesbatur00",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "140journos",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "23derece",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "degirmencirfan",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "BabalaTv",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "CharmQuell",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "tansu_yegen",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "tolgaozuyilmaz",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "pressthisbutton",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "Berkay v3"
+    },
+    {
+      "handle": "EnginDemirog",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ZaferDemirkol",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "veliuysal",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "hakan_erdogan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "bilalcinarli",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "OgrenenK",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "buraksenyurt",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "yigitkonur",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "umit_benan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "halil_ozan",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "DrRizaColak",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "candeger",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "yakupbayrak",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "tahatekin",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ugur",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "RecaiCilingir",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ismailhpolat",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "varol",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "mustafapc_",
+      "niche": "tech",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "enishulli",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "HandeCilingir",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "omererkmen",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "burakbuyukdemir",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "startupswatch",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "volkancagsal",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "baris",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "mustafa",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "hkn",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "kaangulten",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "mertcaner",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "zekierkturk",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "kamilkeles",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "borayalcin",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "emrahkaya",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "duyguoktemclark",
+      "niche": "pazarlama",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "myilmaz_",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "TuncerSengoz",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "Ozde_Hekimoglu",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "AliPersembe",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "kerimrota",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "gizemoztok",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "HalukBurumcekci",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ysahin_",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "cuneytakman",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "Ali_Agaoglu",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "spk_bulteni",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "brs_ylmz",
+      "niche": "finans",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "kriptolevent",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "altcoinrookie",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "SatoshiTurk",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "EfeBulduk",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "tobby_kitty",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ninjascalper",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "eylemculculoglu",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "CoinHuntersTR",
+      "niche": "kripto",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "rprtajadam",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "gokhanunver",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "uber_kuloz",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "tivitrendelesi",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "feyyazyigit",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "vehisler",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "muthispsikoloji",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "simerazzi",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "sokopop",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "bendawla",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "vismaiorr",
+      "niche": "mizah",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "acarbaltas",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "yankiyazgancom",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ozgurbolat",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "Baris_Muslu",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ceydadvenci",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "tarihdisi",
+      "niche": "kisisel_gelisim",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "Jahrein",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "pintipanda",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "nevsinmengu",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "emincapa",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "evrimagaci",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "ruhicenet",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "DostKayaoglu",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "eniskirazoglu",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "csnaber",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    },
+    {
+      "handle": "mesutcevik",
+      "niche": "icerik_uretici",
+      "language": "tr",
+      "priority": 1,
+      "note": "🇹🇷 Berkay v5 TR güçlendirme"
+    }
   ]
 }

@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 """
-Type Hype - Fine-tuning Veri Hazırlama Pipeline'ı v2
-Supabase'deki viral tweetleri Llama 3.3-70B fine-tuning formatına çevirir.
+Type Hype - Fine-tuning Veri Hazırlama Pipeline'ı v3
+Supabase'deki viral tweetleri Together AI Llama 4 Maverick 17B-128E fine-tuning formatına çevirir.
 
-İyileştirmeler:
+Together AI Conversational Format:
+  {"messages": [{"role": "system", "content": "..."}, {"role": "user", ...}, {"role": "assistant", ...}]}
+
+Model: meta-llama/Llama-4-Maverick-17B-128E-Instruct
+  - LoRA SFT context: 16384 token
+  - Min batch size: 16
+  - Maliyet: $8/1M token (min $16)
+  - Serverless LoRA inference destekli (FP8)
+
+Özellikler:
   - Agresif kalite filtreleme (tek kelimelik, URL-only, mega-hesap noise'u)
   - İki dilli system prompt (TR/EN)
   - Hook tipi otomatik tespiti
   - İçerik yapısı analizi
-  - Token limiti (Together AI: max 8192/example)
+  - Token limiti (Together AI SFT max: 16384, güvenli: 4096/example)
   - Niche balancing (over/under sampling)
   - Deduplication (similarity_hash + fuzzy)
-  - Engagement-aware prompt (yüksek vs orta)
+  - Together AI format doğrulama
 
 Kullanım:
     python prepare_finetune_data.py --dry-run --verbose
@@ -317,10 +326,40 @@ def passes_quality_filter(tweet: dict, strict: bool = True) -> tuple[bool, str]:
     if has_url and len(cleaned.split()) < 15:
         return False, "news_link_dump"
 
-    # 10. Tek cümle + görsel paylaşımı (low effort)
+    # 10. Media-dependent: Görselde değer var, text boş. Fine-tune için işe yaramaz.
     media = tweet.get("media_type") or "none"
-    if media != "none" and len(cleaned.split()) < 10:
-        return False, "media_caption_only"
+    if media != "none" and len(cleaned.split()) < 15:
+        return False, "media_dependent"
+
+    # 11. Reaction tweets: Metin tek başına anlam ifade etmiyor
+    REACTION_PATTERNS = [
+        r"^(buna bak|şuna bak|yoruma bak|bunu izle|şunu izle|look at this|watch this)",
+        r"^(ahahah|hahaha|djdjdj|sksksk|jsjsjsj|kdkdkd|asdfgh|lmao|lol|rofl)",
+        r"^(oha|vay|lan|abi|bruh|bro|wow|omg|wtf|aynen|cidden|harbiden)\s*[😂🤣💀😭!]*$",
+        r"^(ben|biz|adam|kadın|çocuk|herif)\s+(ya|😂|🤣|💀)",
+        r"^(dead|i can.t|crying|screaming|help)\s*[😂🤣💀😭]*$",
+    ]
+    lower_cleaned = cleaned.lower().strip()
+    for pattern in REACTION_PATTERNS:
+        if re.match(pattern, lower_cleaned, re.IGNORECASE):
+            return False, "reaction_tweet"
+
+    # 12. Laughter-dominant: Metnin %50'den fazlası gülme/emoji
+    laugh_chars = sum(1 for c in lower_cleaned if c in "ahjdskwlmf😂🤣💀😭")
+    alpha_chars = sum(1 for c in lower_cleaned if c.isalpha())
+    if alpha_chars > 0 and laugh_chars / max(alpha_chars, 1) > 0.4 and len(cleaned.split()) < 15:
+        return False, "laughter_dominant"
+
+    # 13. Quote/reply bait: Engagement manipulation
+    BAIT_PATTERNS = [
+        r"(like at|rt at|beğen|retweet yap|takip et|follow).*(takip|follow|like|rt)",
+        r"(like if|rt if|retweet if|share if)",
+        r"(giveaway|çekiliş|hediye|kazanan|airdrop|whitelist)",
+        r"(bu tweeti beğenen|bu tweeti rt)",
+    ]
+    for pattern in BAIT_PATTERNS:
+        if re.search(pattern, lower_cleaned, re.IGNORECASE):
+            return False, "engagement_bait"
 
     return True, ""
 
@@ -617,9 +656,11 @@ def main():
     print(f"   Toplam token: {total_tokens:,}")
     print(f"   Ortalama token: {avg_tokens:.0f} | Min: {min(token_counts)} | Max: {max(token_counts)}")
 
-    # Together AI maliyet tahmini (3 epoch, Llama 3.3-70B: ~$3.00/1M token)
-    cost_estimate = (total_tokens * 3 * 3.00) / 1_000_000
-    print(f"   💰 Tahmini fine-tune maliyeti: ~${cost_estimate:.2f} (3 epoch)")
+    # Together AI maliyet tahmini (3 epoch, Llama 4 Maverick: $8.00/1M token, min $16)
+    cost_estimate = (total_tokens * 3 * 8.00) / 1_000_000
+    cost_actual = max(cost_estimate, 16.00)  # Together AI minimum charge
+    print(f"   💰 Tahmini fine-tune maliyeti: ~${cost_actual:.2f} (3 epoch, min $16)")
+    print(f"      Model: meta-llama/Llama-4-Maverick-17B-128E-Instruct")
 
     print()
     print("   📂 Niche dağılımı:")
@@ -730,7 +771,53 @@ def main():
         size_kb = p.stat().st_size / 1024
         print(f"   💾 {p.name}: {size_kb:.1f} KB")
 
-    print(f"\n🏁 Tamamlandı! Together AI'a yüklenmeye hazır.")
+    # ── 9. Format doğrulama ──
+    print()
+    print("🔍 Together AI format doğrulama:")
+    errors = 0
+    for path in [train_path, val_path]:
+        with open(path) as f:
+            for line_no, line in enumerate(f, 1):
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    print(f"   ❌ {path.name}:{line_no} JSON parse hatası")
+                    errors += 1
+                    continue
+                if "messages" not in obj:
+                    print(f"   ❌ {path.name}:{line_no} 'messages' field eksik")
+                    errors += 1
+                    continue
+                msgs = obj["messages"]
+                if not isinstance(msgs, list) or len(msgs) < 2:
+                    print(f"   ❌ {path.name}:{line_no} messages min 2 olmalı")
+                    errors += 1
+                    continue
+                # İlk mesaj system veya user olmalı
+                if msgs[0]["role"] not in ("system", "user"):
+                    print(f"   ❌ {path.name}:{line_no} ilk mesaj system/user olmalı")
+                    errors += 1
+                # Son mesaj assistant olmalı
+                if msgs[-1]["role"] != "assistant":
+                    print(f"   ❌ {path.name}:{line_no} son mesaj assistant olmalı")
+                    errors += 1
+                # _meta olmamalı
+                if "_meta" in obj:
+                    print(f"   ❌ {path.name}:{line_no} _meta field kaldırılmamış")
+                    errors += 1
+                # Her mesajda role+content olmalı
+                for m in msgs:
+                    if "role" not in m or "content" not in m:
+                        print(f"   ❌ {path.name}:{line_no} role/content eksik")
+                        errors += 1
+    if errors == 0:
+        print("   ✅ Format doğrulama başarılı! Together AI'a yüklenmeye hazır.")
+    else:
+        print(f"   ⚠️  {errors} hata bulundu!")
+
+    print(f"\n🏁 Tamamlandı!")
+    print(f"   Sonraki adım: together files check {train_path}")
+    print(f"   Model: meta-llama/Llama-4-Maverick-17B-128E-Instruct")
 
 
 if __name__ == "__main__":
