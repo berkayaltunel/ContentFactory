@@ -555,11 +555,15 @@ function CommentsTab() {
     try {
       const res = await apiCall("/api/youtube-studio/comments/analyze", "POST", { url: url, limit: parseInt(limit) });
       if (res.error || res.detail) throw new Error(res.error || res.detail);
-      // summary is AI JSON with sentiment_distribution, categories, analysis etc.
       setData({ ...res, ...(res.summary || {}), analysis: res.summary?.analysis || res.summary?.summary || (typeof res.summary === "string" ? res.summary : null) });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
+
+  const sentimentEmoji = { positive: "😊", neutral: "😐", negative: "😠" };
+  const sentimentColor = { positive: "green-500", neutral: "gray-400", negative: "red-500" };
+  const sentimentLabel = { positive: "Pozitif", neutral: "Nötr", negative: "Negatif" };
+  const sentimentBg = { positive: "bg-green-500", neutral: "bg-gray-400", negative: "bg-red-500" };
 
   return (
     <div>
@@ -584,23 +588,136 @@ function CommentsTab() {
       {loading && <LoadingSpinner />}
       {error && <ErrorCard message={error} />}
       {data && (
-        <>
-          {data.sentiment_distribution && (
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <MetricCard label="Pozitif" value={`%${data.sentiment_distribution.positive || 0}`} />
-              <MetricCard label="Nötr" value={`%${data.sentiment_distribution.neutral || 0}`} />
-              <MetricCard label="Negatif" value={`%${data.sentiment_distribution.negative || 0}`} />
+        <div className="space-y-5">
+          {/* 1. Duygu Dağılımı Barı */}
+          {data.sentiment_distribution && (() => {
+            const sd = data.sentiment_distribution;
+            const total = (sd.positive || 0) + (sd.neutral || 0) + (sd.negative || 0);
+            const pct = (v) => total > 0 ? Math.round((v || 0) / total * 100) : 0;
+            return (
+              <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-purple-400" />Duygu Dağılımı</h3>
+                <div className="flex justify-between mb-2 text-xs">
+                  <span className="text-green-500">😊 %{pct(sd.positive)}</span>
+                  <span className="text-gray-400">😐 %{pct(sd.neutral)}</span>
+                  <span className="text-red-500">😠 %{pct(sd.negative)}</span>
+                </div>
+                <div className="h-3 rounded-full flex overflow-hidden bg-white/5">
+                  {pct(sd.positive) > 0 && <div className="bg-green-500 transition-all" style={{ width: `${pct(sd.positive)}%` }} />}
+                  {pct(sd.neutral) > 0 && <div className="bg-gray-400 transition-all" style={{ width: `${pct(sd.neutral)}%` }} />}
+                  {pct(sd.negative) > 0 && <div className="bg-red-500 transition-all" style={{ width: `${pct(sd.negative)}%` }} />}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 2. Metrik Kartları */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <MessageSquare className="h-5 w-5 text-purple-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{data.total_comments || 0}</p>
+              <p className="text-xs text-white/50 mt-1">Toplam Yorum</p>
+            </div>
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <ThumbsUp className="h-5 w-5 text-purple-400 mx-auto mb-2" />
+              {data.overall_sentiment && (
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                  data.overall_sentiment === "positive" ? "bg-green-500/20 text-green-400" :
+                  data.overall_sentiment === "negative" ? "bg-red-500/20 text-red-400" :
+                  "bg-gray-500/20 text-gray-300"
+                }`}>
+                  {sentimentEmoji[data.overall_sentiment]} {sentimentLabel[data.overall_sentiment] || data.overall_sentiment}
+                </span>
+              )}
+              <p className="text-xs text-white/50 mt-1">Genel Duygu</p>
+            </div>
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
+              <Target className="h-5 w-5 text-purple-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{(data.top_categories || []).length}</p>
+              <p className="text-xs text-white/50 mt-1">Kategori</p>
+            </div>
+          </div>
+
+          {/* 3. Öne Çıkan Temalar */}
+          {data.key_themes && data.key_themes.length > 0 && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Compass className="h-4 w-4 text-purple-400" />Öne Çıkan Temalar</h3>
+              <div className="flex flex-wrap gap-2">
+                {data.key_themes.map((t, i) => (
+                  <span key={i} className="px-3 py-1.5 rounded-full text-xs font-medium bg-violet-500/15 text-violet-300 border border-violet-500/20">{t}</span>
+                ))}
+              </div>
             </div>
           )}
-          {data.categories && data.categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {data.categories.map((c, i) => (
-                <Badge key={i} variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">{c}</Badge>
-              ))}
+
+          {/* 4. Kategori Dağılımı */}
+          {data.top_categories && data.top_categories.length > 0 && (() => {
+            const cats = data.top_categories;
+            const comments = data.categorized_comments || [];
+            const catCounts = {};
+            cats.forEach(c => { catCounts[c] = 0; });
+            comments.forEach(c => { if (c.category && catCounts[c.category] !== undefined) catCounts[c.category]++; });
+            const maxCount = Math.max(...Object.values(catCounts), 1);
+            return (
+              <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-purple-400" />Kategori Dağılımı</h3>
+                <div className="space-y-2">
+                  {cats.map((cat, i) => {
+                    const count = catCounts[cat] || 0;
+                    const pct = comments.length > 0 ? Math.round(count / comments.length * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="text-white/70 text-xs w-16 shrink-0 capitalize">{cat}</span>
+                        <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                          <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all" style={{ width: `${Math.max(pct, 2)}%` }} />
+                        </div>
+                        <span className="text-white/50 text-xs w-10 text-right">%{pct}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 5. Dikkat Çeken Yorumlar */}
+          {data.notable_comments && data.notable_comments.length > 0 && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Star className="h-4 w-4 text-yellow-400" />Dikkat Çeken Yorumlar</h3>
+              <div className="space-y-3">
+                {data.notable_comments.map((nc, i) => (
+                  <div key={i} className="border-l-2 border-purple-500/50 pl-4 py-2">
+                    <p className="text-white/80 text-sm italic">"{nc.text}"</p>
+                    {nc.reason && <p className="text-purple-300/70 text-xs mt-1 flex items-center gap-1"><Lightbulb className="h-3 w-3" />{nc.reason}</p>}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          {data.analysis && <AIResult html={simpleMarkdown(flattenAnalysis(data.analysis))} />}
-        </>
+
+          {/* 6. AI Önerileri */}
+          {data.recommendations && data.recommendations.length > 0 && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-400" />AI Önerileri</h3>
+              <div className="space-y-2">
+                {data.recommendations.map((rec, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 flex items-center justify-center text-white text-xs font-bold">{i + 1}</span>
+                    <p className="text-white/70 text-sm leading-relaxed">{rec}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 7. AI Genel Değerlendirme */}
+          {data.analysis && (
+            <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-purple-400" />AI Genel Değerlendirme</h3>
+              <div className="text-white/70 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: simpleMarkdown(flattenAnalysis(data.analysis)) }} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
