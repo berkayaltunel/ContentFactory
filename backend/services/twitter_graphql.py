@@ -288,7 +288,13 @@ class TwitterGraphQL:
         # Parse timeline entries
         tweets = []
         try:
-            instructions = tweets_data["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"]
+            user_result = tweets_data["data"]["user"]["result"]
+            # Twitter bazen timeline_v2, bazen timeline kullanıyor
+            timeline_obj = user_result.get("timeline_v2") or user_result.get("timeline")
+            if not timeline_obj:
+                logger.error("No timeline key found in user result")
+                return []
+            instructions = timeline_obj["timeline"]["instructions"]
             for instruction in instructions:
                 if instruction.get("type") == "TimelineAddEntries":
                     for entry in instruction.get("entries", []):
