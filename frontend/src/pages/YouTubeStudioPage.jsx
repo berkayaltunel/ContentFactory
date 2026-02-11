@@ -14,8 +14,18 @@ import { FaYoutube } from "react-icons/fa6";
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || "https://api.typehype.io";
 
+// Supabase auth token'ını localStorage'dan al (lib/api.js ile aynı mantık)
+const getAuthToken = () => {
+  try {
+    const key = Object.keys(localStorage).find((k) => k.startsWith("sb-") && k.endsWith("-auth-token"));
+    if (!key) return null;
+    const parsed = JSON.parse(localStorage.getItem(key));
+    return parsed?.access_token || null;
+  } catch { return null; }
+};
+
 const apiCall = async (endpoint, method = "POST", body = null) => {
-  const token = localStorage.getItem("access_token");
+  const token = getAuthToken();
   const opts = {
     method,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-TH-Client": "web-app" },
@@ -26,7 +36,7 @@ const apiCall = async (endpoint, method = "POST", body = null) => {
 };
 
 const apiUpload = async (endpoint, formData) => {
-  const token = localStorage.getItem("access_token");
+  const token = getAuthToken();
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "X-TH-Client": "web-app" },
