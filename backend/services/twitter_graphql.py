@@ -155,7 +155,9 @@ class TwitterGraphQL:
             logger.info(f"Using direct GraphQL HTTP ({len(self._cookie_pool)} cookie set(s))")
 
     def _get_active_cookie(self) -> tuple:
-        """Get the best available cookie set, rotating away from rate-limited ones."""
+        """Get the best available cookie set, rotating away from rate-limited ones.
+        Returns: (idx, auth_token, ct0, is_fresh) — is_fresh=False means all are rate limited
+        """
         import time
         now = time.time()
         
@@ -166,14 +168,14 @@ class TwitterGraphQL:
             # Rate limit cooldown: 15 minutes
             if now - limited_at > 900:
                 cookie = self._cookie_pool[idx]
-                return idx, cookie["auth_token"], cookie["ct0"]
+                return idx, cookie["auth_token"], cookie["ct0"], True
             # This one is rate limited, try next
             self._current_cookie_idx = (self._current_cookie_idx + 1) % len(self._cookie_pool)
         
-        # All rate limited, return current anyway (retry logic will handle)
+        # All rate limited, return current anyway (retry logic will handle backoff)
         idx = self._current_cookie_idx
         cookie = self._cookie_pool[idx]
-        return idx, cookie["auth_token"], cookie["ct0"]
+        return idx, cookie["auth_token"], cookie["ct0"], False
 
     def _mark_rate_limited(self, idx: int):
         """Mark a cookie set as rate limited."""
@@ -253,7 +255,7 @@ class TwitterGraphQL:
 
         for attempt in range(max_retries + 1):
             # Get active cookie (rotates on rate limit)
-            cookie_idx, active_auth, active_ct0 = self._get_active_cookie()
+            cookie_idx, active_auth, active_ct0, is_fresh = self._get_active_cookie()
             headers = _build_headers(active_ct0)
             cookies = _build_cookies(active_auth, active_ct0)
 
@@ -266,10 +268,10 @@ class TwitterGraphQL:
                         self._mark_rate_limited(cookie_idx)
                         if attempt >= max_retries:
                             break  # Don't sleep on last attempt
-                        # If we have another cookie available, try immediately
-                        next_idx, _, _ = self._get_active_cookie()
-                        if next_idx != cookie_idx:
-                            logger.info(f"⚡ Switching to cookie #{next_idx+1}, retrying immediately")
+                        # Check if we have a FRESH (non-rate-limited) cookie available
+                        next_idx, _, _, next_fresh = self._get_active_cookie()
+                        if next_fresh and next_idx != cookie_idx:
+                            logger.info(f"⚡ Switching to fresh cookie #{next_idx+1}, retrying immediately")
                             continue
                         # All cookies rate limited, backoff
                         wait_secs = min(60 + (60 * attempt), 300)
