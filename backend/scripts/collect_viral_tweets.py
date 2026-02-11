@@ -67,9 +67,9 @@ RETRY_DELAY = 10.0
 
 # ─── Kalite Eşikleri ─────────────────────────────────────────────────────────
 
-DEFAULT_MIN_LIKES = 500
-MIN_LIKES_TR = 100                 # Türk hesaplar için düşük eşik (TR Twitter daha küçük)
-MIN_LIKES_EN = 500                 # EN hesaplar için standart eşik
+DEFAULT_MIN_LIKES = 1000
+MIN_LIKES_TR = 1000                # Model eğitimi için gerçek viral (Berkay: 20 like patates!)
+MIN_LIKES_EN = 1000                # EN hesaplar için de aynı eşik
 MIN_ENGAGEMENT_RATE = 2.0          # %2
 MIN_ENGAGEMENT_RATE_TR = 1.0       # TR için daha düşük engagement rate eşiği
 MIN_IMPRESSIONS = 100_000          # varsa kontrol et
@@ -508,12 +508,12 @@ class TweetCollector:
         if user_data:
             followers = user_data.get("followers_count", 0) or 0
 
-        # Dil bazlı eşikler: Türkçe Twitter EN'ye göre daha küçük, eşikleri düşür
-        effective_min_likes = min_likes
+        # CLI min_likes her zaman geçerli (override yok!)
+        # Dil bazlı engagement/impression eşikleri farklı olabilir
+        effective_min_likes = min_likes  # CLI değeri korunuyor
         effective_min_eng = MIN_ENGAGEMENT_RATE
         effective_min_imp = MIN_IMPRESSIONS
         if language == "tr":
-            effective_min_likes = min(min_likes, MIN_LIKES_TR)
             effective_min_eng = MIN_ENGAGEMENT_RATE_TR
             effective_min_imp = MIN_IMPRESSIONS_TR
 
