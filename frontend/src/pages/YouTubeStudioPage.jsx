@@ -359,6 +359,7 @@ function VideoTab() {
     try {
       const res = await apiCall("/api/youtube-studio/video/analyze", "POST", { url: url });
       if (res.error || res.detail) throw new Error(res.error || res.detail);
+      console.log("YT Video Response:", JSON.stringify({video_keys: Object.keys(res.video || {}), video_id: res.video?.id, has_thumbnails: !!res.video?.thumbnails}));
       setData({ ...res.metrics, analysis: res.ai_analysis, video: res.video });
     } catch (e) { setError(e.message); }
     setLoading(false);
@@ -383,7 +384,7 @@ function VideoTab() {
           {/* ── Video Info Card ── */}
           {v && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 flex gap-4 items-start">
-              <img src={`https://img.youtube.com/vi/${v.id}/hqdefault.jpg`} alt="" className="w-44 rounded-lg aspect-video object-cover shrink-0" />
+              <img src={`https://img.youtube.com/vi/${v.id || url.match(/[?&]v=([^&]+)/)?.[1] || ""}/hqdefault.jpg`} alt="" className="w-44 rounded-lg aspect-video object-cover shrink-0" />
               <div className="flex-1 min-w-0">
                 <h3 className="text-white font-semibold text-lg leading-tight line-clamp-2">{v.title}</h3>
                 <p className="text-white/40 text-sm mt-1">{v.channelTitle || v.channel_title}</p>
