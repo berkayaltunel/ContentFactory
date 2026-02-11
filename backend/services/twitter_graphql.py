@@ -126,16 +126,63 @@ def _build_headers(ct0: str) -> dict:
 
 
 class TwitterGraphQL:
-    """Direct Twitter GraphQL API client."""
+    """Direct Twitter GraphQL API client with multi-cookie rotation."""
 
-    def __init__(self, auth_token: str, ct0: str):
+    def __init__(self, auth_token: str, ct0: str, extra_cookies: Optional[List[dict]] = None):
+        """
+        Args:
+            auth_token: Primary auth token
+            ct0: Primary CSRF token
+            extra_cookies: List of {"auth_token": ..., "ct0": ...} for rotation
+        """
+        # Cookie pool: primary + extras
+        self._cookie_pool = [{"auth_token": auth_token, "ct0": ct0}]
+        if extra_cookies:
+            for ec in extra_cookies:
+                if ec.get("auth_token") and ec.get("ct0"):
+                    self._cookie_pool.append(ec)
+        self._current_cookie_idx = 0
+        self._cookie_rate_limited = {}  # idx -> timestamp when rate limited
+
+        # Keep primary for backward compat
         self.auth_token = auth_token
         self.ct0 = ct0
+
         self.use_bird = _has_bird_cli()
         if self.use_bird:
             logger.info("Bird CLI detected, will use it for requests")
         else:
-            logger.info("Bird CLI not found, using direct GraphQL HTTP")
+            logger.info(f"Using direct GraphQL HTTP ({len(self._cookie_pool)} cookie set(s))")
+
+    def _get_active_cookie(self) -> tuple:
+        """Get the best available cookie set, rotating away from rate-limited ones."""
+        import time
+        now = time.time()
+        
+        # Try current index first, then rotate
+        for _ in range(len(self._cookie_pool)):
+            idx = self._current_cookie_idx
+            limited_at = self._cookie_rate_limited.get(idx, 0)
+            # Rate limit cooldown: 15 minutes
+            if now - limited_at > 900:
+                cookie = self._cookie_pool[idx]
+                return idx, cookie["auth_token"], cookie["ct0"]
+            # This one is rate limited, try next
+            self._current_cookie_idx = (self._current_cookie_idx + 1) % len(self._cookie_pool)
+        
+        # All rate limited, return current anyway (retry logic will handle)
+        idx = self._current_cookie_idx
+        cookie = self._cookie_pool[idx]
+        return idx, cookie["auth_token"], cookie["ct0"]
+
+    def _mark_rate_limited(self, idx: int):
+        """Mark a cookie set as rate limited."""
+        import time
+        self._cookie_rate_limited[idx] = time.time()
+        old_idx = self._current_cookie_idx
+        self._current_cookie_idx = (idx + 1) % len(self._cookie_pool)
+        if len(self._cookie_pool) > 1:
+            logger.info(f"🔄 Cookie #{old_idx+1} rate limited, switching to #{self._current_cookie_idx+1}")
 
     def _bird_run(self, args: List[str], timeout: int = 30) -> Optional[list]:
         """Run bird CLI command."""
@@ -202,23 +249,31 @@ class TwitterGraphQL:
             "features": json.dumps(features),
         }
 
-        headers = _build_headers(self.ct0)
-        cookies = _build_cookies(self.auth_token, self.ct0)
-
         url = f"{TWITTER_API_BASE}/{query_id}/{operation}"
 
         for attempt in range(max_retries + 1):
+            # Get active cookie (rotates on rate limit)
+            cookie_idx, active_auth, active_ct0 = self._get_active_cookie()
+            headers = _build_headers(active_ct0)
+            cookies = _build_cookies(active_auth, active_ct0)
+
             try:
                 async with httpx.AsyncClient(timeout=30) as client:
                     resp = await client.get(url, params=params, headers=headers, cookies=cookies)
                     if resp.status_code == 200:
                         return resp.json()
                     elif resp.status_code == 429:
+                        self._mark_rate_limited(cookie_idx)
                         if attempt >= max_retries:
                             break  # Don't sleep on last attempt
-                        # Rate limited - linear backoff starting at 60s, max 300s
-                        wait_secs = min(60 + (60 * attempt), 300)  # 60, 120, 180, 240, 300
-                        logger.warning(f"⏳ Rate limited (429), waiting {wait_secs}s (attempt {attempt + 1}/{max_retries + 1})")
+                        # If we have another cookie available, try immediately
+                        next_idx, _, _ = self._get_active_cookie()
+                        if next_idx != cookie_idx:
+                            logger.info(f"⚡ Switching to cookie #{next_idx+1}, retrying immediately")
+                            continue
+                        # All cookies rate limited, backoff
+                        wait_secs = min(60 + (60 * attempt), 300)
+                        logger.warning(f"⏳ All cookies rate limited, waiting {wait_secs}s (attempt {attempt + 1}/{max_retries + 1})")
                         await _asyncio.sleep(wait_secs)
                         continue
                     else:

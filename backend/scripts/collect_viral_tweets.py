@@ -360,7 +360,7 @@ class TweetCollector:
             await self._http.aclose()
 
     def _get_graphql(self):
-        """TwitterGraphQL client'ı lazy init et."""
+        """TwitterGraphQL client'ı lazy init et (multi-cookie rotation desteği)."""
         if self._graphql:
             return self._graphql
         try:
@@ -375,7 +375,17 @@ class TweetCollector:
                 ct0 = os.environ.get("CT0", "")
 
             if auth_token and ct0:
-                self._graphql = TwitterGraphQL(auth_token, ct0)
+                # Collect extra cookie sets from env (TWITTER_AUTH_TOKEN_2, TWITTER_CT0_2, etc.)
+                extra_cookies = []
+                for i in range(2, 10):  # Support up to 9 extra cookie sets
+                    extra_auth = os.environ.get(f"TWITTER_AUTH_TOKEN_{i}", "")
+                    extra_ct0 = os.environ.get(f"TWITTER_CT0_{i}", "")
+                    if extra_auth and extra_ct0:
+                        extra_cookies.append({"auth_token": extra_auth, "ct0": extra_ct0})
+                
+                self._graphql = TwitterGraphQL(auth_token, ct0, extra_cookies=extra_cookies or None)
+                if extra_cookies:
+                    logger.info(f"🔑 {len(extra_cookies) + 1} cookie seti yüklendi (rate limit rotation aktif)")
             else:
                 logger.error("Twitter cookie'leri bulunamadı!")
         except ImportError as e:
