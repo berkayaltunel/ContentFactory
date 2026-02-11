@@ -263,6 +263,7 @@ async def channel_analyze(req: ChannelAnalyzeRequest, user=Depends(require_auth)
             "metrics": metrics,
             "ai_analysis": ai,
             "videos_analyzed": len(videos),
+            "videos": sorted(videos, key=lambda x: int(x.get("viewCount", 0) or 0), reverse=True)[:10],
         }
     except ValueError as e:
         raise HTTPException(400, str(e))

@@ -135,7 +135,7 @@ function ChannelTab() {
     try {
       const res = await apiCall("/api/youtube-studio/channel/analyze", "POST", { url: url });
       if (res.error || res.detail) throw new Error(res.error || res.detail);
-      setData({ ...res.metrics, analysis: res.ai_analysis, channel: res.channel, videos_analyzed: res.videos_analyzed });
+      setData({ ...res.metrics, analysis: res.ai_analysis, channel: res.channel, videos_analyzed: res.videos_analyzed, videos: res.videos });
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
