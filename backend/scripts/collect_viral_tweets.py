@@ -59,9 +59,9 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://awlsmfhxcsifabyanwfv.supa
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 # Rate limiting
-DELAY_BETWEEN_USERS = 5.0       # saniye
+DELAY_BETWEEN_USERS = 10.0      # saniye (pagination ile daha fazla istek, rate limit'e dikkat)
 DELAY_BETWEEN_REQUESTS = 2.0    # saniye
-DELAY_BETWEEN_SEARCHES = 8.0    # search daha agresif, daha fazla bekle
+DELAY_BETWEEN_SEARCHES = 12.0   # search daha agresif, daha fazla bekle
 MAX_RETRIES = 3
 RETRY_DELAY = 10.0
 
