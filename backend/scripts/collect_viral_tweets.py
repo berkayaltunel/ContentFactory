@@ -68,8 +68,12 @@ RETRY_DELAY = 10.0
 # ─── Kalite Eşikleri ─────────────────────────────────────────────────────────
 
 DEFAULT_MIN_LIKES = 500
+MIN_LIKES_TR = 100                 # Türk hesaplar için düşük eşik (TR Twitter daha küçük)
+MIN_LIKES_EN = 500                 # EN hesaplar için standart eşik
 MIN_ENGAGEMENT_RATE = 2.0          # %2
+MIN_ENGAGEMENT_RATE_TR = 1.0       # TR için daha düşük engagement rate eşiği
 MIN_IMPRESSIONS = 100_000          # varsa kontrol et
+MIN_IMPRESSIONS_TR = 10_000        # TR için daha düşük impressions eşiği
 MIN_FOLLOWER_FOLLOWING_RATIO = 0.1 # altı = muhtemel bot
 MIN_ACCOUNT_AGE_DAYS = 180         # 6 ay
 
@@ -484,14 +488,24 @@ class TweetCollector:
         tweets: List[dict],
         user_data: Optional[dict] = None,
         min_likes: int = DEFAULT_MIN_LIKES,
+        language: str = "en",
     ) -> List[dict]:
-        """Çok katmanlı kalite filtreleme."""
+        """Çok katmanlı kalite filtreleme. Dil bazlı eşikler."""
         if not tweets:
             return []
 
         followers = 0
         if user_data:
             followers = user_data.get("followers_count", 0) or 0
+
+        # Dil bazlı eşikler: Türkçe Twitter EN'ye göre daha küçük, eşikleri düşür
+        effective_min_likes = min_likes
+        effective_min_eng = MIN_ENGAGEMENT_RATE
+        effective_min_imp = MIN_IMPRESSIONS
+        if language == "tr":
+            effective_min_likes = min(min_likes, MIN_LIKES_TR)
+            effective_min_eng = MIN_ENGAGEMENT_RATE_TR
+            effective_min_imp = MIN_IMPRESSIONS_TR
 
         passed = []
         stats = {"total": len(tweets), "low_likes": 0, "low_engagement": 0,
@@ -504,19 +518,19 @@ class TweetCollector:
             replies = t.get("replyCount", 0) or t.get("replies", 0) or 0
             impressions = t.get("views", 0) or t.get("impressions", 0) or 0
 
-            # 1. Minimum like kontrolü
-            if likes < min_likes:
+            # 1. Minimum like kontrolü (dil bazlı)
+            if likes < effective_min_likes:
                 stats["low_likes"] += 1
                 continue
 
-            # 2. Engagement rate kontrolü
+            # 2. Engagement rate kontrolü (dil bazlı)
             eng_rate = calculate_engagement_rate(t, followers)
-            if eng_rate > 0 and eng_rate < MIN_ENGAGEMENT_RATE:
+            if eng_rate > 0 and eng_rate < effective_min_eng:
                 stats["low_engagement"] += 1
                 continue
 
-            # 3. Impressions kontrolü (varsa)
-            if impressions > 0 and impressions < MIN_IMPRESSIONS:
+            # 3. Impressions kontrolü (dil bazlı, varsa)
+            if impressions > 0 and impressions < effective_min_imp:
                 stats["low_impressions"] += 1
                 continue
 
@@ -531,8 +545,9 @@ class TweetCollector:
             passed.append(t)
             stats["passed"] += 1
 
+        lang_note = f" (lang={language}, min_likes={effective_min_likes})" if language == "tr" else ""
         logger.info(
-            f"🔥 Filtre: {stats['passed']}/{stats['total']} geçti | "
+            f"🔥 Filtre{lang_note}: {stats['passed']}/{stats['total']} geçti | "
             f"düşük_like={stats['low_likes']} düşük_eng={stats['low_engagement']} "
             f"düşük_imp={stats['low_impressions']} duplicate={stats['duplicate']}"
         )
@@ -721,8 +736,8 @@ class TweetCollector:
                                 f"FF ratio: {ff} | Yaş: {age}g | "
                                 f"Verified: {user_data.get('verified', False)}")
 
-                # Viral filtrele
-                viral = await self.filter_viral(tweets, user_data=user_data, min_likes=min_likes)
+                # Viral filtrele (dil bazlı eşikler)
+                viral = await self.filter_viral(tweets, user_data=user_data, min_likes=min_likes, language=language)
                 stats["total_viral"] += len(viral)
 
                 # Normalize et

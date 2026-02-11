@@ -24,6 +24,62 @@ QUERY_IDS = {
     "SearchTimeline": "IzA05zAvo7MGeZrkQmIVvw",
 }
 
+# Default features for most GraphQL endpoints (UserTweets, TweetDetail, etc.)
+DEFAULT_FEATURES = {
+    "creator_subscriptions_tweet_preview_api_enabled": True,
+    "premium_content_api_read_enabled": False,
+    "communities_web_enable_tweet_community_results_fetch": True,
+    "c9s_tweet_anatomy_moderator_badge_enabled": True,
+    "articles_preview_enabled": True,
+    "responsive_web_edit_tweet_api_enabled": True,
+    "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
+    "view_counts_everywhere_api_enabled": True,
+    "longform_notetweets_consumption_enabled": True,
+    "responsive_web_twitter_article_tweet_consumption_enabled": True,
+    "tweet_awards_web_tipping_enabled": False,
+    "creator_subscriptions_quote_tweet_preview_enabled": False,
+    "freedom_of_speech_not_reach_fetch_enabled": True,
+    "standardized_nudges_misinfo": True,
+    "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
+    "rweb_video_timestamps_enabled": True,
+    "longform_notetweets_rich_text_read_enabled": True,
+    "longform_notetweets_inline_media_enabled": True,
+    "responsive_web_enhance_cards_enabled": False,
+    "responsive_web_graphql_exclude_directive_enabled": True,
+    "verified_phone_label_enabled": False,
+    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+    "responsive_web_graphql_timeline_navigation_enabled": True,
+    "tweetypie_unmention_optimization_enabled": True,
+    "vibe_api_enabled": True,
+    # 2026-02 eklenen zorunlu feature'lar
+    "rweb_tipjar_consumption_enabled": True,
+    "responsive_web_twitter_article_notes_tab_enabled": True,
+    "subscriptions_feature_can_gift_premium": True,
+    "subscriptions_verification_info_verified_since_enabled": True,
+    "subscriptions_verification_info_is_identity_verified_enabled": True,
+    "hidden_profile_subscriptions_enabled": True,
+    "highlights_tweets_tab_ui_enabled": True,
+    "responsive_web_profile_redirect_enabled": True,
+    "profile_label_improvements_pcf_label_in_post_enabled": True,
+}
+
+# UserByScreenName endpoint'i için minimal zorunlu feature seti
+USER_BY_SCREEN_NAME_FEATURES = {
+    "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
+    "creator_subscriptions_tweet_preview_api_enabled": True,
+    "rweb_tipjar_consumption_enabled": True,
+    "subscriptions_verification_info_verified_since_enabled": True,
+    "responsive_web_twitter_article_notes_tab_enabled": True,
+    "responsive_web_profile_redirect_enabled": True,
+    "profile_label_improvements_pcf_label_in_post_enabled": True,
+    "verified_phone_label_enabled": False,
+    "hidden_profile_subscriptions_enabled": True,
+    "highlights_tweets_tab_ui_enabled": True,
+    "responsive_web_graphql_timeline_navigation_enabled": True,
+    "subscriptions_verification_info_is_identity_verified_enabled": True,
+    "subscriptions_feature_can_gift_premium": True,
+}
+
 # Required headers for Twitter GraphQL
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -119,33 +175,7 @@ class TwitterGraphQL:
     async def _graphql_request(self, query_id: str, operation: str, variables: dict, features: Optional[dict] = None) -> Optional[dict]:
         """Make a direct GraphQL request to Twitter."""
         if features is None:
-            features = {
-                "creator_subscriptions_tweet_preview_api_enabled": True,
-                "premium_content_api_read_enabled": False,
-                "communities_web_enable_tweet_community_results_fetch": True,
-                "c9s_tweet_anatomy_moderator_badge_enabled": True,
-                "articles_preview_enabled": True,
-                "responsive_web_edit_tweet_api_enabled": True,
-                "graphql_is_translatable_rweb_tweet_is_translatable_enabled": True,
-                "view_counts_everywhere_api_enabled": True,
-                "longform_notetweets_consumption_enabled": True,
-                "responsive_web_twitter_article_tweet_consumption_enabled": True,
-                "tweet_awards_web_tipping_enabled": False,
-                "creator_subscriptions_quote_tweet_preview_enabled": False,
-                "freedom_of_speech_not_reach_fetch_enabled": True,
-                "standardized_nudges_misinfo": True,
-                "tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled": True,
-                "rweb_video_timestamps_enabled": True,
-                "longform_notetweets_rich_text_read_enabled": True,
-                "longform_notetweets_inline_media_enabled": True,
-                "responsive_web_enhance_cards_enabled": False,
-                "responsive_web_graphql_exclude_directive_enabled": True,
-                "verified_phone_label_enabled": False,
-                "responsive_web_graphql_skip_user_profile_image_extensions_enabled": False,
-                "responsive_web_graphql_timeline_navigation_enabled": True,
-                "tweetypie_unmention_optimization_enabled": True,
-                "vibe_api_enabled": True,
-            }
+            features = DEFAULT_FEATURES.copy()
 
         params = {
             "variables": json.dumps(variables),
@@ -213,6 +243,7 @@ class TwitterGraphQL:
         user_data = await self._graphql_request(
             QUERY_IDS["UserByScreenName"], "UserByScreenName",
             variables={"screen_name": username, "withSafetyModeUserFields": True},
+            features=USER_BY_SCREEN_NAME_FEATURES,
         )
 
         if not user_data:
