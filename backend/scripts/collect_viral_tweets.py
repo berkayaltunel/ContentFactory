@@ -407,19 +407,19 @@ class TweetCollector:
 
     # ─── Tweet Toplama ────────────────────────────────────────────────────
 
-    async def collect_user_tweets(self, handle: str, limit: int = 200) -> Tuple[List[dict], Optional[dict]]:
+    async def collect_user_tweets(self, handle: str, limit: int = 200, max_pages: int = 5) -> Tuple[List[dict], Optional[dict]]:
         """
-        Bir hesaptan tweet'leri topla.
+        Bir hesaptan tweet'leri topla (cursor pagination ile derin toplama).
         Returns: (tweets, user_data)
         """
-        logger.info(f"📥 @{handle} - {limit} tweet çekiliyor...")
+        logger.info(f"📥 @{handle} - {limit} tweet çekiliyor (max {max_pages} sayfa)...")
         graphql = self._get_graphql()
         if not graphql:
             logger.error(f"❌ @{handle} - GraphQL client yok")
             return [], None
 
         try:
-            tweets = await graphql.get_user_tweets(handle, count=min(limit, 200))
+            tweets = await graphql.get_user_tweets(handle, count=min(limit, 200), max_pages=max_pages)
             if not tweets:
                 logger.warning(f"⚠️ @{handle} - Tweet bulunamadı")
                 return [], None
@@ -688,6 +688,7 @@ class TweetCollector:
         accounts: List[dict],
         min_likes: int = DEFAULT_MIN_LIKES,
         dry_run: bool = False,
+        max_pages: int = 5,
     ) -> dict:
         """Hesap listesinden viral tweet'leri topla."""
         stats = {
@@ -711,8 +712,8 @@ class TweetCollector:
             logger.info(f"{'='*60}")
 
             try:
-                # Tweet'leri ve user data'yı çek
-                tweets, user_data = await self.collect_user_tweets(handle, limit=200)
+                # Tweet'leri ve user data'yı çek (pagination ile derin toplama)
+                tweets, user_data = await self.collect_user_tweets(handle, limit=200, max_pages=max_pages)
                 stats["total_tweets_fetched"] += len(tweets)
 
                 if not tweets:
@@ -817,6 +818,7 @@ class TweetCollector:
         min_likes: int = DEFAULT_MIN_LIKES,
         dry_run: bool = False,
         search_queries: Optional[List[str]] = None,
+        max_pages: int = 5,
     ) -> dict:
         """Tüm kaynaklardan topla: timeline + search."""
 
@@ -824,8 +826,8 @@ class TweetCollector:
         if not dry_run:
             await self.load_existing_hashes()
 
-        # 1. Hesap bazlı toplama
-        account_stats = await self.collect_from_accounts(accounts, min_likes=min_likes, dry_run=dry_run)
+        # 1. Hesap bazlı toplama (pagination ile derin toplama)
+        account_stats = await self.collect_from_accounts(accounts, min_likes=min_likes, dry_run=dry_run, max_pages=max_pages)
 
         # 2. Search bazlı toplama
         search_stats = {"total_found": 0, "total_saved": 0}
@@ -891,6 +893,7 @@ async def main():
     parser.add_argument("--niche", type=str, help="Sadece belirli niş (tech, finans, ...)")
     parser.add_argument("--handle", type=str, help="Tek hesap")
     parser.add_argument("--min-likes", type=int, default=DEFAULT_MIN_LIKES, help=f"Minimum like eşiği (default: {DEFAULT_MIN_LIKES})")
+    parser.add_argument("--max-pages", type=int, default=5, help="Max pagination pages per account (default: 5, ~100 tweets)")
     parser.add_argument("--search", type=str, help="Manuel search query")
     parser.add_argument("--with-search", action="store_true", help="Default search query'lerini de çalıştır")
     parser.add_argument("--search-only", action="store_true", help="Sadece search, timeline atla")
@@ -940,6 +943,7 @@ async def main():
             min_likes=args.min_likes,
             dry_run=args.dry_run,
             search_queries=search_queries,
+            max_pages=args.max_pages,
         )
     finally:
         await collector.close()

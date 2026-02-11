@@ -243,10 +243,15 @@ class TwitterGraphQL:
         logger.warning("Sync tweet fetch without Bird CLI not supported, use async")
         return []
 
-    async def get_user_tweets(self, username: str, count: int = 50) -> List[dict]:
-        """Async: Get user tweets via GraphQL."""
+    async def get_user_tweets(self, username: str, count: int = 50, max_pages: int = 1) -> List[dict]:
+        """Async: Get user tweets via GraphQL with cursor pagination.
+        
+        Args:
+            username: Twitter handle
+            count: Total tweets to collect  
+            max_pages: Max pagination pages (1=single request ~20 tweets, 5=~100 tweets)
+        """
         if self.use_bird:
-            # Use bird CLI for consistency
             result = self._bird_run(
                 ["user-tweets", f"@{username}", "-n", str(count)],
                 timeout=90,
@@ -269,61 +274,157 @@ class TwitterGraphQL:
             logger.error("Could not extract user ID")
             return []
 
-        # Fetch tweets
-        tweets_data = await self._graphql_request(
-            QUERY_IDS["UserTweets"], "UserTweets",
-            variables={
+        all_tweets = []
+        cursor = None
+        page_size = min(count, 40)  # Twitter max per request ~40
+
+        for page in range(max_pages):
+            variables = {
                 "userId": user_id,
-                "count": count,
+                "count": page_size,
                 "includePromotedContent": False,
                 "withQuickPromoteEligibilityTweetFields": False,
                 "withVoice": True,
                 "withV2Timeline": True,
-            },
-        )
+            }
+            if cursor:
+                variables["cursor"] = cursor
 
-        if not tweets_data:
-            return []
+            tweets_data = await self._graphql_request(
+                QUERY_IDS["UserTweets"], "UserTweets",
+                variables=variables,
+            )
 
-        # Parse timeline entries
+            if not tweets_data:
+                break
+
+            # Parse timeline entries + extract cursor
+            page_tweets, next_cursor = self._parse_timeline_entries(tweets_data, username)
+
+            if not page_tweets:
+                break
+
+            all_tweets.extend(page_tweets)
+
+            # Check if we have enough or no more pages
+            if len(all_tweets) >= count or not next_cursor:
+                break
+
+            cursor = next_cursor
+
+            # Rate limit between pages
+            if page < max_pages - 1:
+                import asyncio
+                await asyncio.sleep(1.5)
+
+        logger.info(f"Fetched {len(all_tweets)} tweets for @{username} via GraphQL ({page + 1} pages)")
+        return all_tweets[:count]
+
+    def _parse_timeline_entries(self, tweets_data: dict, username: str) -> tuple:
+        """Parse timeline response into tweets list + bottom cursor.
+        Returns: (tweets, bottom_cursor)
+        """
         tweets = []
+        bottom_cursor = None
+
         try:
             user_result = tweets_data["data"]["user"]["result"]
-            # Twitter bazen timeline_v2, bazen timeline kullanıyor
             timeline_obj = user_result.get("timeline_v2") or user_result.get("timeline")
             if not timeline_obj:
                 logger.error("No timeline key found in user result")
-                return []
+                return [], None
             instructions = timeline_obj["timeline"]["instructions"]
+
             for instruction in instructions:
                 if instruction.get("type") == "TimelineAddEntries":
                     for entry in instruction.get("entries", []):
                         content = entry.get("content", {})
-                        if content.get("entryType") == "TimelineTimelineItem":
-                            tweet_result = content.get("itemContent", {}).get("tweet_results", {}).get("result", {})
-                            legacy = tweet_result.get("legacy", {})
-                            core = tweet_result.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {})
+                        entry_type = content.get("entryType") or content.get("__typename", "")
 
-                            if legacy.get("retweeted_status_result"):
-                                continue  # Skip RTs
+                        # Tweet entries
+                        if entry_type == "TimelineTimelineItem":
+                            tweet = self._parse_tweet_entry(content, username)
+                            if tweet:
+                                tweets.append(tweet)
 
-                            tweets.append({
-                                "id": legacy.get("id_str"),
-                                "text": legacy.get("full_text", ""),
-                                "createdAt": legacy.get("created_at"),
-                                "likeCount": legacy.get("favorite_count", 0),
-                                "retweetCount": legacy.get("retweet_count", 0),
-                                "replyCount": legacy.get("reply_count", 0),
-                                "conversationId": legacy.get("conversation_id_str"),
-                                "author": {
-                                    "username": core.get("screen_name", username),
-                                    "name": core.get("name", ""),
-                                },
-                                "authorId": tweet_result.get("rest_id"),
-                                "media": legacy.get("extended_entities", {}).get("media"),
-                            })
+                        # Cursor entries (for pagination)
+                        elif entry_type == "TimelineTimelineCursor":
+                            if content.get("cursorType") == "Bottom":
+                                bottom_cursor = content.get("value")
+
+                        # Module entries (Twitter sometimes wraps tweets in modules)
+                        elif entry_type == "TimelineTimelineModule":
+                            for item in content.get("items", []):
+                                item_content = item.get("item", {}).get("itemContent", {})
+                                if item_content:
+                                    tweet = self._parse_tweet_result(
+                                        item_content.get("tweet_results", {}).get("result", {}),
+                                        username
+                                    )
+                                    if tweet:
+                                        tweets.append(tweet)
+
         except (KeyError, TypeError) as e:
             logger.error(f"Tweet parse error: {e}")
 
-        logger.info(f"Fetched {len(tweets)} tweets for @{username} via GraphQL")
-        return tweets
+        return tweets, bottom_cursor
+
+    def _parse_tweet_entry(self, content: dict, username: str) -> Optional[dict]:
+        """Parse a single TimelineTimelineItem into a tweet dict."""
+        tweet_result = content.get("itemContent", {}).get("tweet_results", {}).get("result", {})
+        return self._parse_tweet_result(tweet_result, username)
+
+    def _parse_tweet_result(self, tweet_result: dict, username: str) -> Optional[dict]:
+        """Parse a tweet_results.result object into a normalized tweet dict."""
+        if not tweet_result:
+            return None
+
+        # Handle TweetWithVisibilityResults wrapper
+        if tweet_result.get("__typename") == "TweetWithVisibilityResults":
+            tweet_result = tweet_result.get("tweet", {})
+
+        legacy = tweet_result.get("legacy", {})
+        if not legacy:
+            return None
+
+        # Skip retweets
+        if legacy.get("retweeted_status_result"):
+            return None
+
+        core = tweet_result.get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {})
+
+        # Extract view count (impressions)
+        views = tweet_result.get("views", {})
+        view_count = 0
+        if views and views.get("count"):
+            try:
+                view_count = int(views["count"])
+            except (ValueError, TypeError):
+                pass
+
+        # Extract bookmark count
+        bookmark_count = legacy.get("bookmark_count", 0) or 0
+
+        # Extract quote count
+        quote_count = legacy.get("quote_count", 0) or 0
+
+        return {
+            "id": legacy.get("id_str"),
+            "text": legacy.get("full_text", ""),
+            "createdAt": legacy.get("created_at"),
+            "likeCount": legacy.get("favorite_count", 0),
+            "retweetCount": legacy.get("retweet_count", 0),
+            "replyCount": legacy.get("reply_count", 0),
+            "quoteCount": quote_count,
+            "bookmarkCount": bookmark_count,
+            "views": view_count,
+            "conversationId": legacy.get("conversation_id_str"),
+            "in_reply_to_status_id_str": legacy.get("in_reply_to_status_id_str"),
+            "is_quote_status": legacy.get("is_quote_status", False),
+            "author": {
+                "username": core.get("screen_name", username),
+                "name": core.get("name", ""),
+            },
+            "authorId": tweet_result.get("rest_id"),
+            "media": legacy.get("extended_entities", {}).get("media"),
+        }
