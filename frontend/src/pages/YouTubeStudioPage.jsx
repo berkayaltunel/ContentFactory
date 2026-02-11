@@ -12,7 +12,7 @@ import {
 import { Loader2, Plus, X, Upload, TrendingUp, Lightbulb, Search, Globe, GraduationCap, BarChart3, MessageSquare, Users, Image, Sparkles, Compass, Languages } from "lucide-react";
 import { FaYoutube } from "react-icons/fa6";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = process.env.REACT_APP_BACKEND_URL || "https://api.typehype.io";
 
 const apiCall = async (endpoint, method = "POST", body = null) => {
   const token = localStorage.getItem("access_token");
