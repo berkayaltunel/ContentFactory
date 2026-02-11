@@ -17,10 +17,11 @@ TWITTER_API_BASE = "https://x.com/i/api/graphql"
 
 # Known query IDs (Bird CLI'dan reverse-engineered, periyodik güncelleme gerekebilir)
 QUERY_IDS = {
-    "UserByScreenName": "qW5u-DABXCMlmFGJxn3ENA",
-    "UserTweets": "E3opETHurmVJflFsUBVuUQ",
-    "TweetDetail": "nBS-WpgA6ZG0CyNHD517JQ",
-    "Viewer": "pBPBr_BIXR0TLb1M_2FH3w",
+    "UserByScreenName": "AWbeRIdkLtqTRN7yL_H8yw",
+    "UserTweets": "SURb7otVJKay5ECsD8ffXA",
+    "TweetDetail": "XL2NEfLK2TBJfbT_KsXlbA",
+    "Viewer": "178EtFdhcGqmoyzKL4muaA",
+    "SearchTimeline": "IzA05zAvo7MGeZrkQmIVvw",
 }
 
 # Required headers for Twitter GraphQL
