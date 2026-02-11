@@ -33,6 +33,25 @@
 
     {"handle": "semihdev", "niche": "pazarlama", "language": "tr", "priority": 1, "note": "🔍 Semih Kışlar, dev/marketing TR"},
 
+    {"handle": "hrrcnes", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "egebese", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "sakevoid", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "BeatstoBytes", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "emrullahai", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, AI"},
+    {"handle": "mentalist_ai", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, AI"},
+    {"handle": "parsluci", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "ayemebottu", "niche": "mizah", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "fkadev", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, dev"},
+    {"handle": "_evliyacelebi", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "ozan_sihay", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "fatihguzeldev", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, dev"},
+    {"handle": "fatihguner", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "oozn", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "dirstream", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "MeanDrunkWeb3", "niche": "kripto", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, Web3"},
+    {"handle": "vibeeval", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR"},
+    {"handle": "FitzGPT", "niche": "tech", "language": "tr", "priority": 1, "note": "Berkay onaylı viral TR, AI"},
+
     {"handle": "BloombergHT", "niche": "finans", "language": "tr", "priority": 1, "note": "✅ 1.05M, TR finance #1"},
     {"handle": "paraanaliz", "niche": "finans", "language": "tr", "priority": 1, "note": "✅ 199K, ekonomi platform"},
 
