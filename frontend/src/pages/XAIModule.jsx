@@ -1329,29 +1329,32 @@ export default function XAIModule() {
           additional_context: null,
         };
       } else if (activePlatform === "instagram") {
-        const igEndpoints = {
-          "caption": "/generate/instagram/caption",
-          "reel-script": "/generate/instagram/reel-script",
-          "story": "/generate/instagram/story-ideas",
+        const igConfig = {
+          "caption": { endpoint: "/generate/instagram/caption", body: { topic: input, format: "standard", language: settings.language, variants: settings.variants } },
+          "reel-script": { endpoint: "/generate/instagram/reel-script", body: { topic: input, duration: 30, language: settings.language } },
+          "story": { endpoint: "/generate/instagram/story-ideas", body: { topic: input, count: 5, language: settings.language } },
         };
-        endpoint = `${API}${igEndpoints[activeTab] || "/generate/instagram/caption"}`;
-        body = { topic: input, language: settings.language, variants: settings.variants, persona: settings.persona, tone: settings.tone };
+        const cfg = igConfig[activeTab] || igConfig["caption"];
+        endpoint = `${API}${cfg.endpoint}`;
+        body = cfg.body;
       } else if (activePlatform === "tiktok") {
-        const tkEndpoints = {
-          "hook": "/generate/tiktok/script",
-          "script": "/generate/tiktok/script",
-          "caption": "/generate/tiktok/caption",
+        const tkConfig = {
+          "hook": { endpoint: "/generate/tiktok/script", body: { topic: input, duration: 15, language: settings.language } },
+          "script": { endpoint: "/generate/tiktok/script", body: { topic: input, duration: 30, language: settings.language } },
+          "caption": { endpoint: "/generate/tiktok/caption", body: { topic: input, language: settings.language } },
         };
-        endpoint = `${API}${tkEndpoints[activeTab] || "/generate/tiktok/script"}`;
-        body = { topic: input, language: settings.language, variants: settings.variants, persona: settings.persona, tone: settings.tone };
+        const cfg = tkConfig[activeTab] || tkConfig["script"];
+        endpoint = `${API}${cfg.endpoint}`;
+        body = cfg.body;
       } else if (activePlatform === "youtube") {
-        const ytEndpoints = {
-          "video-script": "/generate/youtube/script",
-          "title-desc": "/generate/youtube/title-description",
-          "shorts-script": "/generate/youtube/shorts-script",
+        const ytConfig = {
+          "video-script": { endpoint: "/generate/youtube/script", body: { topic: input, duration_minutes: 10, style: "educational", language: settings.language } },
+          "title-desc": { endpoint: "/generate/youtube/title", body: { topic: input, count: 5, language: settings.language } },
+          "shorts-script": { endpoint: "/generate/youtube/script", body: { topic: input, duration_minutes: 1, style: "shorts", language: settings.language } },
         };
-        endpoint = `${API}${ytEndpoints[activeTab] || "/generate/youtube/script"}`;
-        body = { topic: input, language: settings.language, variants: settings.variants, persona: settings.persona, tone: settings.tone };
+        const cfg = ytConfig[activeTab] || ytConfig["video-script"];
+        endpoint = `${API}${cfg.endpoint}`;
+        body = cfg.body;
       } else if (type === "tweet") {
         endpoint = `${API}/generate/tweet`;
         body = {
