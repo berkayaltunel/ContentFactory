@@ -298,12 +298,12 @@ class AccountQualityChecker:
         created_at = user_data.get("created_at", "")
 
         # Follower/following ratio kontrolü
-        if following > 0:
+        # Not: GraphQL timeline response'unda follower sayısı gelmeyebilir
+        # Bu durumda check'i atla (follower=0 ve following=0)
+        if followers > 0 and following > 0:
             ratio = followers / following
             if ratio < MIN_FOLLOWER_FOLLOWING_RATIO:
                 return False, f"low_ff_ratio:{ratio:.2f}"
-        elif followers == 0:
-            return False, "no_followers"
 
         # Hesap yaşı kontrolü
         if created_at:
