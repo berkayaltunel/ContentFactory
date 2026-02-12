@@ -1086,6 +1086,7 @@ export default function XAIModule() {
   const [fetchPhase, setFetchPhase] = useState("link"); // "link" | "prompt"
   const [imageUrl, setImageUrl] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
+  const [trendContext, setTrendContext] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -1135,7 +1136,7 @@ export default function XAIModule() {
     const platformParam = searchParams.get("platform");
     const styleParam = searchParams.get("style");
     if (topic) setInputValue(topic);
-    if (context) setInputValue((prev) => prev ? `${prev}\n\n${context}` : context);
+    if (context) setTrendContext(context);
     if (platformParam && ["twitter","youtube","instagram","tiktok","linkedin","blog"].includes(platformParam)) {
       setActivePlatform(platformParam);
     }
@@ -1344,6 +1345,7 @@ export default function XAIModule() {
           is_ultra: settings.isUltra,
           variants: settings.variants,
           additional_context: null,
+          trend_context: trendContext || null,
           style_profile_id: activeProfileId || null,
           image_base64: imageBase64 || null,
         };
@@ -1423,7 +1425,7 @@ export default function XAIModule() {
     } finally {
       setGenerating(false);
     }
-  }, [inputValue, activeTab, settings, fetched, fetchPhase, tweetUrl, tweetData, activeProfileId, imageUrl, imageBase64, updateJob]);
+  }, [inputValue, activeTab, settings, fetched, fetchPhase, tweetUrl, tweetData, activeProfileId, imageUrl, imageBase64, trendContext, updateJob]);
 
   // Placeholder based on active tab
   const basePlaceholders = PLATFORM_PLACEHOLDERS[activePlatform] || PLATFORM_PLACEHOLDERS.twitter;
