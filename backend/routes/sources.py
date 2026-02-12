@@ -50,9 +50,9 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
     if existing.data:
         raise HTTPException(status_code=400, detail=f"@{username} zaten ekli")
     
-    # Get user info
+    # Get user info (async — GraphQL fallback when Bird CLI unavailable)
     logger.info(f"Fetching user info for @{username}")
-    user_info = scraper.get_user_info(username)
+    user_info = await scraper.get_user_info_async(username)
     
     if not user_info:
         raise HTTPException(status_code=404, detail=f"@{username} bulunamadı")
@@ -71,9 +71,9 @@ async def add_source(request: AddSourceRequest, user=Depends(require_auth), supa
     
     supabase.table("style_sources").insert(source_data).execute()
     
-    # Fetch tweets in background (for now, sync)
+    # Fetch tweets (async — GraphQL fallback)
     logger.info(f"Fetching tweets for @{username}")
-    tweets = scraper.get_user_tweets(username, count=200)
+    tweets = await scraper.get_user_tweets_async(username, count=200)
     
     # Save tweets
     tweet_records = []
@@ -146,7 +146,6 @@ async def list_sources(user=Depends(require_auth), supabase=Depends(get_supabase
 @router.get("/{source_id}/tweets", response_model=List[TweetResponse])
 async def get_source_tweets(source_id: str, limit: int = 50, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Get tweets from a source (verify ownership first)"""
-    # Verify source belongs to user
     source_check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
     if not source_check.data:
         raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
@@ -171,7 +170,6 @@ async def get_source_tweets(source_id: str, limit: int = 50, user=Depends(requir
 @router.delete("/{source_id}")
 async def delete_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Delete a style source and its tweets (user-scoped)"""
-    # Only delete if belongs to user
     result = supabase.table("style_sources").delete().eq("id", source_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
@@ -180,7 +178,6 @@ async def delete_source(source_id: str, user=Depends(require_auth), supabase=Dep
 @router.post("/{source_id}/refresh")
 async def refresh_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Re-fetch tweets for a source (verify ownership)"""
-    # Get source - verify belongs to user
     result = supabase.table("style_sources").select("*").eq("id", source_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
@@ -188,8 +185,8 @@ async def refresh_source(source_id: str, user=Depends(require_auth), supabase=De
     source = result.data[0]
     username = source['twitter_username']
     
-    # Fetch new tweets
-    tweets = scraper.get_user_tweets(username, count=200)
+    # Fetch new tweets (async — GraphQL fallback)
+    tweets = await scraper.get_user_tweets_async(username, count=200)
     
     # Delete old tweets
     supabase.table("source_tweets").delete().eq("source_id", source_id).execute()

@@ -215,7 +215,8 @@ async def generate_with_openai(system_prompt: str, user_prompt: str, variants: i
                 max_tokens=3000
             )
 
-            content = response.choices[0].message.content.strip()
+            raw_content = response.choices[0].message.content
+            content = raw_content.strip() if raw_content else ""
             results.append(content)
 
             # Track token usage
@@ -1218,7 +1219,7 @@ from routes.youtube_studio import router as youtube_studio_router
 api_router.include_router(youtube_studio_router)
 
 # Include the router in the main app
-app.include_router(api_router)
+# app.include_router(api_router)  # Moved to end for v2 routes
 
 # ==================== MIDDLEWARE (order matters: last added = first executed) ====================
 from middleware.security import SecurityMiddleware, ALLOWED_ORIGINS as SEC_ORIGINS
@@ -1250,3 +1251,563 @@ from middleware.db_cleanup import start_cleanup_task
 @app.on_event("startup")
 async def startup_event():
     start_cleanup_task(supabase)
+
+
+# ==================== V2 MODELS ====================
+
+# ==================== V2 IMPORTS ====================
+from prompts.builder_v2 import build_final_prompt_v2, validate_settings
+from prompts.etki import ETKILER
+from prompts.karakter_v2 import KARAKTERLER, KARAKTER_YAPI_UYUM
+from prompts.yapi import YAPILAR
+from prompts.acilis import ACILISLAR
+from prompts.bitis import BITISLER
+from prompts.derinlik import DERINLIKLER
+from prompts.smart_defaults import SMART_DEFAULTS, get_smart_defaults
+
+# Model routing config
+V2_MODEL_CONFIG = {
+    "normal": {
+        "model": "google/gemini-3-flash-preview",
+        "provider": "openrouter",
+        "max_tokens": 2048,
+        "temperature_base": 0.8,
+    },
+    "ultra": {
+        "model": "anthropic/claude-sonnet-4.5",
+        "provider": "openrouter",
+        "max_tokens": 2048,
+        "temperature_base": 0.8,
+    },
+    "shitpost": {
+        "model": "mistralai/mistral-large-2512",
+        "provider": "openrouter",
+        "max_tokens": 1024,
+        "temperature_base": 0.85,
+    },
+}
+
+# Max tokens cap per uzunluk — prevents models from over-generating
+UZUNLUK_MAX_TOKENS = {
+    "micro": 55,      # 50-100 chars ≈ 25-50 tokens
+    "punch": 160,     # 140-280 chars ≈ 70-140 tokens
+    "spark": 350,     # 400-600 chars ≈ 200-300 tokens
+    "storm": 450,     # 700-1000 chars ≈ 350-500 tokens
+    "thread": 2048,   # 1000-2500 chars ≈ 500-1200 tokens
+}
+
+# Hard char limits for post-generation check
+UZUNLUK_CHAR_LIMITS = {
+    "micro": (50, 180),     # 20% tolerance
+    "punch": (100, 400),    # 20% tolerance
+    "spark": (240, 820),    # 20% tolerance
+    "storm": (500, 1300),   # 20% tolerance
+    "thread": (800, 3000),  # generous
+}
+# BeatstoBytes style profile for shitpost mode (auto-injected, hidden from users)
+SHITPOST_STYLE_PROFILE_ID = "dd1a9608-1441-4b72-bf28-83e11d4c5a60"
+_shitpost_style_cache = {"prompt": None, "examples": None}
+
+def _get_shitpost_style():
+    """Get BeatstoBytes style prompt + examples (cached)."""
+    if _shitpost_style_cache["prompt"] is None:
+        try:
+            from services.style_analyzer import analyzer
+            result = supabase.table("style_profiles").select("style_fingerprint,example_tweets").eq("id", SHITPOST_STYLE_PROFILE_ID).execute()
+            if result.data:
+                fp = result.data[0].get("style_fingerprint", {})
+                _shitpost_style_cache["prompt"] = analyzer.generate_style_prompt(fp)
+                _shitpost_style_cache["examples"] = result.data[0].get("example_tweets", [])
+                logger.info(f"Shitpost style loaded: {len(_shitpost_style_cache['prompt'])} chars, {len(_shitpost_style_cache['examples'])} examples")
+            else:
+                logger.warning("BeatstoBytes profile not found, shitpost style disabled")
+                _shitpost_style_cache["prompt"] = ""
+                _shitpost_style_cache["examples"] = []
+        except Exception as e:
+            logger.error(f"Failed to load shitpost style: {e}")
+            _shitpost_style_cache["prompt"] = ""
+            _shitpost_style_cache["examples"] = []
+    return _shitpost_style_cache["prompt"], _shitpost_style_cache["examples"]
+
+
+
+# ==================== OPENROUTER CLIENT ====================
+
+_openrouter_client = None
+
+def _get_openrouter_client():
+    """Lazy init OpenRouter client (OpenAI-compatible SDK)."""
+    global _openrouter_client
+    if _openrouter_client is None:
+        openrouter_key = os.environ.get('OPENROUTER_API_KEY')
+        if not openrouter_key:
+            raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
+        _openrouter_client = OpenAI(
+            api_key=openrouter_key,
+            base_url="https://openrouter.ai/api/v1",
+        )
+    return _openrouter_client
+
+
+# ==================== MODEL ROUTING ====================
+
+def get_model_config(etki: str, is_ultra: bool) -> dict:
+    """Determine which model to use based on settings."""
+    if etki == "shitpost":
+        return V2_MODEL_CONFIG["shitpost"]
+    elif is_ultra:
+        return V2_MODEL_CONFIG["ultra"]
+    else:
+        return V2_MODEL_CONFIG["normal"]
+
+
+# ==================== V2 GENERATION ====================
+
+async def generate_with_openrouter(
+    system_prompt: str,
+    user_prompt: str,
+    model_config: dict,
+    variants: int = 1,
+    user_id: str = None,
+    uzunluk: str = "punch",
+) -> tuple:
+    """Generate content via OpenRouter (OpenAI-compatible API).
+    Returns (results, total_tokens_used)."""
+
+    if user_id:
+        check_token_budget(user_id)
+
+    client = _get_openrouter_client()
+    model = model_config["model"]
+    # Cap max_tokens by uzunluk to prevent over-generation
+    uzunluk_cap = UZUNLUK_MAX_TOKENS.get(uzunluk, 2048)
+    max_tokens = min(model_config["max_tokens"], uzunluk_cap)
+    temp_base = model_config.get("temperature_base", 0.8)
+    
+    # Get char limits for post-generation check
+    char_min, char_max = UZUNLUK_CHAR_LIMITS.get(uzunluk, (0, 99999))
+
+    results = []
+    total_tokens = 0
+
+    for i in range(variants):
+        try:
+            variant_prompt = user_prompt
+            if variants > 1:
+                variant_prompt += f"\n\nBu {i+1}. varyant. Aynı konu, aynı ayarlar ama farklı bir ifade ve hook kullan. Önceki varyantlardan farklı kelimeler ve cümle yapıları seç."
+
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": variant_prompt}
+                ],
+                temperature=temp_base + (i * 0.05),
+                max_tokens=max_tokens,
+            )
+
+            raw_content = response.choices[0].message.content
+            content = raw_content.strip() if raw_content else ""
+
+            # Clean up common issues
+            content = content.strip('"').strip("'")
+            for prefix in ["Tweet:", "tweet:", "Tweet metni:", "Çıktı:", "Output:", "İşte tweet:"]:
+                if content.lower().startswith(prefix.lower()):
+                    content = content[len(prefix):].strip()
+
+            # Mistral "veya" fix: take only first part if model gave alternatives
+            if model_config == V2_MODEL_CONFIG["shitpost"]:
+                for splitter in ["\n\nYa da ", "\n\nVeya:", "\n\nVeya\n", "\n\nAlternatif:"]:
+                    if splitter in content:
+                        content = content.split(splitter)[0].strip()
+
+            # Retry if empty
+            if not content or len(content) < 5:
+                logger.warning(f"V2 empty output from {model}, retrying...")
+                response2 = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": variant_prompt}
+                    ],
+                    temperature=temp_base + 0.1,
+                    max_tokens=max_tokens,
+                )
+                raw2 = response2.choices[0].message.content
+                content = raw2.strip() if raw2 else ""
+                if response2.usage:
+                    total_tokens += response2.usage.total_tokens
+
+            # Post-generation length enforcement
+            if len(content) > char_max and uzunluk in ("micro", "punch", "spark", "storm"):
+                logger.warning(f"V2 output too long ({len(content)} chars, max {char_max}) for {uzunluk}. Retrying with stricter prompt...")
+                strict_prompt = f"KURAL: Maximum {char_max} karakter. ASLA bu limiti aşma. Kısa ve öz yaz.\n\n" + variant_prompt
+                try:
+                    response3 = client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": strict_prompt}
+                        ],
+                        temperature=max(temp_base - 0.2, 0.3),
+                        max_tokens=max_tokens,
+                    )
+                    retry_content = response3.choices[0].message.content.strip().strip('"').strip("'")
+                    for pfx in ["Tweet:", "tweet:", "Tweet metni:", "Çıktı:", "Output:", "İşte tweet:"]:
+                        if retry_content.lower().startswith(pfx.lower()):
+                            retry_content = retry_content[len(pfx):].strip()
+                    if model_config.get("model", "").startswith("mistral"):
+                        for s in ["\n\nYa da ", "\n\nVeya:", "\n\nVeya\n", "\n\nAlternatif:"]:
+                            if s in retry_content:
+                                retry_content = retry_content.split(s)[0].strip()
+                    if retry_content and len(retry_content) <= char_max:
+                        logger.info(f"V2 retry succeeded: {len(retry_content)} chars (was {len(content)})")
+                        content = retry_content
+                    else:
+                        # Hard truncate at sentence boundary
+                        logger.warning(f"V2 retry still too long ({len(retry_content) if retry_content else 0}), truncating...")
+                        sentences = content.replace('\n', '. ').split('. ')
+                        truncated = ""
+                        for s in sentences:
+                            if len(truncated) + len(s) + 2 <= char_max:
+                                truncated = (truncated + ". " + s).strip(". ") if truncated else s
+                            else:
+                                break
+                        if truncated and len(truncated) >= char_min:
+                            content = truncated + "."
+                    if response3.usage:
+                        total_tokens += response3.usage.total_tokens
+                except Exception as e:
+                    logger.warning(f"V2 length retry failed: {e}")
+
+            results.append(content)
+
+            if response.usage:
+                total_tokens += response.usage.total_tokens
+
+        except Exception as e:
+            logger.error(f"OpenRouter API error ({model}): {e}")
+            raise HTTPException(status_code=500, detail="AI üretimi başarısız oldu")
+
+    if user_id and total_tokens > 0:
+        record_token_usage(user_id, total_tokens)
+
+    return results, total_tokens
+
+
+# ==================== V2 REQUEST MODELS ====================
+
+class TweetGenerateRequestV2(BaseModel):
+    topic: str
+    etki: str = "patlassin"
+    karakter: str = "uzman"
+    yapi: str = "dogal"
+    uzunluk: str = "punch"
+    acilis: str = "otomatik"
+    bitis: str = "otomatik"
+    derinlik: str = "standart"
+    language: str = "auto"
+    is_ultra: bool = False
+    variants: int = 3
+    additional_context: Optional[str] = None
+    trend_context: Optional[str] = None
+    style_profile_id: Optional[str] = None
+    image_base64: Optional[str] = None
+
+class QuoteGenerateRequestV2(BaseModel):
+    tweet_url: str
+    tweet_content: Optional[str] = None
+    etki: str = "konustursun"
+    karakter: str = "uzman"
+    yapi: str = "dogal"
+    uzunluk: str = "punch"
+    acilis: str = "otomatik"
+    bitis: str = "otomatik"
+    derinlik: str = "standart"
+    language: str = "auto"
+    is_ultra: bool = False
+    variants: int = 3
+    additional_context: Optional[str] = None
+    direction: Optional[str] = None
+    style_profile_id: Optional[str] = None
+
+class ReplyGenerateRequestV2(BaseModel):
+    tweet_url: str
+    tweet_content: Optional[str] = None
+    reply_mode: str = "support"
+    etki: str = "konustursun"
+    karakter: str = "uzman"
+    yapi: str = "dogal"
+    uzunluk: str = "punch"
+    acilis: str = "otomatik"
+    bitis: str = "soru"
+    derinlik: str = "standart"
+    language: str = "auto"
+    is_ultra: bool = False
+    variants: int = 3
+    additional_context: Optional[str] = None
+    direction: Optional[str] = None
+    style_profile_id: Optional[str] = None
+
+
+# ==================== V2 ENDPOINTS ====================
+
+@api_router.post("/v2/generate/tweet", response_model=GenerationResponse)
+async def generate_tweet_v2(request: TweetGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth)):
+    """Generate tweet with v2 settings system (Etki, Karakter, Yapı etc.)"""
+    try:
+        sanitize_generation_request(request)
+
+        # Validate settings combination
+        validation = validate_settings(request.etki, request.karakter, request.yapi)
+        if not validation["valid"]:
+            logger.warning(f"V2 incompatible settings: {validation['warnings']}")
+            # Don't block, just warn in logs
+
+        # Image analysis
+        image_context = None
+        if request.image_base64:
+            image_description = await analyze_image_with_vision(request.image_base64)
+            if image_description:
+                image_context = f"Kullanıcı bir görsel ekledi. Görselde: {image_description}. Bu görselle uyumlu tweet yaz."
+
+        combined_context = request.additional_context or ""
+        if image_context:
+            combined_context = f"{combined_context}\n\n{image_context}" if combined_context else image_context
+
+        # Determine model
+        model_config = get_model_config(request.etki, request.is_ultra)
+        logger.info(f"V2 tweet: etki={request.etki}, karakter={request.karakter}, yapi={request.yapi}, model={model_config['model']}, ultra={request.is_ultra}")
+
+        # Auto-inject BeatstoBytes style for shitpost
+        shitpost_style_prompt = None
+        shitpost_examples = None
+        if request.etki == "shitpost":
+            shitpost_style_prompt, shitpost_examples = _get_shitpost_style()
+            logger.info(f"V2 shitpost: injecting BeatstoBytes style ({len(shitpost_style_prompt)} chars, {len(shitpost_examples)} examples)")
+
+        # Build v2 prompt
+        system_prompt = build_final_prompt_v2(
+            content_type="tweet",
+            topic=request.topic,
+            etki=request.etki,
+            karakter=request.karakter,
+            yapi=request.yapi,
+            uzunluk=request.uzunluk,
+            acilis=request.acilis,
+            bitis=request.bitis,
+            derinlik=request.derinlik,
+            language=request.language,
+            is_ultra=request.is_ultra,
+            additional_context=combined_context if combined_context else None,
+            trend_context=request.trend_context,
+            style_prompt=shitpost_style_prompt if shitpost_style_prompt else None,
+            example_tweets=shitpost_examples if shitpost_examples else None,
+        )
+
+        # Generate via OpenRouter
+        contents, tokens_used = await generate_with_openrouter(
+            system_prompt, "İçeriği üret.", model_config, request.variants, user_id=user.id,
+            uzunluk=request.uzunluk,
+        )
+
+        variants = [
+            GeneratedContent(content=c, variant_index=i, character_count=len(c))
+            for i, c in enumerate(contents)
+        ]
+
+        # Log to database
+        gen_id = str(uuid.uuid4())
+        try:
+            supabase.table("generations").insert({
+                "id": gen_id,
+                "type": "tweet",
+                "user_id": user.id,
+                "topic": request.topic,
+                "mode": "ultra" if request.is_ultra else ("shitpost" if request.etki == "shitpost" else "v2"),
+                "length": request.uzunluk,
+                "persona": request.karakter,
+                "tone": request.yapi,
+                "knowledge": request.derinlik if request.derinlik != "standart" else None,
+                "language": request.language,
+                "additional_context": request.additional_context,
+                "is_ultra": request.is_ultra,
+                "variants": [v.model_dump(mode="json") for v in variants],
+                "tokens_used": tokens_used,
+                "model_used": model_config["model"],
+            }).execute()
+        except Exception as e:
+            logger.warning(f"DB log failed: {e}")
+
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"V2 tweet generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/v2/generate/quote", response_model=GenerationResponse)
+async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth)):
+    """Generate quote tweet with v2 settings."""
+    try:
+        sanitize_generation_request(request)
+
+        # Fetch original tweet if needed
+        original_content = request.tweet_content or ""
+        if not original_content and request.tweet_url:
+            original_content = f"[Tweet URL: {request.tweet_url}]"
+
+        model_config = get_model_config(request.etki, request.is_ultra)
+
+        combined_context = request.additional_context or ""
+        if request.direction:
+            combined_context = f"Kullanıcı yönlendirmesi: {request.direction}\n\n{combined_context}" if combined_context else f"Kullanıcı yönlendirmesi: {request.direction}"
+
+        system_prompt = build_final_prompt_v2(
+            content_type="quote",
+            topic=None,
+            etki=request.etki,
+            karakter=request.karakter,
+            yapi=request.yapi,
+            uzunluk=request.uzunluk,
+            acilis=request.acilis,
+            bitis=request.bitis,
+            derinlik=request.derinlik,
+            language=request.language,
+            is_ultra=request.is_ultra,
+            original_tweet=original_content,
+            additional_context=combined_context if combined_context else None,
+        )
+
+        contents, tokens_used = await generate_with_openrouter(
+            system_prompt, "İçeriği üret.", model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
+        )
+
+        variants = [
+            GeneratedContent(content=c, variant_index=i, character_count=len(c))
+            for i, c in enumerate(contents)
+        ]
+
+        gen_id = str(uuid.uuid4())
+        try:
+            supabase.table("generations").insert({
+                "id": gen_id, "type": "quote", "user_id": user.id,
+                "topic": f"Quote: {request.tweet_url}", "mode": "v2",
+                "length": request.uzunluk, "persona": request.karakter,
+                "tone": request.yapi, "language": request.language,
+                "is_ultra": request.is_ultra,
+                "variants": [v.model_dump(mode="json") for v in variants],
+                "tokens_used": tokens_used, "model_used": model_config["model"],
+            }).execute()
+        except Exception as e:
+            logger.warning(f"DB log failed: {e}")
+
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"V2 quote generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/v2/generate/reply", response_model=GenerationResponse)
+async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth)):
+    """Generate reply with v2 settings."""
+    try:
+        sanitize_generation_request(request)
+
+        original_content = request.tweet_content or ""
+        if not original_content and request.tweet_url:
+            original_content = f"[Tweet URL: {request.tweet_url}]"
+
+        model_config = get_model_config(request.etki, request.is_ultra)
+
+        combined_context = request.additional_context or ""
+        if request.direction:
+            combined_context = f"Kullanıcı yönlendirmesi: {request.direction}\n\n{combined_context}" if combined_context else f"Kullanıcı yönlendirmesi: {request.direction}"
+
+        system_prompt = build_final_prompt_v2(
+            content_type="reply",
+            topic=None,
+            etki=request.etki,
+            karakter=request.karakter,
+            yapi=request.yapi,
+            uzunluk=request.uzunluk,
+            acilis=request.acilis,
+            bitis=request.bitis,
+            derinlik=request.derinlik,
+            language=request.language,
+            is_ultra=request.is_ultra,
+            original_tweet=original_content,
+            reply_mode=request.reply_mode,
+            additional_context=combined_context if combined_context else None,
+        )
+
+        contents, tokens_used = await generate_with_openrouter(
+            system_prompt, "İçeriği üret.", model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
+        )
+
+        variants = [
+            GeneratedContent(content=c, variant_index=i, character_count=len(c))
+            for i, c in enumerate(contents)
+        ]
+
+        gen_id = str(uuid.uuid4())
+        try:
+            supabase.table("generations").insert({
+                "id": gen_id, "type": "reply", "user_id": user.id,
+                "topic": f"Reply: {request.tweet_url}", "mode": "v2",
+                "length": request.uzunluk, "persona": request.karakter,
+                "tone": request.yapi, "language": request.language,
+                "is_ultra": request.is_ultra,
+                "variants": [v.model_dump(mode="json") for v in variants],
+                "tokens_used": tokens_used, "model_used": model_config["model"],
+            }).execute()
+        except Exception as e:
+            logger.warning(f"DB log failed: {e}")
+
+        return GenerationResponse(success=True, variants=variants, generation_id=gen_id)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"V2 reply generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== V2 SETTINGS ENDPOINTS ====================
+
+@api_router.get("/v2/settings/defaults")
+async def get_settings_defaults(etki: str = "patlassin"):
+    """Get smart defaults for a given Etki selection."""
+    defaults = get_smart_defaults(etki)
+    return {
+        "etki": etki,
+        "defaults": defaults,
+    }
+
+
+@api_router.get("/v2/settings/options")
+async def get_settings_options():
+    """Get all available settings options for the UI."""
+    return {
+        "etki": [{"id": k, "name": v["name"], "label": v["label"], "emoji": v["emoji"]} for k, v in ETKILER.items()],
+        "karakter": [{"id": k, "name": v["name"], "label": v["label"], "emoji": v["emoji"]} for k, v in KARAKTERLER.items()],
+        "yapi": [{"id": k, "name": v["name"], "label": v["label"], "emoji": v["emoji"]} for k, v in YAPILAR.items()],
+        "acilis": [{"id": k, "name": v["name"], "label": v["label"], "emoji": v["emoji"]} for k, v in ACILISLAR.items()],
+        "bitis": [{"id": k, "name": v["name"], "label": v["label"], "emoji": v["emoji"]} for k, v in BITISLER.items()],
+        "derinlik": [{"id": k, "name": v["name"], "label": v["label"], "emoji": v["emoji"]} for k, v in DERINLIKLER.items()],
+        "uzunluk": ["micro", "punch", "spark", "storm", "thread"],
+        "karakter_yapi_uyum": KARAKTER_YAPI_UYUM,
+        "smart_defaults": SMART_DEFAULTS,
+    }
+
+
+@api_router.post("/v2/settings/validate")
+async def validate_settings_endpoint(etki: str = "patlassin", karakter: str = "uzman", yapi: str = "dogal"):
+    """Validate a settings combination."""
+    return validate_settings(etki, karakter, yapi)
+app.include_router(api_router)

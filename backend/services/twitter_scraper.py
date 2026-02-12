@@ -4,6 +4,7 @@ import json
 import os
 import re
 import logging
+import shutil
 from typing import List, Optional
 from datetime import datetime
 
@@ -11,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 # Tek seferde çekilecek max tweet (Bird CLI güvenli limit)
 BIRD_BATCH_SIZE = 50
+
+def _has_bird() -> bool:
+    return shutil.which("bird") is not None
 
 class TwitterScraper:
     def __init__(self):
@@ -29,7 +33,13 @@ class TwitterScraper:
         if not self.auth_token or not self.ct0:
             logger.warning("Twitter credentials not configured")
 
-        # GraphQL client for Hetzner/Linux fallback
+        self.has_bird = _has_bird()
+        if self.has_bird:
+            logger.info("Bird CLI detected")
+        else:
+            logger.info("Bird CLI not found, will use GraphQL fallback")
+
+        # GraphQL client (lazy init)
         self._graphql = None
 
     def _get_graphql(self):
@@ -51,9 +61,10 @@ class TwitterScraper:
     
     def _run_bird(self, args: List[str], timeout: int = 30) -> Optional[list]:
         """Run bird CLI command and return JSON output"""
-        # Always refresh before run to pick up updates
-        self.refresh_cookies()
+        if not self.has_bird:
+            return None
 
+        self.refresh_cookies()
         if not self.auth_token or not self.ct0:
             raise Exception("Twitter credentials not configured")
         
@@ -65,11 +76,7 @@ class TwitterScraper:
         
         try:
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                env=env
+                cmd, capture_output=True, text=True, timeout=timeout, env=env
             )
             
             if result.returncode != 0:
@@ -78,12 +85,12 @@ class TwitterScraper:
             
             output = result.stdout.strip()
             
-            # NDJSON satır satır parse (Bird CLI bazen NDJSON döner)
-            lines = output.split('\n')
+            # NDJSON parse
+            lines = output.split("\n")
             ndjson_results = []
             for line in lines:
                 line = line.strip()
-                if line.startswith('{'):
+                if line.startswith("{"):
                     try:
                         ndjson_results.append(json.loads(line))
                     except json.JSONDecodeError:
@@ -93,26 +100,23 @@ class TwitterScraper:
                 return ndjson_results
             
             # Normal JSON array parse
-            json_start = output.find('[')
+            json_start = output.find("[")
             if json_start != -1:
                 json_str = output[json_start:]
                 try:
                     return json.loads(json_str)
                 except json.JSONDecodeError:
-                    # Truncated JSON: son geçerli objeye kadar kes
-                    # Her tweet }{ veya },{ ile ayrılır
-                    last_valid = json_str.rfind('}')
+                    last_valid = json_str.rfind("}")
                     while last_valid > 0:
                         try:
                             candidate = json_str[:last_valid + 1]
-                            # Array'i kapat
-                            if not candidate.endswith(']'):
-                                candidate = candidate.rstrip(',') + ']'
+                            if not candidate.endswith("]"):
+                                candidate = candidate.rstrip(",") + "]"
                             parsed = json.loads(candidate)
                             logger.info(f"Recovered {len(parsed)} items from truncated JSON")
                             return parsed
                         except json.JSONDecodeError:
-                            last_valid = json_str.rfind('}', 0, last_valid)
+                            last_valid = json_str.rfind("}", 0, last_valid)
             
             return None
             
@@ -123,8 +127,11 @@ class TwitterScraper:
             logger.error(f"Bird command error: {e}")
             return None
     
+    # ----------------------------------------------------------------
+    # SYNC methods (Bird CLI only — used by non-async callers)
+    # ----------------------------------------------------------------
     def get_user_info(self, username: str) -> Optional[dict]:
-        """Get user info by username"""
+        """Get user info by username (sync, Bird CLI only)"""
         result = self._run_bird(['user-tweets', f'@{username}', '-n', '1'])
         if result and len(result) > 0:
             author = result[0].get('author', {})
@@ -136,22 +143,13 @@ class TwitterScraper:
         return None
     
     def get_user_tweets(self, username: str, count: int = 100) -> List[dict]:
-        """
-        Fetch user's tweets. 
-        100+ tweet için batch'ler halinde çeker (Bird CLI güvenli limiti 50).
-        """
+        """Fetch user tweets (sync, Bird CLI only)"""
         all_raw = []
         remaining = count
-        cursor = None
         
         while remaining > 0:
             batch_size = min(remaining, BIRD_BATCH_SIZE)
             args = ['user-tweets', f'@{username}', '-n', str(batch_size)]
-            
-            # cursor varsa (pagination) ekle
-            if cursor:
-                args += ['--cursor', cursor]
-            
             result = self._run_bird(args, timeout=60)
             
             if not result or len(result) == 0:
@@ -160,35 +158,91 @@ class TwitterScraper:
             all_raw.extend(result)
             remaining -= len(result)
             
-            # Son tweet'in ID'sini cursor olarak kullan
-            # Bird CLI cursor desteği yoksa, seen ID'lerle deduplicate yap
             if len(result) < batch_size:
-                break  # Daha fazla tweet yok
+                break
             
-            # Bird CLI'da cursor yoksa ikinci batch'i farklı yoldan dene
-            if not cursor and remaining > 0:
-                # Bird CLI cursor desteklemiyorsa, tek seferde max count dene
-                logger.info(f"First batch: {len(all_raw)} tweets. Trying full fetch for remaining {remaining}...")
+            if remaining > 0:
                 full_result = self._run_bird(
-                    ['user-tweets', f'@{username}', '-n', str(count)],
-                    timeout=90
+                    ['user-tweets', f'@{username}', '-n', str(count)], timeout=90
                 )
                 if full_result and len(full_result) > len(all_raw):
                     all_raw = full_result
                 break
         
-        # Deduplicate by tweet ID
+        return self._normalize_tweets(all_raw)
+    
+    # ----------------------------------------------------------------
+    # ASYNC methods (GraphQL fallback — used by FastAPI routes)
+    # ----------------------------------------------------------------
+    async def get_user_info_async(self, username: str) -> Optional[dict]:
+        """Get user info (async, with GraphQL fallback)"""
+        # Try Bird first
+        result = self._run_bird(['user-tweets', f'@{username}', '-n', '1'])
+        if result and len(result) > 0:
+            author = result[0].get('author', {})
+            return {
+                'username': author.get('username'),
+                'name': author.get('name'),
+                'user_id': result[0].get('authorId')
+            }
+        
+        # GraphQL fallback
+        logger.info(f"Bird unavailable, using GraphQL for @{username} user info")
+        gql = self._get_graphql()
+        from services.twitter_graphql import QUERY_IDS, USER_BY_SCREEN_NAME_FEATURES
+        
+        user_data = await gql._graphql_request(
+            QUERY_IDS["UserByScreenName"], "UserByScreenName",
+            variables={"screen_name": username, "withSafetyModeUserFields": True},
+            features=USER_BY_SCREEN_NAME_FEATURES,
+        )
+        
+        if not user_data:
+            return None
+        
+        try:
+            user_result = user_data["data"]["user"]["result"]
+            core = user_result.get("core", {})
+            return {
+                'username': core.get('screen_name', username),
+                'name': core.get('name', ''),
+                'user_id': user_result.get('rest_id')
+            }
+        except (KeyError, TypeError) as e:
+            logger.error(f"Failed to parse user info for @{username}: {e}")
+            return None
+    
+    async def get_user_tweets_async(self, username: str, count: int = 200) -> List[dict]:
+        """Fetch user tweets (async, with GraphQL fallback)"""
+        # Try Bird first
+        result = self._run_bird(['user-tweets', f'@{username}', '-n', str(count)], timeout=90)
+        if result and len(result) > 0:
+            return self._normalize_tweets(result)
+        
+        # GraphQL fallback
+        logger.info(f"Bird unavailable, using GraphQL for @{username} tweets (count={count})")
+        gql = self._get_graphql()
+        max_pages = max(1, count // 20)  # ~20 tweets per page
+        raw_tweets = await gql.get_user_tweets(username, count=count, max_pages=max_pages)
+        
+        return self._normalize_tweets(raw_tweets)
+    
+    # ----------------------------------------------------------------
+    # Shared helpers
+    # ----------------------------------------------------------------
+    def _normalize_tweets(self, raw_tweets: list) -> List[dict]:
+        """Normalize raw tweet dicts into standard format for source_tweets table."""
         seen_ids = set()
         tweets = []
-        for tweet in all_raw:
+        for tweet in raw_tweets:
             tid = tweet.get('id')
             if tid and tid in seen_ids:
                 continue
             if tid:
                 seen_ids.add(tid)
             
-            # RT'leri atla
-            if tweet.get('retweetedTweet'):
+            # Skip RTs
+            if tweet.get('retweetedTweet') or tweet.get('retweeted_status_result'):
                 continue
             
             tweets.append({
@@ -202,7 +256,7 @@ class TwitterScraper:
                 'tweet_created_at': tweet.get('createdAt')
             })
         
-        logger.info(f"Fetched {len(tweets)} tweets for @{username} (requested {count})")
+        logger.info(f"Normalized {len(tweets)} tweets from {len(raw_tweets)} raw")
         return tweets
     
     def fetch_tweet_by_url(self, url: str) -> Optional[dict]:
