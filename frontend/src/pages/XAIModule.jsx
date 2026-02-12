@@ -56,6 +56,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 // DATA: Personas, Tones, Lengths, etc.
 // ══════════════════════════════════════════
 
+// v1 settings (diğer platformlar için korunuyor)
 const personas = [
   { id: "saf", label: "Saf", desc: "Karakter yok, sadece sen" },
   { id: "otorite", label: "Otorite", desc: "Insider perspective, kesin" },
@@ -78,6 +79,69 @@ const knowledgeModes = [
   { id: "hidden", label: "hidden", desc: "Gizli, az bilinen bilgi" },
   { id: "expert", label: "expert", desc: "Derin uzmanlık bilgisi" },
 ];
+
+// ══════════════════════════════════════════
+// V2 DATA: Etki, Karakter, Yapı, etc. (sadece X platformu)
+// ══════════════════════════════════════════
+
+const v2Etkiler = [
+  { id: "patlassin", label: "Patlasın", desc: "Viral, maximum erişim" },
+  { id: "konustursun", label: "Konuştursun", desc: "Tartışma başlatsın, reply çeksin" },
+  { id: "ogretsin", label: "Öğretsin", desc: "Bilgi versin, kaydedilsin" },
+  { id: "iz_biraksin", label: "İz Bıraksın", desc: "Düşündürsün, aklından çıkmasın" },
+  { id: "shitpost", label: "Shitpost", desc: "Komik, ironik, absürt" },
+];
+
+const v2Karakterler = [
+  { id: "uzman", label: "Uzman", desc: "Bilen, deneyimli, güvenilir" },
+  { id: "otorite", label: "Otorite", desc: "Kesin, tartışmasız, kanıt odaklı" },
+  { id: "iceriden", label: "İçeriden", desc: "Perde arkası, insider bilgi" },
+  { id: "mentalist", label: "Mentalist", desc: "Psikolojik insight, davranış okuma" },
+  { id: "haberci", label: "Haberci", desc: "Haber formatı, faktüel, hızlı" },
+];
+
+const v2Yapilar = [
+  { id: "dogal", label: "Doğal", desc: "Akıcı, samimi, konuşur gibi" },
+  { id: "kurgulu", label: "Kurgulu", desc: "Yapılandırılmış, planlı, profesyonel" },
+  { id: "cesur", label: "Cesur", desc: "Provokatif, sınır zorlayan, vurucu" },
+];
+
+const v2Acilislar = [
+  { id: "otomatik", label: "Otomatik", desc: "En uygun açılışı AI seçsin" },
+  { id: "zit_gorus", label: "Zıt Görüş", desc: "Beklentinin tersini söyle" },
+  { id: "merak", label: "Merak", desc: "Okuyucuyu meraklandır" },
+  { id: "hikaye", label: "Hikaye", desc: "Kısa bir anekdotla başla" },
+  { id: "tartisma", label: "Tartışma", desc: "Tartışma ateşle" },
+];
+
+const v2Bitisler = [
+  { id: "otomatik", label: "Otomatik", desc: "En uygun bitişi AI seçsin" },
+  { id: "soru", label: "Soru", desc: "Soru ile bitir, yorum çek" },
+  { id: "dogal", label: "Doğal", desc: "Doğal bir şekilde bitir" },
+];
+
+const v2Derinlikler = [
+  { id: "standart", label: "Standart", desc: "Normal bilgi derinliği" },
+  { id: "karsi_gorus", label: "Karşıt Görüş", desc: "Mainstream'in tersini savun" },
+  { id: "perde_arkasi", label: "Perde Arkası", desc: "Herkesin bilmediği detaylar" },
+  { id: "uzmanlik", label: "Uzmanlık", desc: "Derin teknik bilgi" },
+];
+
+const v2SmartDefaults = {
+  patlassin:   { karakter: "uzman",    yapi: "kurgulu", uzunluk: "punch", acilis: "otomatik", bitis: "otomatik", derinlik: "standart" },
+  konustursun: { karakter: "iceriden", yapi: "dogal",   uzunluk: "spark", acilis: "tartisma", bitis: "soru",     derinlik: "karsi_gorus" },
+  ogretsin:    { karakter: "otorite",  yapi: "kurgulu", uzunluk: "punch", acilis: "merak",    bitis: "dogal",    derinlik: "uzmanlik" },
+  iz_biraksin: { karakter: "uzman",    yapi: "dogal",   uzunluk: "spark", acilis: "hikaye",   bitis: "dogal",    derinlik: "standart" },
+  shitpost:    { karakter: "haberci",  yapi: "dogal",   uzunluk: "micro", acilis: "otomatik", bitis: "dogal",    derinlik: "standart" },
+};
+
+const v2KarakterYapiUyum = {
+  uzman:    { dogal: true, kurgulu: true, cesur: true },
+  otorite:  { dogal: true, kurgulu: true, cesur: true },
+  iceriden: { dogal: true, kurgulu: true, cesur: false },
+  mentalist:{ dogal: true, kurgulu: true, cesur: false },
+  haberci:  { dogal: true, kurgulu: true, cesur: false },
+};
 
 const tweetLengths = [
   { id: "micro", label: "Micro", range: "50-100" },
@@ -259,26 +323,74 @@ const blogLevels = [
 ];
 
 function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, activePlatform }) {
+  const [advOpen, setAdvOpen] = useState(false);
+
   if (!open) return null;
 
+  const isTwitter = activePlatform === "twitter";
   const currentLengths = activeTab === "reply" ? replyLengths : 
                          activeTab === "article" ? articleLengths : tweetLengths;
 
+  // v2: Etki seçildiğinde smart defaults uygula
+  const handleEtkiChange = (newEtki) => {
+    const defaults = v2SmartDefaults[newEtki] || {};
+    onSettingsChange({
+      ...settings,
+      etki: newEtki,
+      karakter: defaults.karakter || settings.karakter,
+      yapi: defaults.yapi || settings.yapi,
+      uzunluk: defaults.uzunluk || settings.uzunluk,
+      acilis: defaults.acilis || settings.acilis,
+      bitis: defaults.bitis || settings.bitis,
+      derinlik: defaults.derinlik || settings.derinlik,
+    });
+  };
+
+  // v2: Uyumluluk kontrolü
+  const isIncompat = isTwitter && v2KarakterYapiUyum[settings.karakter] && v2KarakterYapiUyum[settings.karakter][settings.yapi] === false;
+
+  // Pill renderer: tekrar eden kod yerine helper
+  const renderPills = (items, activeId, field, opts = {}) => (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+      {items.map((item) => {
+        const id = item.id;
+        const isActive = activeId === id;
+        // v2 yapi uyumluluk: uyumsuz pill'i kırmızı border ile göster
+        const isWarning = opts.checkCompat && id === "cesur" && v2KarakterYapiUyum[settings.karakter]?.[id] === false;
+        return (
+          <button
+            key={id || "none"}
+            onClick={() => onSettingsChange({ ...settings, [field]: id })}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "999px",
+              border: isActive ? "none" : isWarning ? "1px solid rgba(239,68,68,0.5)" : "1px solid var(--m-border)",
+              background: isActive ? "var(--m-pill-active-bg)" : "transparent",
+              color: isActive ? "var(--m-pill-active-text)" : isWarning ? "rgba(239,68,68,0.7)" : "var(--m-text-soft)",
+              fontSize: "13px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {item.label}{item.range ? <span style={{ opacity: 0.5, marginLeft: "4px" }}>{item.range}</span> : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderDesc = (items, activeId) => {
+    const found = items.find((i) => i.id === activeId);
+    return found?.desc ? (
+      <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>{found.desc}</p>
+    ) : null;
+  };
+
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 z-40"
-        onClick={onClose}
-      />
-      {/* Popup */}
-      <div 
-        style={{
-          position: "relative",
-          zIndex: 50,
-          width: "100%",
-          marginTop: "8px",
-        }}
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        style={{ position: "relative", zIndex: 50, width: "100%", marginTop: "8px" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -292,331 +404,288 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
             display: "flex",
             flexDirection: "column",
             gap: "0",
+            maxHeight: "70vh",
+            overflowY: "auto",
           }}
         >
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text)" }}>
               Üretim Ayarları
             </span>
-            <button
-              onClick={onClose}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--m-text-muted)",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--m-text-muted)", cursor: "pointer" }}>
               <X size={16} />
             </button>
           </div>
 
-          {/* Persona */}
-          <div className="mb-2.5">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-              Karakter
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {personas.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => onSettingsChange({ ...settings, persona: p.id })}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "999px",
-                    border: settings.persona === p.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.persona === p.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.persona === p.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            {personas.find((p) => p.id === settings.persona)?.desc && (
-              <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                {personas.find((p) => p.id === settings.persona).desc}
-              </p>
-            )}
-          </div>
-
-          {/* Tone */}
-          <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-              Ton
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {tones.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => onSettingsChange({ ...settings, tone: t.id })}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "999px",
-                    border: settings.tone === t.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.tone === t.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.tone === t.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            {tones.find((t) => t.id === settings.tone)?.desc && (
-              <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                {tones.find((t) => t.id === settings.tone).desc}
-              </p>
-            )}
-          </div>
-
-          {/* Length */}
-          <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-              Uzunluk
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {currentLengths.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => onSettingsChange({ ...settings, length: l.id })}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "999px",
-                    border: settings.length === l.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.length === l.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.length === l.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {l.label} <span style={{ opacity: 0.5, marginLeft: "4px" }}>{l.range}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Knowledge */}
-          <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-              Knowledge Mode
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {knowledgeModes.map((k) => (
-                <button
-                  key={k.id || "none"}
-                  onClick={() => onSettingsChange({ ...settings, knowledge: k.id })}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "999px",
-                    border: settings.knowledge === k.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.knowledge === k.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.knowledge === k.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {k.label}
-                </button>
-              ))}
-            </div>
-            {knowledgeModes.find((k) => k.id === settings.knowledge)?.desc && settings.knowledge && (
-              <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                {knowledgeModes.find((k) => k.id === settings.knowledge).desc}
-              </p>
-            )}
-          </div>
-
-          {/* Language */}
-          <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-              Dil
-            </label>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {languages.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => onSettingsChange({ ...settings, language: l.id })}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "999px",
-                    border: settings.language === l.id ? "none" : "1px solid var(--m-border)",
-                    background: settings.language === l.id ? "var(--m-pill-active-bg)" : "transparent",
-                    color: settings.language === l.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {l.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* LinkedIn-specific settings */}
-          {activePlatform === "linkedin" && (
+          {/* ══════ X PLATFORM: V2 SETTINGS ══════ */}
+          {isTwitter && activeTab !== "article" ? (
             <>
+              {/* Etki (smart defaults tetikleyen özel pills) */}
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                  LinkedIn Persona
-                </label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Etki</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {linkedinPersonas.map((p) => (
+                  {v2Etkiler.map((e) => (
                     <button
-                      key={p.id}
-                      onClick={() => onSettingsChange({ ...settings, linkedinPersona: p.id })}
+                      key={e.id}
+                      onClick={() => handleEtkiChange(e.id)}
                       style={{
-                        padding: "6px 14px", borderRadius: "999px",
-                        border: settings.linkedinPersona === p.id ? "none" : "1px solid var(--m-border)",
-                        background: settings.linkedinPersona === p.id ? "var(--m-pill-active-bg)" : "transparent",
-                        color: settings.linkedinPersona === p.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
+                        padding: "6px 14px",
+                        borderRadius: "999px",
+                        border: settings.etki === e.id ? "none" : "1px solid var(--m-border)",
+                        background: settings.etki === e.id ? "var(--m-pill-active-bg)" : "transparent",
+                        color: settings.etki === e.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
                       }}
-                    >{p.label}</button>
+                    >
+                      {e.label}
+                    </button>
                   ))}
                 </div>
-                {linkedinPersonas.find((p) => p.id === settings.linkedinPersona)?.desc && (
-                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                    {linkedinPersonas.find((p) => p.id === settings.linkedinPersona).desc}
+                {renderDesc(v2Etkiler, settings.etki)}
+              </div>
+
+              {/* Karakter */}
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Karakter</label>
+                {renderPills(v2Karakterler, settings.karakter, "karakter")}
+                {renderDesc(v2Karakterler, settings.karakter)}
+              </div>
+
+              {/* Yapı */}
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Yapı</label>
+                {renderPills(v2Yapilar, settings.yapi, "yapi", { checkCompat: true })}
+                {renderDesc(v2Yapilar, settings.yapi)}
+                {isIncompat && (
+                  <p style={{ fontSize: "11px", color: "rgba(239,68,68,0.8)", marginTop: "4px" }}>
+                    Bu karakter ve yapı uyumsuz. Çelişkili sonuçlar üretebilir.
                   </p>
                 )}
               </div>
+
+              {/* Uzunluk */}
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                  Format
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {linkedinFormats.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => onSettingsChange({ ...settings, linkedinFormat: f.id })}
-                      style={{
-                        padding: "6px 14px", borderRadius: "999px",
-                        border: settings.linkedinFormat === f.id ? "none" : "1px solid var(--m-border)",
-                        background: settings.linkedinFormat === f.id ? "var(--m-pill-active-bg)" : "transparent",
-                        color: settings.linkedinFormat === f.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
-                      }}
-                    >{f.label}</button>
-                  ))}
-                </div>
-                {linkedinFormats.find((f) => f.id === settings.linkedinFormat)?.desc && (
-                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                    {linkedinFormats.find((f) => f.id === settings.linkedinFormat).desc}
-                  </p>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Uzunluk</label>
+                {renderPills(
+                  activeTab === "reply" ? replyLengths : tweetLengths,
+                  settings.uzunluk,
+                  "uzunluk"
                 )}
               </div>
+
+              {/* Gelişmiş Ayarlar (collapsible) */}
+              <button
+                onClick={() => setAdvOpen(!advOpen)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--m-text-muted)",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  padding: "4px 0",
+                  marginBottom: advOpen ? "8px" : "4px",
+                }}
+              >
+                {advOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                Gelişmiş Ayarlar
+              </button>
+
+              {advOpen && (
+                <>
+                  {/* Açılış */}
+                  <div className="mb-2">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Açılış</label>
+                    {renderPills(v2Acilislar, settings.acilis, "acilis")}
+                    {renderDesc(v2Acilislar, settings.acilis)}
+                  </div>
+
+                  {/* Bitiş */}
+                  <div className="mb-2">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Bitiş</label>
+                    {renderPills(v2Bitisler, settings.bitis, "bitis")}
+                    {renderDesc(v2Bitisler, settings.bitis)}
+                  </div>
+
+                  {/* Derinlik */}
+                  <div className="mb-2">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Derinlik</label>
+                    {renderPills(v2Derinlikler, settings.derinlik, "derinlik")}
+                    {renderDesc(v2Derinlikler, settings.derinlik)}
+                  </div>
+
+                  {/* Dil */}
+                  <div className="mb-2">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Dil</label>
+                    {renderPills(languages, settings.language, "language")}
+                  </div>
+                </>
+              )}
+
+              {/* Ultra Mode Toggle */}
+              <div className="mb-2" style={{ marginTop: "4px" }}>
+                <div
+                  onClick={() => onSettingsChange({ ...settings, isUltra: !settings.isUltra })}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    borderRadius: "12px",
+                    border: settings.isUltra ? "1px solid rgba(168,85,247,0.4)" : "1px solid var(--m-border)",
+                    background: settings.isUltra ? "rgba(168,85,247,0.1)" : "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: settings.isUltra ? "rgba(168,85,247,1)" : "var(--m-text)" }}>
+                      Ultra Mode
+                    </span>
+                    <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "2px" }}>
+                      Premium model, maximum kalite
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "22px",
+                      borderRadius: "11px",
+                      background: settings.isUltra ? "rgba(168,85,247,0.8)" : "var(--m-border)",
+                      position: "relative",
+                      transition: "background 0.2s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        background: "white",
+                        position: "absolute",
+                        top: "2px",
+                        left: settings.isUltra ? "20px" : "2px",
+                        transition: "left 0.2s ease",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Reply Mode (reply tab'da) */}
+              {activeTab === "reply" && (
+                <div className="mb-2 mt-1">
+                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Reply Modu</label>
+                  {renderPills(replyModes, settings.replyMode, "replyMode")}
+                </div>
+              )}
+            </>
+          ) : (
+            /* ══════ OTHER PLATFORMS / ARTICLE: V1 SETTINGS ══════ */
+            <>
+              {/* Persona */}
+              <div className="mb-2.5">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Karakter</label>
+                {renderPills(personas, settings.persona, "persona")}
+                {renderDesc(personas, settings.persona)}
+              </div>
+
+              {/* Tone */}
+              <div className="mb-2">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Ton</label>
+                {renderPills(tones, settings.tone, "tone")}
+                {renderDesc(tones, settings.tone)}
+              </div>
+
+              {/* Length */}
+              <div className="mb-2">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Uzunluk</label>
+                {renderPills(currentLengths, settings.length, "length")}
+              </div>
+
+              {/* Knowledge */}
+              <div className="mb-2">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Knowledge Mode</label>
+                {renderPills(knowledgeModes, settings.knowledge, "knowledge")}
+                {renderDesc(knowledgeModes, settings.knowledge)}
+              </div>
+
+              {/* Language */}
+              <div className="mb-2">
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Dil</label>
+                {renderPills(languages, settings.language, "language")}
+              </div>
+
+              {/* LinkedIn-specific */}
+              {activePlatform === "linkedin" && (
+                <>
+                  <div className="mb-2.5">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>LinkedIn Persona</label>
+                    {renderPills(linkedinPersonas, settings.linkedinPersona, "linkedinPersona")}
+                    {renderDesc(linkedinPersonas, settings.linkedinPersona)}
+                  </div>
+                  <div className="mb-2.5">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Format</label>
+                    {renderPills(linkedinFormats, settings.linkedinFormat, "linkedinFormat")}
+                    {renderDesc(linkedinFormats, settings.linkedinFormat)}
+                  </div>
+                </>
+              )}
+
+              {/* Blog-specific */}
+              {activePlatform === "blog" && (
+                <>
+                  <div className="mb-2.5">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Yazı Stili</label>
+                    {renderPills(blogStyles, settings.blogStyle, "blogStyle")}
+                    {renderDesc(blogStyles, settings.blogStyle)}
+                  </div>
+                  <div className="mb-2.5">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Framework</label>
+                    {renderPills(blogFrameworks, settings.blogFramework, "blogFramework")}
+                    {renderDesc(blogFrameworks, settings.blogFramework)}
+                  </div>
+                  <div className="mb-2.5">
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Seviye</label>
+                    {renderPills(blogLevels, settings.blogLevel, "blogLevel")}
+                    {renderDesc(blogLevels, settings.blogLevel)}
+                  </div>
+                </>
+              )}
+
+              {/* Reply Mode */}
+              {activeTab === "reply" && (
+                <div className="mb-2 mt-2">
+                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Reply Modu</label>
+                  {renderPills(replyModes, settings.replyMode, "replyMode")}
+                </div>
+              )}
+
+              {/* Article Style */}
+              {activeTab === "article" && (
+                <div className="mb-2 mt-2">
+                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Makale Stili</label>
+                  {renderPills(articleStyles, settings.articleStyle, "articleStyle")}
+                </div>
+              )}
             </>
           )}
 
-          {/* Blog-specific settings */}
-          {activePlatform === "blog" && (
-            <>
-              <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                  Yazı Stili
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {blogStyles.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => onSettingsChange({ ...settings, blogStyle: s.id })}
-                      style={{
-                        padding: "6px 14px", borderRadius: "999px",
-                        border: settings.blogStyle === s.id ? "none" : "1px solid var(--m-border)",
-                        background: settings.blogStyle === s.id ? "var(--m-pill-active-bg)" : "transparent",
-                        color: settings.blogStyle === s.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
-                      }}
-                    >{s.label}</button>
-                  ))}
-                </div>
-                {blogStyles.find((s) => s.id === settings.blogStyle)?.desc && (
-                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                    {blogStyles.find((s) => s.id === settings.blogStyle).desc}
-                  </p>
-                )}
-              </div>
-              <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                  Framework
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {blogFrameworks.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => onSettingsChange({ ...settings, blogFramework: f.id })}
-                      style={{
-                        padding: "6px 14px", borderRadius: "999px",
-                        border: settings.blogFramework === f.id ? "none" : "1px solid var(--m-border)",
-                        background: settings.blogFramework === f.id ? "var(--m-pill-active-bg)" : "transparent",
-                        color: settings.blogFramework === f.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
-                      }}
-                    >{f.label}</button>
-                  ))}
-                </div>
-                {blogFrameworks.find((f) => f.id === settings.blogFramework)?.desc && (
-                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                    {blogFrameworks.find((f) => f.id === settings.blogFramework).desc}
-                  </p>
-                )}
-              </div>
-              <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                  İçerik Seviyesi
-                </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {blogLevels.map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => onSettingsChange({ ...settings, blogLevel: l.id })}
-                      style={{
-                        padding: "6px 14px", borderRadius: "999px",
-                        border: settings.blogLevel === l.id ? "none" : "1px solid var(--m-border)",
-                        background: settings.blogLevel === l.id ? "var(--m-pill-active-bg)" : "transparent",
-                        color: settings.blogLevel === l.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                        fontSize: "13px", cursor: "pointer", transition: "all 0.2s ease",
-                      }}
-                    >{l.label}</button>
-                  ))}
-                </div>
-                {blogLevels.find((l) => l.id === settings.blogLevel)?.desc && (
-                  <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>
-                    {blogLevels.find((l) => l.id === settings.blogLevel).desc}
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Variant Count */}
+          {/* Variant Count (her platformda) */}
           <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-              Varyant Sayısı
-            </label>
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Varyant Sayısı</label>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <button
                 onClick={() => onSettingsChange({ ...settings, variants: Math.max(1, settings.variants - 1) })}
                 style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  border: "1px solid var(--m-border)",
-                  background: "transparent",
-                  color: "var(--m-text-soft)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
+                  width: "32px", height: "32px", borderRadius: "50%",
+                  border: "1px solid var(--m-border)", background: "transparent",
+                  color: "var(--m-text-soft)", display: "flex", alignItems: "center",
+                  justifyContent: "center", cursor: "pointer",
                 }}
               >
                 <Minus size={14} />
@@ -627,80 +696,16 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               <button
                 onClick={() => onSettingsChange({ ...settings, variants: Math.min(5, settings.variants + 1) })}
                 style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  border: "1px solid var(--m-border)",
-                  background: "transparent",
-                  color: "var(--m-text-soft)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
+                  width: "32px", height: "32px", borderRadius: "50%",
+                  border: "1px solid var(--m-border)", background: "transparent",
+                  color: "var(--m-text-soft)", display: "flex", alignItems: "center",
+                  justifyContent: "center", cursor: "pointer",
                 }}
               >
                 <Plus size={14} />
               </button>
             </div>
           </div>
-
-          {/* Reply-specific: Reply Mode */}
-          {activeTab === "reply" && (
-            <div className="mb-2 mt-2">
-              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                Reply Modu
-              </label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {replyModes.map((rm) => (
-                  <button
-                    key={rm.id}
-                    onClick={() => onSettingsChange({ ...settings, replyMode: rm.id })}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "999px",
-                      border: settings.replyMode === rm.id ? "none" : "1px solid var(--m-border)",
-                      background: settings.replyMode === rm.id ? "var(--m-pill-active-bg)" : "transparent",
-                      color: settings.replyMode === rm.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {rm.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Article-specific: Style */}
-          {activeTab === "article" && (
-            <div className="mb-2 mt-2">
-              <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>
-                Makale Stili
-              </label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                {articleStyles.map((as) => (
-                  <button
-                    key={as.id}
-                    onClick={() => onSettingsChange({ ...settings, articleStyle: as.id })}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "999px",
-                      border: settings.articleStyle === as.id ? "none" : "1px solid var(--m-border)",
-                      background: settings.articleStyle === as.id ? "var(--m-pill-active-bg)" : "transparent",
-                      color: settings.articleStyle === as.id ? "var(--m-pill-active-text)" : "var(--m-text-soft)",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {as.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </>
@@ -1159,7 +1164,19 @@ export default function XAIModule() {
     blogStyle: "informative",
     blogFramework: "answer_first",
     blogLevel: "standard",
+    // v2 X settings
+    etki: "patlassin",
+    karakter: "uzman",
+    yapi: "kurgulu",
+    uzunluk: "punch",
+    acilis: "otomatik",
+    bitis: "otomatik",
+    derinlik: "standart",
+    isUltra: false,
   });
+
+  // v2 gelişmiş ayarlar paneli açık/kapalı
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Initialize from URL params
   useEffect(() => {
@@ -1292,12 +1309,18 @@ export default function XAIModule() {
       status: "generating",
       startedAt: Date.now(),
       topic: input.slice(0, 60) + (input.length > 60 ? "..." : ""),
-      persona: settings.persona,
-      personaLabel: personas.find((p) => p.id === settings.persona)?.label,
-      toneLabel: tones.find((t) => t.id === settings.tone)?.label,
+      persona: activePlatform === "twitter" ? settings.karakter : settings.persona,
+      personaLabel: activePlatform === "twitter"
+        ? v2Karakterler.find((k) => k.id === settings.karakter)?.label
+        : personas.find((p) => p.id === settings.persona)?.label,
+      toneLabel: activePlatform === "twitter"
+        ? v2Yapilar.find((y) => y.id === settings.yapi)?.label
+        : tones.find((t) => t.id === settings.tone)?.label,
       lengthLabel: (activeTab === "reply" ? replyLengths : activeTab === "article" ? articleLengths : tweetLengths)
-        .find((l) => l.id === settings.length)?.label,
-      knowledgeLabel: settings.knowledge ? knowledgeModes.find((k) => k.id === settings.knowledge)?.label : null,
+        .find((l) => l.id === (activePlatform === "twitter" ? settings.uzunluk : settings.length))?.label,
+      knowledgeLabel: activePlatform === "twitter"
+        ? (settings.etki ? v2Etkiler.find((e) => e.id === settings.etki)?.label : null)
+        : (settings.knowledge ? knowledgeModes.find((k) => k.id === settings.knowledge)?.label : null),
       variantCount: settings.variants,
       variants: null,
     };
@@ -1356,48 +1379,61 @@ export default function XAIModule() {
         endpoint = `${API}${cfg.endpoint}`;
         body = cfg.body;
       } else if (type === "tweet") {
-        endpoint = `${API}/generate/tweet`;
+        // X platformu: v2 endpoint
+        endpoint = `${API}/v2/generate/tweet`;
         body = {
           topic: input,
-          mode: settings.mode,
-          length: activeTab === "thread" ? "thread" : settings.length,
-          variants: settings.variants,
-          persona: settings.persona,
-          tone: settings.tone,
-          knowledge: settings.knowledge,
+          etki: settings.etki,
+          karakter: settings.karakter,
+          yapi: settings.yapi,
+          uzunluk: activeTab === "thread" ? "thread" : settings.uzunluk,
+          acilis: settings.acilis,
+          bitis: settings.bitis,
+          derinlik: settings.derinlik,
           language: settings.language,
+          is_ultra: settings.isUltra,
+          variants: settings.variants,
           additional_context: null,
           style_profile_id: activeProfileId || null,
-          image_url: imageUrl || null,
           image_base64: imageBase64 || null,
         };
       } else if (type === "quote") {
-        endpoint = `${API}/generate/quote`;
+        // X platformu: v2 endpoint
+        endpoint = `${API}/v2/generate/quote`;
         body = {
           tweet_url: tweetUrl,
           tweet_content: tweetData?.text || "",
           direction: input || null,
-          length: settings.length,
-          variants: settings.variants,
-          persona: settings.persona,
-          tone: settings.tone,
-          knowledge: settings.knowledge,
+          etki: settings.etki,
+          karakter: settings.karakter,
+          yapi: settings.yapi,
+          uzunluk: settings.uzunluk,
+          acilis: settings.acilis,
+          bitis: settings.bitis,
+          derinlik: settings.derinlik,
           language: settings.language,
+          is_ultra: settings.isUltra,
+          variants: settings.variants,
           additional_context: null,
         };
       } else if (type === "reply") {
-        endpoint = `${API}/generate/reply`;
+        // X platformu: v2 endpoint
+        endpoint = `${API}/v2/generate/reply`;
         body = {
           tweet_url: tweetUrl,
           tweet_content: tweetData?.text || "",
           direction: input || null,
-          length: settings.length,
           reply_mode: settings.replyMode,
-          variants: settings.variants,
-          persona: settings.persona,
-          tone: settings.tone,
-          knowledge: settings.knowledge,
+          etki: settings.etki,
+          karakter: settings.karakter,
+          yapi: settings.yapi,
+          uzunluk: settings.uzunluk,
+          acilis: settings.acilis,
+          bitis: settings.bitis,
+          derinlik: settings.derinlik,
           language: settings.language,
+          is_ultra: settings.isUltra,
+          variants: settings.variants,
           additional_context: null,
         };
       } else if (type === "article") {
@@ -1456,6 +1492,8 @@ export default function XAIModule() {
     ? `${linkedinPersonas.find((p) => p.id === settings.linkedinPersona)?.label} · ${linkedinFormats.find((f) => f.id === settings.linkedinFormat)?.label} · ${settings.variants}x`
     : activePlatform === "blog"
     ? `${blogStyles.find((s) => s.id === settings.blogStyle)?.label} · ${blogFrameworks.find((f) => f.id === settings.blogFramework)?.label} · ${blogLevels.find((l) => l.id === settings.blogLevel)?.label}`
+    : activePlatform === "twitter"
+    ? `${v2Etkiler.find((e) => e.id === settings.etki)?.label || "Patlasın"} · ${v2Karakterler.find((k) => k.id === settings.karakter)?.label || "Uzman"} · ${v2Yapilar.find((y) => y.id === settings.yapi)?.label || "Doğal"} · ${settings.variants}x${settings.isUltra ? " · Ultra" : ""}`
     : `${personas.find((p) => p.id === settings.persona)?.label} · ${tones.find((t) => t.id === settings.tone)?.label} · ${settings.variants}x`;
 
   return (
