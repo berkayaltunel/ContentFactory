@@ -204,18 +204,25 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
     }
   };
 
+  const constraints = profile.constraints || {};
+  const algoScore = profile.algo_insights?.avg_score ?? profile.style_fingerprint?.algo_score_avg ?? null;
+  const tweetCount = profile.tweet_count ?? profile.style_summary?.tweet_count ?? 0;
+
   return (
     <Card className="group relative overflow-hidden border-border bg-gradient-to-br from-purple-500/10 via-card to-pink-500/10 hover:border-purple-500/30 transition-all duration-500">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="relative h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
               <Dna className="h-6 w-6 text-white" />
+              {profile.profile_version >= 2 && (
+                <span className="absolute -top-1.5 -left-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-purple-500 text-white leading-none">v2</span>
+              )}
             </div>
             <div>
               <h3 className="font-semibold text-lg">{profile.name}</h3>
               <p className="text-sm text-muted-foreground">
-                {profile.source_ids?.length || 0} kaynak · {profile.style_summary?.tweet_count || 0} tweet
+                {profile.source_ids?.length || 0} kaynak · {tweetCount} tweet
               </p>
             </div>
           </div>
@@ -241,17 +248,40 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
           </div>
         </div>
 
-        {/* Style Summary */}
-        {profile.style_summary && (
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="p-3 rounded-lg bg-secondary/50">
-              <p className="text-xs text-muted-foreground">Ort. Uzunluk</p>
-              <p className="font-semibold">{profile.style_summary.avg_length} karakter</p>
-            </div>
-            <div className="p-3 rounded-lg bg-secondary/50">
-              <p className="text-xs text-muted-foreground">Ort. Beğeni</p>
-              <p className="font-semibold">{profile.style_summary.avg_likes?.toFixed(0) || 0}</p>
-            </div>
+        {/* Style Summary - 3 columns */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="p-3 rounded-lg bg-secondary/50">
+            <p className="text-xs text-muted-foreground">Tweet</p>
+            <p className="font-semibold">{tweetCount}</p>
+          </div>
+          <div className="p-3 rounded-lg bg-secondary/50">
+            <p className="text-xs text-muted-foreground">Ort. Uzunluk</p>
+            <p className="font-semibold">{profile.style_summary?.avg_length || 0} kr</p>
+          </div>
+          <div className="p-3 rounded-lg bg-secondary/50">
+            <p className="text-xs text-muted-foreground">Algo Skoru</p>
+            <p className="font-semibold">{algoScore != null ? Math.round(algoScore) : "—"}</p>
+          </div>
+        </div>
+
+        {/* Constraint Badges */}
+        {Object.keys(constraints).length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {constraints.emoji_policy === "BANNED" && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/40 text-red-400">emoji yok</Badge>
+            )}
+            {constraints.hashtag_policy === "BANNED" && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/40 text-red-400">hashtag yok</Badge>
+            )}
+            {constraints.link_policy === "BANNED" && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-orange-500/40 text-orange-400">link yok</Badge>
+            )}
+            {constraints.line_break_policy === "BANNED" && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-orange-500/40 text-orange-400">tek satır</Badge>
+            )}
+            {constraints.line_break_policy === "REQUIRED" && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-500/40 text-blue-400">çok satır</Badge>
+            )}
           </div>
         )}
 
@@ -464,6 +494,135 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             </div>
           )}
 
+          {/* 🚫 Yasaklı Kalıplar */}
+          {fp.banned_patterns?.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                🚫 Asla Yapmaz
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {fp.banned_patterns.map((pattern, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border border-red-500/30 bg-red-500/5 text-sm text-red-300">
+                    {pattern}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 🔥 Viral Pattern Analizi */}
+          {profileData.viral_patterns && (
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                🔥 Ne Zaman Viral Oluyor?
+              </h4>
+              {profileData.viral_patterns.viral_avg_length && profileData.viral_patterns.flop_avg_length && (
+                <div className="flex gap-3 mb-2">
+                  <div className="flex-1 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
+                    <p className="text-lg font-bold text-green-400">{Math.round(profileData.viral_patterns.viral_avg_length)}</p>
+                    <p className="text-xs text-muted-foreground">Viral ort. uzunluk</p>
+                  </div>
+                  <div className="flex-1 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
+                    <p className="text-lg font-bold text-red-400">{Math.round(profileData.viral_patterns.flop_avg_length)}</p>
+                    <p className="text-xs text-muted-foreground">Flop ort. uzunluk</p>
+                  </div>
+                </div>
+              )}
+              {profileData.viral_patterns.insights?.length > 0 && (
+                <div className="grid grid-cols-1 gap-2">
+                  {profileData.viral_patterns.insights.map((insight, idx) => (
+                    <div key={idx} className="p-3 rounded-lg border border-green-500/30 bg-green-500/5 text-sm text-green-300">
+                      {insight}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Açılış & Kapanış Stratejisi */}
+          {(fp.opening_psychology || fp.closing_strategy) && (
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Target className="h-4 w-4 text-sky-400" />
+                Açılış & Kapanış
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                {fp.opening_psychology && (
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Nasıl Açıyor?</p>
+                    <p className="text-sm font-medium mb-3">{fp.opening_psychology.dominant_pattern || "—"}</p>
+                    {fp.opening_psychology.distribution && (
+                      <div className="space-y-1.5">
+                        {Object.entries(fp.opening_psychology.distribution).map(([key, val]) => (
+                          <div key={key} className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground w-20 truncate">{key}</span>
+                            <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                              <div className="h-full bg-sky-400 rounded-full" style={{ width: `${val}%` }} />
+                            </div>
+                            <span className="text-[11px] text-muted-foreground w-8 text-right">{val}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {fp.closing_strategy && (
+                  <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Nasıl Kapıyor?</p>
+                    <p className="text-sm font-medium mb-3">{fp.closing_strategy.dominant || "—"}</p>
+                    {fp.closing_strategy.distribution && (
+                      <div className="space-y-1.5">
+                        {Object.entries(fp.closing_strategy.distribution).map(([key, val]) => (
+                          <div key={key} className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground w-20 truncate">{key}</span>
+                            <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                              <div className="h-full bg-pink-400 rounded-full" style={{ width: `${val}%` }} />
+                            </div>
+                            <span className="text-[11px] text-muted-foreground w-8 text-right">{val}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ⚙️ Yazım Kuralları */}
+          {profileData.constraints && Object.keys(profileData.constraints).length > 0 && (() => {
+            const c = profileData.constraints;
+            const rules = [];
+            if (c.emoji_policy === "BANNED") rules.push({ label: "Emoji", status: "banned" });
+            else if (c.emoji_policy === "REQUIRED") rules.push({ label: "Emoji", status: "required" });
+            if (c.hashtag_policy === "BANNED") rules.push({ label: "Hashtag", status: "banned" });
+            else if (c.hashtag_policy === "REQUIRED") rules.push({ label: "Hashtag", status: "required" });
+            if (c.link_policy === "BANNED") rules.push({ label: "Link", status: "banned" });
+            if (c.line_break_policy === "BANNED") rules.push({ label: "Tek satır yazıyor", status: "required" });
+            else if (c.line_break_policy === "REQUIRED") rules.push({ label: "Çok satırlı yazıyor", status: "required" });
+            if (c.min_length) rules.push({ label: `En az ${c.min_length} karakter`, status: "required" });
+            if (c.max_length) rules.push({ label: `En fazla ${c.max_length} karakter`, status: "required" });
+            if (rules.length === 0) return null;
+            return (
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">⚙️ Yazım Kuralları</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {rules.map((r, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 text-sm">
+                      {r.status === "banned" ? (
+                        <span className="text-red-400 text-xs">✕</span>
+                      ) : (
+                        <span className="text-green-400 text-xs">✓</span>
+                      )}
+                      <span className="text-muted-foreground">{r.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Style Prompt */}
           {stylePrompt && (
             <div className="space-y-3">
@@ -563,10 +722,21 @@ function AddSourceDialog({ open, onOpenChange, onAdd }) {
           {loading && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Tweet'ler çekiliyor...</span>
+                <span className="text-muted-foreground">
+                  {progress < 25 ? "Tweet'ler çekiliyor..." :
+                   progress < 50 ? "Mikro analiz yapılıyor..." :
+                   progress < 75 ? "Embedding hesaplanıyor..." :
+                   "Skor hesaplanıyor..."}
+                </span>
                 <span className="text-muted-foreground">{progress}%</span>
               </div>
               <Progress value={progress} className="h-2" />
+              <div className="flex justify-between text-[10px] text-muted-foreground/50 px-0.5">
+                <span className={progress >= 0 ? "text-muted-foreground" : ""}>Tweet</span>
+                <span className={progress >= 25 ? "text-muted-foreground" : ""}>Analiz</span>
+                <span className={progress >= 50 ? "text-muted-foreground" : ""}>Embedding</span>
+                <span className={progress >= 75 ? "text-muted-foreground" : ""}>Skor</span>
+              </div>
             </div>
           )}
         </div>

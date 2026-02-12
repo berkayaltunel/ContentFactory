@@ -72,6 +72,19 @@ class StyleAnalyzer:
             "vocabulary": self._vocabulary_analysis(clean_contents),
             "emoji_strategy": self._emoji_strategy(clean_contents),
             
+            # Sprint 2: Mikro-Dilbilim v2
+            "opening_psychology": self._opening_psychology(clean_contents),
+            "closing_strategy": self._closing_strategy(clean_contents),
+            "thought_structure": self._thought_structure(clean_contents),
+            "emotional_intensity": self._emotional_intensity(clean_contents),
+            "reader_relationship": self._reader_relationship(clean_contents),
+            "repetition_patterns": self._repetition_patterns(clean_contents),
+            "format_preferences": self._format_preferences(clean_contents),
+            "interaction_style": self._interaction_style(
+                [t for t in tweets if t.get('is_reply')],
+                [t for t in tweets if t.get('is_quote')]
+            ),
+            
             # Eski uyumluluk
             "emoji_usage": self._emoji_count_avg(clean_contents),
             "question_ratio": self._ratio_with_char(clean_contents, '?'),
@@ -397,6 +410,324 @@ class StyleAnalyzer:
         }
     
     # ═══════════════════════════════════════════
+    # AÇILIŞ PSİKOLOJİSİ
+    # ═══════════════════════════════════════════
+    def _opening_psychology(self, contents: List[str]) -> Dict:
+        """İlk cümlenin psikolojik tetikleyicisi"""
+        categories = Counter()
+        
+        for c in contents:
+            first_sent = re.split(r'[.!?\n]', c.strip())[0].strip()
+            if not first_sent:
+                continue
+            
+            fl = first_sent.lower()
+            
+            if fl.endswith('?') or any(fl.startswith(q) for q in ('ne ', 'nasıl', 'neden', 'niye', 'kim ', 'hangi', 'what', 'how', 'why', 'who', 'which', 'do you', 'have you', 'is it')):
+                categories['question'] += 1
+            elif any(w in fl for w in ('bir gün', 'geçen', 'dün', 'bugün', 'hatırlıyorum', 'çocukken', 'yesterday', 'once', 'i remember', 'when i')):
+                categories['story'] += 1
+            elif re.search(r'\d+[%xX]|\d{2,}', fl):
+                categories['data'] += 1
+            elif any(w in fl for w in ('sen ', 'siz ', 'sana ', 'size ', 'you ', 'your ')):
+                categories['direct_address'] += 1
+            elif any(w in fl for w in ('ama ', 'oysa', 'halbuki', 'aksine', 'but ', 'however', 'yet ')):
+                categories['contrast'] += 1
+            elif any(w in fl for w in ('merak', 'acaba', 'hiç düşündün', 'peki', 'ya ', 'wonder', 'imagine', 'what if')):
+                categories['mystery'] += 1
+            elif len(first_sent.split()) <= 6 and (first_sent[0].isupper() or first_sent.endswith('.')):
+                # Short bold opening
+                categories['bold_claim'] += 1
+            else:
+                categories['provocation'] += 1
+        
+        n = len(contents)
+        distribution = {k: round(v / n * 100, 1) for k, v in categories.items()}
+        dominant = categories.most_common(1)[0][0] if categories else 'unknown'
+        
+        return {
+            "distribution": distribution,
+            "dominant_opening": dominant,
+            "top_3": [k for k, _ in categories.most_common(3)]
+        }
+    
+    # ═══════════════════════════════════════════
+    # KAPANIŞ STRATEJİSİ
+    # ═══════════════════════════════════════════
+    def _closing_strategy(self, contents: List[str]) -> Dict:
+        """Tweet nasıl bitiyor"""
+        categories = Counter()
+        
+        for c in contents:
+            stripped = c.rstrip()
+            if not stripped:
+                continue
+            
+            # Son cümleyi al
+            sentences = [s.strip() for s in re.split(r'[\n]', stripped) if s.strip()]
+            last_part = sentences[-1] if sentences else stripped
+            last_lower = last_part.lower()
+            
+            if last_part.rstrip().endswith('?'):
+                categories['question_cta'] += 1
+            elif any(w in last_lower for w in ('...', '…')):
+                categories['incomplete'] += 1
+            elif EMOJI_RE.search(last_part) and EMOJI_RE.search(last_part).end() >= len(last_part.rstrip()) - 2:
+                categories['emoji_close'] += 1
+            elif any(w in last_lower for w in ('yap', 'dene', 'bak', 'oku', 'takip', 'follow', 'check', 'try', 'join', 'subscribe', 'link')):
+                categories['call_to_action'] += 1
+            elif last_part.rstrip()[-1:] in ('.', '!'):
+                categories['statement'] += 1
+            else:
+                categories['no_close'] += 1
+        
+        n = len(contents)
+        distribution = {k: round(v / n * 100, 1) for k, v in categories.items()}
+        dominant = categories.most_common(1)[0][0] if categories else 'statement'
+        
+        return {
+            "distribution": distribution,
+            "dominant_closing": dominant,
+        }
+    
+    # ═══════════════════════════════════════════
+    # DÜŞÜNCE YAPISI
+    # ═══════════════════════════════════════════
+    def _thought_structure(self, contents: List[str]) -> Dict:
+        """Bilgi organizasyonu"""
+        categories = Counter()
+        
+        for c in contents:
+            lines = [l.strip() for l in c.split('\n') if l.strip()]
+            sentences = [s.strip() for s in re.split(r'[.!?\n]+', c) if len(s.strip()) > 3]
+            
+            if re.search(r'^[\-•·▪→]|^\d+[.)\-]', c, re.MULTILINE):
+                categories['list_format'] += 1
+            elif len(sentences) <= 1:
+                categories['single_thought'] += 1
+            elif any(w in c.lower()[:50] for w in ('ama', 'oysa', 'aksine', 'tam tersi', 'but', 'however', 'on the contrary')):
+                categories['contrast'] += 1
+            elif len(sentences) >= 3 and len(sentences[-1].split()) > len(sentences[0].split()):
+                categories['buildup'] += 1
+            elif len(sentences) >= 2 and len(sentences[0].split()) >= len(sentences[-1].split()):
+                categories['conclusion_first'] += 1
+            else:
+                categories['multi_thought'] += 1
+        
+        n = len(contents)
+        distribution = {k: round(v / n * 100, 1) for k, v in categories.items()}
+        dominant = categories.most_common(1)[0][0] if categories else 'single_thought'
+        
+        return {
+            "distribution": distribution,
+            "dominant_structure": dominant,
+        }
+    
+    # ═══════════════════════════════════════════
+    # DUYGUSAL YOĞUNLUK
+    # ═══════════════════════════════════════════
+    def _emotional_intensity(self, contents: List[str]) -> Dict:
+        """Duygusal yoğunluk 0-100 skoru + dominant emotion"""
+        emotion_signals = {
+            'excitement': re.compile(r'[!]{1,}|🔥|💪|🚀|harika|müthiş|amazing|incredible|awesome|wow', re.I),
+            'anger': re.compile(r'saçmalık|rezalet|skandal|absurd|ridiculous|pathetic|utanç|yazık', re.I),
+            'curiosity': re.compile(r'\?|merak|acaba|neden|nasıl|why|how|wonder|interesting', re.I),
+            'confidence': re.compile(r'kesinlikle|şüphesiz|absolutely|definitely|clearly|obviously|%100|asla', re.I),
+            'humor': re.compile(r'😂|🤣|😅|haha|lol|:D|ajsdk|skdj|kdjs', re.I),
+            'empathy': re.compile(r'anlıyorum|hissediyorum|understand|feel|❤|🥺|zor|difficult', re.I),
+        }
+        
+        emotion_scores = Counter()
+        intensity_scores = []
+        
+        for c in contents:
+            tweet_intensity = 0
+            excl = c.count('!')
+            caps_words = len(re.findall(r'\b[A-ZĞÜŞİÖÇ]{3,}\b', c))
+            emoji_count = len(EMOJI_RE.findall(c))
+            
+            tweet_intensity += min(excl * 8, 30)
+            tweet_intensity += min(caps_words * 10, 25)
+            tweet_intensity += min(emoji_count * 5, 20)
+            
+            for emotion, pattern in emotion_signals.items():
+                matches = len(pattern.findall(c))
+                if matches:
+                    emotion_scores[emotion] += matches
+                    tweet_intensity += min(matches * 5, 15)
+            
+            intensity_scores.append(min(tweet_intensity, 100))
+        
+        avg_intensity = round(sum(intensity_scores) / len(intensity_scores), 1) if intensity_scores else 0
+        dominant = emotion_scores.most_common(1)[0][0] if emotion_scores else 'neutral'
+        
+        return {
+            "score": avg_intensity,
+            "dominant_emotion": dominant,
+            "emotion_distribution": {k: v for k, v in emotion_scores.most_common(5)},
+            "level": "cold" if avg_intensity < 15 else "calm" if avg_intensity < 30 else "warm" if avg_intensity < 50 else "intense" if avg_intensity < 75 else "explosive"
+        }
+    
+    # ═══════════════════════════════════════════
+    # OKUYUCU İLİŞKİSİ
+    # ═══════════════════════════════════════════
+    def _reader_relationship(self, contents: List[str]) -> Dict:
+        """Okuyucu ile kurulan ilişki tarzı"""
+        you_count = 0  # sen/siz
+        we_count = 0   # biz
+        i_count = 0    # ben
+        authority_signals = 0
+        peer_signals = 0
+        
+        for c in contents:
+            cl = c.lower()
+            words = cl.split()
+            
+            you_count += sum(1 for w in words if w in ('sen', 'siz', 'seni', 'sizi', 'sana', 'size', 'senin', 'sizin', 'you', 'your', 'yours'))
+            we_count += sum(1 for w in words if w in ('biz', 'bize', 'bizim', 'bizden', 'we', 'our', 'us'))
+            i_count += sum(1 for w in words if w in ('ben', 'benim', 'bana', 'beni', 'benden', 'i', 'my', 'me', 'mine'))
+            
+            # Authority: imperative, teaching, certainty
+            if re.search(r'\b(dikkat|unutma|sakın|asla|kesinlikle|şunu|bunu yap|listen|never|always|must|remember)\b', cl):
+                authority_signals += 1
+            # Peer: hedging, questions, inclusive
+            if re.search(r'\b(belki|sanırım|galiba|bence|ne dersin|maybe|perhaps|i think|what do you think|hepimiz)\b', cl):
+                peer_signals += 1
+        
+        n = len(contents)
+        total_rel = authority_signals + peer_signals or 1
+        
+        return {
+            "uses_you_per_tweet": round(you_count / n, 2),
+            "uses_we_per_tweet": round(we_count / n, 2),
+            "uses_i_per_tweet": round(i_count / n, 2),
+            "authority_pct": round(authority_signals / total_rel * 100, 1),
+            "peer_pct": round(peer_signals / total_rel * 100, 1),
+            "dominant_voice": "authority" if authority_signals > peer_signals * 1.5 else "peer" if peer_signals > authority_signals * 1.5 else "balanced",
+            "directness": "high" if you_count / n > 0.5 else "medium" if you_count / n > 0.15 else "low"
+        }
+    
+    # ═══════════════════════════════════════════
+    # TEKRAR KALIPLARI
+    # ═══════════════════════════════════════════
+    def _repetition_patterns(self, contents: List[str]) -> Dict:
+        """İmza açılışlar, kapanışlar, dolgu kelimeleri, catchphrase'ler"""
+        openings = Counter()
+        closings = Counter()
+        all_bigrams = Counter()
+        
+        filler_words = {'yani', 'işte', 'aslında', 'hani', 'şey', 'mesela', 'basically', 
+                       'literally', 'actually', 'like', 'just', 'really', 'honestly'}
+        filler_counts = Counter()
+        
+        for c in contents:
+            words = c.strip().split()
+            if not words:
+                continue
+            
+            # First 3 words as opening signature
+            opening = ' '.join(words[:min(3, len(words))]).lower()
+            opening = re.sub(r'[^\w\s]', '', opening).strip()
+            if opening:
+                openings[opening] += 1
+            
+            # Last 3 words as closing
+            closing = ' '.join(words[-min(3, len(words)):]).lower()
+            closing = re.sub(r'[^\w\s]', '', closing).strip()
+            if closing:
+                closings[closing] += 1
+            
+            # Fillers
+            for w in words:
+                wl = re.sub(r'[^\w]', '', w.lower())
+                if wl in filler_words:
+                    filler_counts[wl] += 1
+            
+            # Bigrams for catchphrases
+            clean_words = [re.sub(r'[^\w]', '', w.lower()) for w in words if len(w) > 1]
+            for i in range(len(clean_words) - 1):
+                if clean_words[i] not in TR_STOP or clean_words[i+1] not in TR_STOP:
+                    bigram = f"{clean_words[i]} {clean_words[i+1]}"
+                    all_bigrams[bigram] += 1
+        
+        n = len(contents)
+        # Signature = appears in >5% of tweets
+        threshold = max(3, n * 0.05)
+        
+        sig_openings = [k for k, v in openings.most_common(10) if v >= threshold]
+        sig_closings = [k for k, v in closings.most_common(10) if v >= threshold]
+        catchphrases = [k for k, v in all_bigrams.most_common(20) if v >= threshold and k not in TR_STOP]
+        
+        return {
+            "signature_openings": sig_openings[:5],
+            "signature_closings": sig_closings[:5],
+            "filler_words": {k: v for k, v in filler_counts.most_common(5) if v >= 3},
+            "catchphrases": catchphrases[:7],
+        }
+    
+    # ═══════════════════════════════════════════
+    # FORMAT TERCİHLERİ
+    # ═══════════════════════════════════════════
+    def _format_preferences(self, contents: List[str]) -> Dict:
+        """Görsel format tercihleri"""
+        bullet_count = 0
+        numbered_count = 0
+        arrow_count = 0
+        parenthetical_count = 0
+        quote_count = 0
+        thread_signal = 0
+        
+        for c in contents:
+            if re.search(r'^[\-•·▪]', c, re.MULTILINE):
+                bullet_count += 1
+            if re.search(r'^\d+[.)\-]', c, re.MULTILINE):
+                numbered_count += 1
+            if '→' in c or '->' in c or '⟶' in c or '▸' in c or '►' in c:
+                arrow_count += 1
+            if '(' in c and ')' in c:
+                parenthetical_count += 1
+            if '"' in c or '"' in c or '«' in c:
+                quote_count += 1
+            if re.search(r'🧵|\d+/\d+|thread|konu başlığı', c, re.I):
+                thread_signal += 1
+        
+        n = len(contents)
+        return {
+            "bullet_points_pct": round(bullet_count / n * 100, 1),
+            "numbered_lists_pct": round(numbered_count / n * 100, 1),
+            "arrows_pct": round(arrow_count / n * 100, 1),
+            "parenthetical_pct": round(parenthetical_count / n * 100, 1),
+            "quotes_pct": round(quote_count / n * 100, 1),
+            "thread_signals_pct": round(thread_signal / n * 100, 1),
+        }
+    
+    # ═══════════════════════════════════════════
+    # ETKİLEŞİM STİLİ
+    # ═══════════════════════════════════════════
+    def _interaction_style(self, reply_tweets: List[Dict], quote_tweets: List[Dict]) -> Dict:
+        """Reply ve quote tweet stilindeki farklar"""
+        result = {"has_reply_data": bool(reply_tweets), "has_quote_data": bool(quote_tweets)}
+        
+        if reply_tweets:
+            reply_contents = [t.get('content', '') for t in reply_tweets if t.get('content')]
+            if reply_contents:
+                reply_lengths = [len(c) for c in reply_contents]
+                result["reply_avg_length"] = round(sum(reply_lengths) / len(reply_lengths))
+                result["reply_question_pct"] = round(sum(1 for c in reply_contents if '?' in c) / len(reply_contents) * 100, 1)
+                result["reply_emoji_pct"] = round(sum(1 for c in reply_contents if EMOJI_RE.search(c)) / len(reply_contents) * 100, 1)
+                result["reply_count"] = len(reply_contents)
+        
+        if quote_tweets:
+            quote_contents = [t.get('content', '') for t in quote_tweets if t.get('content')]
+            if quote_contents:
+                quote_lengths = [len(c) for c in quote_contents]
+                result["quote_avg_length"] = round(sum(quote_lengths) / len(quote_lengths))
+                result["quote_question_pct"] = round(sum(1 for c in quote_contents if '?' in c) / len(quote_contents) * 100, 1)
+                result["quote_count"] = len(quote_contents)
+        
+        return result
+    
+    # ═══════════════════════════════════════════
     # YARDIMCI METOTLAR
     # ═══════════════════════════════════════════
     def _avg_length(self, contents):
@@ -463,94 +794,258 @@ class StyleAnalyzer:
         return '\n'.join(parts)
     
     def _build_micro_rules(self, fp: Dict) -> str:
-        """Fingerprint verilerinden somut mikro kurallar oluştur"""
+        """Fingerprint verilerinden SOMUT ve KESİN mikro kurallar oluştur"""
         rules = []
+        banned = []
         
-        # Noktalama
+        # ── Noktalama ──
         punct = fp.get('punctuation_dna', {})
         if punct:
             comma = punct.get('comma_per_tweet', 0)
-            if comma < 1:
-                rules.append(f"- Virgül az kullan (tweet başına ~{comma})")
+            if comma < 0.5:
+                rules.append("- Virgül KULLANMA. Kısa cümleler kur. Nokta ile bitir.")
+                banned.append("Virgülle uzayan cümleler")
+            elif comma < 1.5:
+                rules.append(f"- Virgül nadir kullan (tweet başına max 1)")
             elif comma > 3:
-                rules.append(f"- Virgülü bol kullan (tweet başına ~{comma})")
+                rules.append(f"- Virgülü bol kullan, uzun akıcı cümleler kur (tweet başına ~{comma:.0f} virgül)")
             
             ellipsis = punct.get('ellipsis_per_tweet', 0)
             if ellipsis > 0.3:
-                rules.append(f"- Üç nokta (...) kullan (tweet başına ~{ellipsis:.1f})")
+                rules.append(f"- Üç nokta (...) kullan, düşünce askıda bırak")
+            elif ellipsis < 0.05:
+                banned.append("Üç nokta (...)")
+            
+            excl = punct.get('exclamation_per_tweet', 0)
+            if excl < 0.1:
+                rules.append("- Ünlem işareti KULLANMA. Sakin ve düz yaz.")
+                banned.append("Ünlem işareti (!)")
+            elif excl > 1.5:
+                rules.append("- Ünlem kullan! Enerjiyi hissettir!")
             
             no_punct = punct.get('tweets_ending_no_punct', 0)
-            if no_punct > 40:
-                rules.append(f"- Tweet'lerin %{no_punct:.0f}'ı noktalama işareti olmadan bitiyor, sen de öyle yap")
+            if no_punct > 50:
+                rules.append(f"- Tweet'i noktalama işareti OLMADAN bitir. Son kelimeden sonra dur.")
+            elif no_punct < 10:
+                period_end = punct.get('tweets_ending_with_period', 0)
+                if period_end > 50:
+                    rules.append("- Her tweet'i nokta ile bitir.")
         
-        # Büyük/küçük harf
+        # ── Büyük/küçük harf ──
         cap = fp.get('capitalization', {})
         if cap:
             lower_start = cap.get('starts_lowercase_pct', 0)
-            if lower_start > 40:
-                rules.append(f"- Küçük harfle başla (tweet'lerin %{lower_start:.0f}'ı küçük harfle)")
+            if lower_start > 60:
+                rules.append("- Tweet'e küçük harfle başla. Büyük harf KULLANMA başta.")
+                banned.append("Cümle başında büyük harf")
+            elif lower_start < 15:
+                rules.append("- Her cümleye büyük harfle başla.")
+            
             caps_emphasis = cap.get('uses_all_caps_emphasis_pct', 0)
-            if caps_emphasis > 15:
-                rules.append(f"- BÜYÜK HARF ile vurgulama yap (%{caps_emphasis:.0f} tweet'te var)")
+            if caps_emphasis > 20:
+                rules.append("- Vurgu için BÜYÜK HARF kullan. Önemli kelimeyi CAPS yap.")
+            elif caps_emphasis < 3:
+                banned.append("BÜYÜK HARF vurgulama")
         
-        # Cümle yapısı
+        # ── Cümle yapısı ──
         sent = fp.get('sentence_architecture', {})
         if sent:
             avg_w = sent.get('avg_words_per_sentence', 0)
-            if avg_w > 0:
-                rules.append(f"- Cümle başına ortalama {avg_w:.0f} kelime kullan")
             short_pct = sent.get('short_sentence_pct', 0)
-            if short_pct > 40:
-                rules.append(f"- Kısa cümleler tercih et (%{short_pct:.0f} cümle 5 kelime altı)")
+            if avg_w > 0 and avg_w < 6:
+                rules.append(f"- KISA cümleler yaz. Max {int(avg_w)+2} kelime. Fazlasını bölüp iki cümle yap.")
+            elif avg_w > 12:
+                rules.append(f"- Uzun, akıcı cümleler kur. Cümle başına ~{avg_w:.0f} kelime.")
+            
+            if short_pct > 50:
+                rules.append("- Cümlelerin çoğu 5 kelime veya altında olsun. Telegram tarzı kısa yaz.")
+            
             inverted = sent.get('inverted_sentence_pct', 0)
-            if inverted > 30:
-                rules.append(f"- Devrik cümle kullan (%{inverted:.0f} cümle devrik)")
+            if inverted > 40:
+                rules.append("- Devrik cümle kur. Fiili sona koyma, cümle ortasına al.")
+            elif inverted < 10:
+                rules.append("- Düz cümle kur. Fiil sonda olsun.")
+            
+            spt = sent.get('sentences_per_tweet', 0)
+            if spt and spt < 2:
+                rules.append("- Tweet başına 1-2 cümle yeter. Daha fazla yazma.")
+            elif spt and spt > 4:
+                rules.append(f"- Tweet başına {spt:.0f} cümle yaz, detaylı anlat.")
         
-        # Dil karışımı
+        # ── Dil karışımı ──
         lang = fp.get('language_mix', {})
         if lang:
-            en_pct = lang.get('english_word_pct', 0)
             style = lang.get('language_style', 'mixed')
+            top_en = lang.get('top_english_words', [])
             if style == 'pure_turkish':
-                rules.append("- Saf Türkçe yaz, İngilizce kelime kullanma")
+                rules.append("- Saf Türkçe yaz. İngilizce kelime KULLANMA.")
+                banned.append("İngilizce kelimeler")
             elif style == 'mostly_turkish':
-                rules.append(f"- Ağırlıklı Türkçe yaz, İngilizce sadece teknik terimlerde (%{en_pct:.0f})")
+                if top_en:
+                    rules.append(f"- Türkçe yaz. Sadece şu İngilizce kelimeleri kullanabilirsin: {', '.join(top_en[:5])}")
             elif style == 'mixed':
-                rules.append(f"- Türkçe-İngilizce karışık yaz (%{en_pct:.0f} İngilizce)")
+                rules.append(f"- Türkçe-İngilizce karıştır. Sık kullandıkların: {', '.join(top_en[:5])}" if top_en else "- Türkçe-İngilizce karıştır")
             elif style == 'mostly_english':
-                rules.append(f"- Ağırlıklı İngilizce yaz (%{en_pct:.0f} İngilizce)")
+                rules.append("- Ağırlıklı İngilizce yaz.")
         
-        # Satır yapısı
+        # ── Satır yapısı ──
         line = fp.get('line_structure', {})
         if line:
             multiline = line.get('multiline_pct', 0)
-            if multiline > 50:
+            if multiline > 60:
                 avg_nl = line.get('newlines_per_tweet', 0)
-                rules.append(f"- Alt satırla böl (tweet başına ~{avg_nl:.1f} satır kırılması)")
+                rules.append(f"- Her tweet'te alt satır kullan. Ortalama {avg_nl:.0f} satır kırılması yap.")
             elif multiline < 15:
-                rules.append("- Tek blok halinde yaz, alt satır kullanma")
+                rules.append("- Alt satır KULLANMA. Tek paragraf halinde yaz.")
+                banned.append("Satır kırılması / alt satır")
         
-        # Emoji
+        # ── Emoji ──
         emoji = fp.get('emoji_strategy', {})
         if emoji:
             style = emoji.get('style', 'no_emoji')
             if style == 'no_emoji':
-                rules.append("- Emoji KULLANMA")
+                rules.append("- Emoji KULLANMA. Asla. Sıfır emoji.")
+                banned.append("Her türlü emoji")
             elif style == 'light':
                 top = emoji.get('top_emojis', [])
-                rules.append(f"- Emoji az kullan, tercih: {' '.join(top[:3])}" if top else "- Emoji az kullan")
+                rules.append(f"- Max 1 emoji kullan, sadece şunlardan: {' '.join(top[:3])}" if top else "- Max 1 emoji, az kullan")
             elif style in ('moderate', 'heavy'):
                 top = emoji.get('top_emojis', [])
                 pos = emoji.get('position', {})
-                pos_hint = "başta" if pos.get('start_pct', 0) > 40 else "sonda" if pos.get('end_pct', 0) > 40 else "arada"
-                rules.append(f"- Emoji kullan ({pos_hint}), tercih: {' '.join(top[:4])}" if top else "- Emoji kullan")
+                if pos.get('end_pct', 0) > 50:
+                    rules.append(f"- Emoji tweet SONUNDA kullan: {' '.join(top[:4])}" if top else "- Emoji sonda kullan")
+                elif pos.get('start_pct', 0) > 40:
+                    rules.append(f"- Emoji tweet BAŞINDA kullan: {' '.join(top[:4])}" if top else "- Emoji başta kullan")
+                else:
+                    rules.append(f"- Emoji cümle arasında kullan: {' '.join(top[:4])}" if top else "- Emoji arada kullan")
         
-        # Bağlaç
+        # ── Bağlaç ──
         conj = fp.get('conjunction_profile', {})
-        if conj and conj.get('prefers_short_sentences'):
-            rules.append("- Bağlaç yerine kısa cümleler tercih et")
+        if conj:
+            if conj.get('prefers_short_sentences'):
+                rules.append("- Bağlaç kullanma. \"ve\", \"ama\" yerine yeni cümle aç.")
+                banned.append("\"ve\" ile uzayan cümleler")
+            top_conj = conj.get('top_conjunctions', {})
+            if top_conj:
+                fav = list(top_conj.keys())[:3]
+                if fav:
+                    rules.append(f"- Bağlaç olarak sadece şunları kullan: {', '.join(fav)}")
         
-        return '\n'.join(rules) if rules else ""
+        # ── Açılış psikolojisi ──
+        opening = fp.get('opening_psychology', {})
+        if opening:
+            dominant = opening.get('dominant_opening', '')
+            top3 = opening.get('top_3', [])
+            opening_map = {
+                'question': 'Soru sorarak başla.',
+                'bold_claim': 'Cesur, kısa bir iddia ile başla.',
+                'story': 'Kişisel anekdot/hikaye ile başla.',
+                'data': 'Veri/sayı ile başla.',
+                'provocation': 'Provokatif bir giriş yap.',
+                'direct_address': 'Okuyucuya direkt seslen (sen/siz).',
+                'contrast': 'Bir karşıtlık ile aç.',
+                'mystery': 'Merak uyandırarak başla.',
+            }
+            if dominant in opening_map:
+                rules.append(f"- AÇILIŞ: {opening_map[dominant]}")
+        
+        # ── Kapanış stratejisi ──
+        closing = fp.get('closing_strategy', {})
+        if closing:
+            dominant = closing.get('dominant_closing', '')
+            closing_map = {
+                'question_cta': 'Soru sorarak bitir.',
+                'statement': 'Kesin bir ifadeyle bitir.',
+                'incomplete': 'Düşünceyi yarım bırak (...)',
+                'emoji_close': 'Emoji ile bitir.',
+                'no_close': 'Doğal bırak, kapatma cümlesi ekleme.',
+                'call_to_action': 'Aksiyon çağrısı ile bitir.',
+            }
+            if dominant in closing_map:
+                rules.append(f"- KAPANIŞ: {closing_map[dominant]}")
+        
+        # ── Duygusal yoğunluk ──
+        emotion = fp.get('emotional_intensity', {})
+        if emotion:
+            level = emotion.get('level', '')
+            dom_emotion = emotion.get('dominant_emotion', '')
+            if level == 'cold':
+                rules.append("- Soğuk ve mesafeli yaz. Duygu katma.")
+            elif level == 'calm':
+                rules.append("- Sakin ve ölçülü yaz. Abartma.")
+            elif level == 'intense':
+                rules.append(f"- Yoğun ve tutkulu yaz. Dominant duygu: {dom_emotion}")
+            elif level == 'explosive':
+                rules.append(f"- PATLAYICI enerji! Coşkulu yaz. Duygu: {dom_emotion}")
+        
+        # ── Okuyucu ilişkisi ──
+        reader = fp.get('reader_relationship', {})
+        if reader:
+            voice = reader.get('dominant_voice', '')
+            if voice == 'authority':
+                rules.append("- Otorite tonunda yaz. Öğreten, yönlendiren, kesin konuşan.")
+            elif voice == 'peer':
+                rules.append("- Eşit tonunda yaz. Düşünen, soran, paylaşan.")
+            
+            directness = reader.get('directness', '')
+            if directness == 'high':
+                rules.append("- Okuyucuya direkt seslen: 'sen', 'siz' kullan.")
+            elif directness == 'low':
+                rules.append("- Okuyucuya direkt seslenme. Genel konuş.")
+                banned.append("'Sen' diye direkt hitap")
+        
+        # ── Tekrar kalıpları ──
+        rep = fp.get('repetition_patterns', {})
+        if rep:
+            sig_openings = rep.get('signature_openings', [])
+            if sig_openings:
+                rules.append(f"- İmza açılışların: \"{sig_openings[0]}\" tarzı başlangıçlar")
+            fillers = rep.get('filler_words', {})
+            if fillers:
+                filler_list = list(fillers.keys())[:3]
+                rules.append(f"- Dolgu kelimeler kullan: {', '.join(filler_list)}")
+            catchphrases = rep.get('catchphrases', [])
+            if catchphrases:
+                rules.append(f"- Catchphrase'ler: {', '.join(catchphrases[:3])}")
+        
+        # ── Format tercihleri ──
+        fmt = fp.get('format_preferences', {})
+        if fmt:
+            if fmt.get('bullet_points_pct', 0) > 15:
+                rules.append("- Madde işareti (•, -) kullan.")
+            elif fmt.get('bullet_points_pct', 0) < 2:
+                banned.append("Madde işaretli listeler")
+            if fmt.get('arrows_pct', 0) > 10:
+                rules.append("- Ok işareti (→) kullan geçişlerde.")
+            if fmt.get('numbered_lists_pct', 0) > 10:
+                rules.append("- Numaralı liste kullan (1. 2. 3.)")
+            elif fmt.get('numbered_lists_pct', 0) < 2:
+                banned.append("Numaralı listeler")
+        
+        # ── Düşünce yapısı ──
+        thought = fp.get('thought_structure', {})
+        if thought:
+            dom = thought.get('dominant_structure', '')
+            thought_map = {
+                'conclusion_first': 'Sonuçla başla, sonra açıkla.',
+                'buildup': 'Yavaş kur, sonuca doğru git.',
+                'list_format': 'Liste formatında sun.',
+                'single_thought': 'Tek bir düşünce, tek bir mesaj.',
+                'multi_thought': 'Birden fazla düşünceyi bağla.',
+                'contrast': 'Karşıtlık kur, iki tarafı göster.',
+            }
+            if dom in thought_map:
+                rules.append(f"- BİLGİ YAPISI: {thought_map[dom]}")
+        
+        # Sonuç
+        output_parts = []
+        if rules:
+            output_parts.append('\n'.join(rules))
+        
+        if banned:
+            output_parts.append("\n\n## 🚫 YASAKLI KALIPLAR (ASLA YAPMA)\n" + '\n'.join(f"- ❌ {b}" for b in banned))
+        
+        return '\n'.join(output_parts) if output_parts else ""
     
     # ═══════════════════════════════════════════
     # AI DERİN ANALİZ
@@ -665,6 +1160,34 @@ Türkçe yaz. Kısa ve keskin ol, gereksiz açıklama yapma."""
         conj = fp.get('conjunction_profile', {})
         if conj:
             lines.append(f"Bağlaç: yoğunluk=%{conj.get('conjunction_density',0)}, kısa cümle tercihi={conj.get('prefers_short_sentences',False)}, top={list(conj.get('top_conjunctions',{}).keys())}")
+        
+        opening = fp.get('opening_psychology', {})
+        if opening:
+            lines.append(f"Açılış: dominant={opening.get('dominant_opening','')}, top3={opening.get('top_3',[])}, dağılım={opening.get('distribution',{})}")
+        
+        closing = fp.get('closing_strategy', {})
+        if closing:
+            lines.append(f"Kapanış: dominant={closing.get('dominant_closing','')}, dağılım={closing.get('distribution',{})}")
+        
+        thought = fp.get('thought_structure', {})
+        if thought:
+            lines.append(f"Düşünce yapısı: dominant={thought.get('dominant_structure','')}, dağılım={thought.get('distribution',{})}")
+        
+        emotion = fp.get('emotional_intensity', {})
+        if emotion:
+            lines.append(f"Duygusal yoğunluk: skor={emotion.get('score',0)}, seviye={emotion.get('level','')}, dominant={emotion.get('dominant_emotion','')}")
+        
+        reader = fp.get('reader_relationship', {})
+        if reader:
+            lines.append(f"Okuyucu ilişkisi: ses={reader.get('dominant_voice','')}, direkt hitap={reader.get('directness','')}, sen/tweet={reader.get('uses_you_per_tweet',0)}, ben/tweet={reader.get('uses_i_per_tweet',0)}")
+        
+        rep = fp.get('repetition_patterns', {})
+        if rep:
+            lines.append(f"Tekrar: imza açılış={rep.get('signature_openings',[])}, dolgu={list(rep.get('filler_words',{}).keys())}, catchphrase={rep.get('catchphrases',[])}")
+        
+        fmt = fp.get('format_preferences', {})
+        if fmt:
+            lines.append(f"Format: bullet=%{fmt.get('bullet_points_pct',0)}, numbered=%{fmt.get('numbered_lists_pct',0)}, ok=%{fmt.get('arrows_pct',0)}, parantez=%{fmt.get('parenthetical_pct',0)}")
         
         return '\n'.join(lines)
     

@@ -192,23 +192,24 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     tiktok: "/dashboard/create?platform=tiktok",
   };
 
-  // Navigate to the module with topic + rich trend context
+  // Navigate to the module with topic + compact context (max 500 chars total)
   const handleGoToModule = () => {
     if (!trend) return;
     const route = PLATFORM_ROUTES[platform] || PLATFORM_ROUTES.twitter;
-    const topic = encodeURIComponent(trend.topic);
 
-    // Zengin context: özet + keywords + content angle + kullanıcı notu
-    const contextParts = [];
-    if (trend.summary) contextParts.push(`Özet: ${trend.summary}`);
-    if (trend.keywords?.length) contextParts.push(`Anahtar Kelimeler: ${trend.keywords.join(", ")}`);
-    if (trend.content_angle) contextParts.push(`İçerik Açısı: ${trend.content_angle}`);
-    if (trend.url) contextParts.push(`Kaynak: ${trend.url}`);
-    if (additionalContext) contextParts.push(`Not: ${additionalContext}`);
+    // Kompakt context oluştur: topic + en önemli bilgiler, 500 karaktere sığdır
+    const parts = [trend.topic];
+    if (trend.content_angle) parts.push(trend.content_angle);
+    if (trend.summary) parts.push(trend.summary);
+    if (trend.keywords?.length) parts.push(trend.keywords.slice(0, 5).join(", "));
+    if (additionalContext) parts.push(additionalContext);
 
-    const context = encodeURIComponent(contextParts.join("\n\n"));
+    let combined = parts.join(" | ");
+    if (combined.length > 490) combined = combined.slice(0, 487) + "...";
+
+    const topic = encodeURIComponent(combined);
     onOpenChange(false);
-    navigate(`${route}&topic=${topic}&trend_context=${context}`);
+    navigate(`${route}&topic=${topic}`);
   };
 
   // Trend değişince state'i sıfırla (otomatik üretim yok, kullanıcı seçsin)

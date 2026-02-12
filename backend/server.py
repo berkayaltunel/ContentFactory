@@ -116,6 +116,7 @@ class QuoteGenerateRequest(BaseModel):
     language: str = "auto"
     additional_context: Optional[str] = None
     direction: Optional[str] = None  # Kullanıcının yönlendirmesi (ör: "buna katılmıyorum")
+    style_profile_id: Optional[str] = None
 
 class ReplyGenerateRequest(BaseModel):
     tweet_url: str
@@ -129,6 +130,7 @@ class ReplyGenerateRequest(BaseModel):
     language: str = "auto"
     additional_context: Optional[str] = None
     direction: Optional[str] = None  # Kullanıcının yönlendirmesi
+    style_profile_id: Optional[str] = None
 
 class ArticleGenerateRequest(BaseModel):
     topic: str
@@ -430,32 +432,6 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         # Input sanitization
         sanitize_generation_request(request)
 
-        # Fetch style prompt and similar tweets if style_profile_id provided
-        style_prompt = None
-        example_tweets = None
-        if request.style_profile_id:
-            from services.style_analyzer import analyzer
-            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
-            if result.data:
-                fingerprint = result.data[0].get('style_fingerprint', {})
-                style_prompt = analyzer.generate_style_prompt(fingerprint)
-                
-                # Fetch similar tweets for few-shot RAG
-                source_ids = result.data[0].get('source_ids', [])
-                if source_ids:
-                    try:
-                        logger.info(f"RAG: Fetching similar tweets for topic='{request.topic}' from {len(source_ids)} sources")
-                        from embed_tweets import get_similar_tweets
-                        example_tweets = get_similar_tweets(
-                            query_text=request.topic,
-                            source_ids=source_ids,
-                            limit=20,
-                            content_type="tweet"
-                        )
-                        logger.info(f"RAG: Found {len(example_tweets)} similar tweets")
-                    except Exception as e:
-                        logger.warning(f"RAG: Similar tweets fetch failed (continuing without): {e}")
-        
         # Analyze image if provided
         image_context = None
         if request.image_base64:
@@ -467,32 +443,97 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         combined_context = request.additional_context or ""
         if image_context:
             combined_context = f"{combined_context}\n\n{image_context}" if combined_context else image_context
-        
-        # Build the complete prompt using modular system
-        system_prompt = build_final_prompt(
-            content_type="tweet",
-            topic=request.topic,
-            persona=request.persona,
-            tone=request.tone,
-            knowledge=request.knowledge,
-            length=request.length,
-            language=request.language,
-            additional_context=combined_context if combined_context else None,
-            is_apex=(request.mode == "ultra" or request.mode == "apex"),
-            style_prompt=style_prompt,
-            example_tweets=example_tweets,
-            platform="twitter"
-        )
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+        # ── Style Lab v2 pipeline ──
+        if request.style_profile_id:
+            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
+            if result.data:
+                fingerprint = result.data[0].get('style_fingerprint', {})
+                viral_patterns = result.data[0].get('viral_patterns', {})
+                source_ids = result.data[0].get('source_ids', [])
 
-        variants = []
-        for i, content in enumerate(contents):
-            variants.append(GeneratedContent(
-                content=content,
-                variant_index=i,
-                character_count=len(content)
-            ))
+                # Constraint engine
+                from services.style_constraints import StyleConstraints
+                constraints = StyleConstraints(fingerprint, viral_patterns)
+
+                # Smart RAG (async)
+                reference_tweets = []
+                try:
+                    from services.style_rag import get_style_examples
+                    import openai as _openai
+                    openai_async = _openai.AsyncOpenAI()
+                    reference_tweets = await get_style_examples(
+                        topic=request.topic,
+                        source_id=source_ids[0] if source_ids else None,
+                        supabase_client=supabase,
+                        openai_client=openai_async,
+                        limit=8,
+                        strategy="hybrid"
+                    )
+                    logger.info(f"Style RAG v2: {len(reference_tweets)} referans tweet bulundu")
+                except Exception as e:
+                    logger.warning(f"Style RAG v2 başarısız (devam ediliyor): {e}")
+
+                # Style-enhanced prompt
+                from prompts.style_prompt_v2 import build_style_enhanced_prompt
+                system_prompt = build_style_enhanced_prompt(
+                    content_type="tweet",
+                    topic=request.topic,
+                    style_fingerprint=fingerprint,
+                    viral_patterns=viral_patterns,
+                    constraints=constraints,
+                    reference_tweets=reference_tweets,
+                    persona=request.persona,
+                    tone=request.tone,
+                    knowledge=request.knowledge,
+                    length=request.length,
+                    language=request.language,
+                    additional_context=combined_context if combined_context else None,
+                    is_apex=(request.mode in ["ultra", "apex"]),
+                    image_context=image_context,
+                )
+
+                # Multi-shot: min 5 variant üret
+                gen_count = max(request.variants, 5)
+                contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", gen_count, user_id=user.id)
+
+                # Ranking
+                from services.style_ranker import StyleRanker
+                ranker = StyleRanker()
+                ranked = ranker.rank(contents, fingerprint, constraints, reference_tweets)
+                top = ranker.get_top_variants(ranked, count=max(request.variants, 3))
+
+                variants = []
+                for i, (text, score, breakdown) in enumerate(top):
+                    variants.append(GeneratedContent(content=text, variant_index=i, character_count=len(text)))
+                logger.info(f"Style v2 tweet: {gen_count} üretildi, {len(top)} seçildi (top score: {top[0][1] if top else 0})")
+            else:
+                # Profile bulunamadı, v1'e fallback
+                logger.warning(f"Style profile {request.style_profile_id} bulunamadı, v1 pipeline kullanılıyor")
+                system_prompt = build_final_prompt(
+                    content_type="tweet", topic=request.topic, persona=request.persona,
+                    tone=request.tone, knowledge=request.knowledge, length=request.length,
+                    language=request.language, additional_context=combined_context if combined_context else None,
+                    is_apex=(request.mode in ["ultra", "apex"]), platform="twitter"
+                )
+                contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+                variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
+        else:
+            # ── v1 pipeline (style profile yok) ──
+            system_prompt = build_final_prompt(
+                content_type="tweet",
+                topic=request.topic,
+                persona=request.persona,
+                tone=request.tone,
+                knowledge=request.knowledge,
+                length=request.length,
+                language=request.language,
+                additional_context=combined_context if combined_context else None,
+                is_apex=(request.mode == "ultra" or request.mode == "apex"),
+                platform="twitter"
+            )
+            contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+            variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
 
         # Log to database
         gen_result = supabase.table("generations").insert({
@@ -540,27 +581,76 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
             direction_text = f"\n\nKullanıcının yönlendirmesi: {request.direction}"
             quote_context = f"{quote_context}{direction_text}" if quote_context else request.direction
 
-        system_prompt = build_final_prompt(
-            content_type="quote",
-            persona=request.persona,
-            tone=request.tone,
-            knowledge=request.knowledge,
-            length=request.length,
-            language=request.language,
-            original_tweet=request.tweet_content,
-            additional_context=quote_context if quote_context else None,
-            platform="twitter"
-        )
+        # ── Style Lab v2 pipeline (quote) ──
+        if request.style_profile_id:
+            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
+            if result.data:
+                fingerprint = result.data[0].get('style_fingerprint', {})
+                viral_patterns = result.data[0].get('viral_patterns', {})
+                source_ids = result.data[0].get('source_ids', [])
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+                from services.style_constraints import StyleConstraints
+                constraints = StyleConstraints(fingerprint, viral_patterns)
 
-        variants = []
-        for i, content in enumerate(contents):
-            variants.append(GeneratedContent(
-                content=content,
-                variant_index=i,
-                character_count=len(content)
-            ))
+                reference_tweets = []
+                try:
+                    from services.style_rag import get_style_examples
+                    import openai as _openai
+                    openai_async = _openai.AsyncOpenAI()
+                    reference_tweets = await get_style_examples(
+                        topic=request.tweet_content or "",
+                        source_id=source_ids[0] if source_ids else None,
+                        supabase_client=supabase, openai_client=openai_async,
+                        limit=8, strategy="hybrid"
+                    )
+                except Exception as e:
+                    logger.warning(f"Style RAG v2 (quote) başarısız: {e}")
+
+                from prompts.style_prompt_v2 import build_style_enhanced_prompt
+                system_prompt = build_style_enhanced_prompt(
+                    content_type="quote",
+                    topic=request.tweet_content or "",
+                    style_fingerprint=fingerprint,
+                    viral_patterns=viral_patterns,
+                    constraints=constraints,
+                    reference_tweets=reference_tweets,
+                    persona=request.persona, tone=request.tone,
+                    knowledge=request.knowledge, length=request.length,
+                    language=request.language,
+                    original_tweet=request.tweet_content,
+                    additional_context=quote_context if quote_context else None,
+                    is_apex=False,
+                )
+
+                gen_count = max(request.variants, 5)
+                contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", gen_count, user_id=user.id)
+
+                from services.style_ranker import StyleRanker
+                ranker = StyleRanker()
+                ranked = ranker.rank(contents, fingerprint, constraints, reference_tweets)
+                top = ranker.get_top_variants(ranked, count=max(request.variants, 3))
+                variants = [GeneratedContent(content=text, variant_index=i, character_count=len(text)) for i, (text, score, breakdown) in enumerate(top)]
+                logger.info(f"Style v2 quote: {gen_count} üretildi, {len(top)} seçildi")
+            else:
+                system_prompt = build_final_prompt(
+                    content_type="quote", persona=request.persona, tone=request.tone,
+                    knowledge=request.knowledge, length=request.length, language=request.language,
+                    original_tweet=request.tweet_content, additional_context=quote_context if quote_context else None, platform="twitter"
+                )
+                contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+                variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
+        else:
+            # ── v1 pipeline ──
+            system_prompt = build_final_prompt(
+                content_type="quote",
+                persona=request.persona, tone=request.tone,
+                knowledge=request.knowledge, length=request.length,
+                language=request.language, original_tweet=request.tweet_content,
+                additional_context=quote_context if quote_context else None,
+                platform="twitter"
+            )
+            contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+            variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
 
         gen_result = supabase.table("generations").insert({
             "type": "quote",
@@ -606,28 +696,79 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
             direction_text = f"\n\nKullanıcının yönlendirmesi: {request.direction}"
             reply_context = f"{reply_context}{direction_text}" if reply_context else request.direction
 
-        system_prompt = build_final_prompt(
-            content_type="reply",
-            persona=request.persona,
-            tone=request.tone,
-            knowledge=request.knowledge,
-            length=request.length,
-            language=request.language,
-            original_tweet=request.tweet_content,
-            reply_mode=request.reply_mode,
-            additional_context=reply_context if reply_context else None,
-            platform="twitter"
-        )
+        # ── Style Lab v2 pipeline (reply) ──
+        if request.style_profile_id:
+            result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
+            if result.data:
+                fingerprint = result.data[0].get('style_fingerprint', {})
+                viral_patterns = result.data[0].get('viral_patterns', {})
+                source_ids = result.data[0].get('source_ids', [])
 
-        contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+                from services.style_constraints import StyleConstraints
+                constraints = StyleConstraints(fingerprint, viral_patterns)
 
-        variants = []
-        for i, content in enumerate(contents):
-            variants.append(GeneratedContent(
-                content=content,
-                variant_index=i,
-                character_count=len(content)
-            ))
+                reference_tweets = []
+                try:
+                    from services.style_rag import get_style_examples
+                    import openai as _openai
+                    openai_async = _openai.AsyncOpenAI()
+                    reference_tweets = await get_style_examples(
+                        topic=request.tweet_content or "",
+                        source_id=source_ids[0] if source_ids else None,
+                        supabase_client=supabase, openai_client=openai_async,
+                        limit=8, strategy="hybrid"
+                    )
+                except Exception as e:
+                    logger.warning(f"Style RAG v2 (reply) başarısız: {e}")
+
+                from prompts.style_prompt_v2 import build_style_enhanced_prompt
+                system_prompt = build_style_enhanced_prompt(
+                    content_type="reply",
+                    topic=request.tweet_content or "",
+                    style_fingerprint=fingerprint,
+                    viral_patterns=viral_patterns,
+                    constraints=constraints,
+                    reference_tweets=reference_tweets,
+                    persona=request.persona, tone=request.tone,
+                    knowledge=request.knowledge, length=request.length,
+                    language=request.language,
+                    original_tweet=request.tweet_content,
+                    reply_mode=request.reply_mode,
+                    additional_context=reply_context if reply_context else None,
+                    is_apex=False,
+                )
+
+                gen_count = max(request.variants, 5)
+                contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", gen_count, user_id=user.id)
+
+                from services.style_ranker import StyleRanker
+                ranker = StyleRanker()
+                ranked = ranker.rank(contents, fingerprint, constraints, reference_tweets)
+                top = ranker.get_top_variants(ranked, count=max(request.variants, 3))
+                variants = [GeneratedContent(content=text, variant_index=i, character_count=len(text)) for i, (text, score, breakdown) in enumerate(top)]
+                logger.info(f"Style v2 reply: {gen_count} üretildi, {len(top)} seçildi")
+            else:
+                system_prompt = build_final_prompt(
+                    content_type="reply", persona=request.persona, tone=request.tone,
+                    knowledge=request.knowledge, length=request.length, language=request.language,
+                    original_tweet=request.tweet_content, reply_mode=request.reply_mode,
+                    additional_context=reply_context if reply_context else None, platform="twitter"
+                )
+                contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+                variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
+        else:
+            # ── v1 pipeline ──
+            system_prompt = build_final_prompt(
+                content_type="reply",
+                persona=request.persona, tone=request.tone,
+                knowledge=request.knowledge, length=request.length,
+                language=request.language, original_tweet=request.tweet_content,
+                reply_mode=request.reply_mode,
+                additional_context=reply_context if reply_context else None,
+                platform="twitter"
+            )
+            contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
+            variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
 
         gen_result = supabase.table("generations").insert({
             "type": "reply",

@@ -80,12 +80,36 @@ def load_env():
 # ============================================================
 # File operations
 # ============================================================
-def check_file(client: Together, filepath: str) -> dict:
-    """Together AI format check."""
+def check_file_local(filepath: str) -> bool:
+    """Lokal JSONL format kontrolü."""
     print(f"🔍 Dosya kontrol ediliyor: {filepath}")
-    result = client.files.check(file=filepath)
-    print(json.dumps(result.model_dump() if hasattr(result, 'model_dump') else result, indent=2))
-    return result
+    p = Path(filepath)
+    if not p.exists():
+        print(f"   ❌ Dosya bulunamadı: {filepath}")
+        return False
+    
+    errors = 0
+    total = 0
+    with open(p) as f:
+        for i, line in enumerate(f, 1):
+            total += 1
+            try:
+                obj = json.loads(line)
+                msgs = obj.get("messages", [])
+                if not msgs or not isinstance(msgs, list):
+                    print(f"   ⚠️  Satır {i}: 'messages' alanı eksik veya hatalı")
+                    errors += 1
+                    continue
+                roles = [m.get("role") for m in msgs]
+                if "assistant" not in roles:
+                    print(f"   ⚠️  Satır {i}: 'assistant' rolü eksik")
+                    errors += 1
+            except json.JSONDecodeError:
+                print(f"   ⚠️  Satır {i}: JSON parse hatası")
+                errors += 1
+    
+    print(f"   ✅ {total} satır kontrol edildi, {errors} hata")
+    return errors == 0
 
 
 def upload_file(client: Together, filepath: str) -> str:
@@ -277,9 +301,7 @@ def full_pipeline(
 
     # 1. Check files
     print("\n📋 Adım 1: Dosya kontrolü")
-    check_result = check_file(client, train_path)
-    passed = getattr(check_result, "is_check_passed", None)
-    if passed is False:
+    if not check_file_local(train_path):
         sys.exit("❌ Train dosyası format kontrolünden geçemedi!")
 
     # 2. Upload files
@@ -385,11 +407,11 @@ def main():
     client = Together(api_key=api_key)
 
     if args.command == "upload":
-        check_file(client, args.train)
+        check_file_local(args.train)
         train_id = upload_file(client, args.train)
         print(f"\n   Train file ID: {train_id}")
         if args.val:
-            check_file(client, args.val)
+            check_file_local(args.val)
             val_id = upload_file(client, args.val)
             print(f"   Val file ID: {val_id}")
 

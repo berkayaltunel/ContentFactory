@@ -1135,26 +1135,8 @@ export default function XAIModule() {
     const context = searchParams.get("trend_context") || "";
     const platformParam = searchParams.get("platform");
     const styleParam = searchParams.get("style");
-    if (topic && context) {
-      // Trend'den geliyorsa: topic + context'i birleştir, limitlere uygun böl
-      const combined = `${topic}\n\n${context}`;
-      if (combined.length <= 500) {
-        setInputValue(combined);
-      } else {
-        // Topic alanına max 500, kalanı trend_context'e
-        setInputValue(topic.slice(0, 500));
-        setTrendContext(context.slice(0, 1000));
-      }
-    } else if (topic) {
-      setInputValue(topic);
-    } else if (context) {
-      if (context.length <= 500) {
-        setInputValue(context);
-      } else {
-        setInputValue(context.slice(0, 500));
-        setTrendContext(context.slice(0, 1000));
-      }
-    }
+    if (topic) setInputValue(topic);
+    if (context) setTrendContext(context);
     if (platformParam && ["twitter","youtube","instagram","tiktok","linkedin","blog"].includes(platformParam)) {
       setActivePlatform(platformParam);
     }

@@ -307,6 +307,60 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
   );
 }
 
+// Style Score Mini Card
+function StyleScoreCard({ scores, isBest }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!scores) return null;
+
+  const scoreMap = {
+    constraint: "Stil Uyumu",
+    length: "Uzunluk",
+    punctuation: "Noktalama",
+    vocabulary: "Kelime Benzerliği",
+    algorithm: "Algoritma",
+    hook: "Hook Gücü",
+    reply_potential: "Etkileşim",
+  };
+
+  const overallScore = scores.constraint != null ? Math.round(scores.constraint * 100) : null;
+  const barColor = (val) => val > 80 ? "bg-green-500" : val > 60 ? "bg-yellow-500" : "bg-red-500";
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {overallScore != null && (
+          <span className="text-xs font-medium">🎯 Stile %{overallScore} uyumlu</span>
+        )}
+        {isBest && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-medium">⭐ En İyi</span>
+        )}
+        <span className="text-[10px] opacity-60">{expanded ? "▲" : "▼"} Skor detayları</span>
+      </button>
+      {expanded && (
+        <div className="mt-2 p-3 rounded-lg bg-secondary/30 border border-border/50 space-y-1.5">
+          {Object.entries(scoreMap).map(([key, label]) => {
+            const raw = scores[key];
+            if (raw == null) return null;
+            const val = Math.round(typeof raw === "number" && raw <= 1 ? raw * 100 : raw);
+            return (
+              <div key={key} className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground w-28 truncate">{label}</span>
+                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full", barColor(val))} style={{ width: `${Math.min(val, 100)}%` }} />
+                </div>
+                <span className="text-[11px] font-medium w-8 text-right">{val}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GenerationCard({ job }) {
   const [favorites, setFavorites] = useState(new Map());
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
@@ -315,6 +369,13 @@ export default function GenerationCard({ job }) {
   const [imagePromptContent, setImagePromptContent] = useState("");
   const color = PERSONA_COLORS[job.persona] || "#6B7280";
   const isGenerating = job.status === "generating";
+
+  // Find best variant by style score
+  const styleScores = job.variants?.map((v, i) => {
+    const s = v.style_scores || job.style_scores?.[i] || null;
+    return s?.constraint ?? -1;
+  }) || [];
+  const bestIdx = styleScores.length > 0 ? styleScores.indexOf(Math.max(...styleScores)) : -1;
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content);
@@ -404,6 +465,10 @@ export default function GenerationCard({ job }) {
                 className="rounded-lg border border-border p-3 space-y-2"
               >
                 <p className="text-sm whitespace-pre-wrap">{variant.content}</p>
+                <StyleScoreCard
+                  scores={variant.style_scores || job.style_scores?.[index] || null}
+                  isBest={bestIdx === index && bestIdx >= 0 && styleScores[bestIdx] > 0}
+                />
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">

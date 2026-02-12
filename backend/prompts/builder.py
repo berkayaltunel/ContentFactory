@@ -525,4 +525,10 @@ __all__ = [
     'YOUTUBE_FORMAT_PROMPTS',
     'TIKTOK_FORMATS',
     'TIKTOK_FORMAT_PROMPTS',
+    'build_style_enhanced_prompt',
 ]
+
+# v2 re-export (lazy)
+def build_style_enhanced_prompt(*args, **kwargs):
+    from .style_prompt_v2 import build_style_enhanced_prompt as _v2
+    return _v2(*args, **kwargs)

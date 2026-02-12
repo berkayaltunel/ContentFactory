@@ -120,6 +120,13 @@ MEGA_ACCOUNTS_SKIP = {
     # Haber kopyala-yapıştır hesapları (link dump)
 }
 
+# Yazar başına max tweet limiti (dataset dengesini korumak için)
+# Özel limitler: belirli yazarlar için override
+AUTHOR_MAX_TWEETS = 150  # Genel default
+AUTHOR_LIMITS_OVERRIDE = {
+    "BeatstoBytes": 500,  # Berkay: yarı yarıya indir (1074 → ~500)
+}
+
 
 # ============================================================
 # Hook tipi tespiti
@@ -622,6 +629,31 @@ def main():
 
     if skipped_tokens:
         print(f"   ⚠️  {skipped_tokens} örnek token limiti aştı ({MAX_TOKENS_PER_EXAMPLE})")
+
+    # ── 4b. Author capping ──
+    from collections import defaultdict as dd
+    by_author = dd(list)
+    for ex in examples:
+        by_author[ex["_meta"]["author"]].append(ex)
+    
+    capped = []
+    capped_count = 0
+    for author, items in by_author.items():
+        limit = AUTHOR_LIMITS_OVERRIDE.get(author, AUTHOR_MAX_TWEETS)
+        if len(items) > limit:
+            # En yüksek like'lıları tut
+            items.sort(key=lambda x: x["_meta"]["likes"], reverse=True)
+            capped.extend(items[:limit])
+            capped_count += len(items) - limit
+            if args.verbose:
+                print(f"   ✂️  @{author}: {len(items)} → {limit} (en iyi like'lılar)")
+        else:
+            capped.extend(items)
+    
+    if capped_count:
+        print(f"   ✂️  Author capping: {len(examples)} → {len(capped)} ({capped_count} kırpıldı)")
+        examples = capped
+        token_counts = [example_token_count(ex) for ex in examples]
 
     # ── 5. Niche balancing ──
     if args.balance:
