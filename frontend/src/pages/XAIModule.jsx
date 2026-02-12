@@ -526,56 +526,6 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                 </>
               )}
 
-              {/* Ultra Mode Toggle */}
-              <div className="mb-2" style={{ marginTop: "4px" }}>
-                <div
-                  onClick={() => onSettingsChange({ ...settings, isUltra: !settings.isUltra })}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    border: settings.isUltra ? "1px solid rgba(168,85,247,0.4)" : "1px solid var(--m-border)",
-                    background: settings.isUltra ? "rgba(168,85,247,0.1)" : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <div>
-                    <span style={{ fontSize: "13px", fontWeight: "600", color: settings.isUltra ? "rgba(168,85,247,1)" : "var(--m-text)" }}>
-                      Ultra Mode
-                    </span>
-                    <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "2px" }}>
-                      Premium model, maximum kalite
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      width: "40px",
-                      height: "22px",
-                      borderRadius: "11px",
-                      background: settings.isUltra ? "rgba(168,85,247,0.8)" : "var(--m-border)",
-                      position: "relative",
-                      transition: "background 0.2s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "18px",
-                        height: "18px",
-                        borderRadius: "50%",
-                        background: "white",
-                        position: "absolute",
-                        top: "2px",
-                        left: settings.isUltra ? "20px" : "2px",
-                        transition: "left 0.2s ease",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Reply Mode (reply tab'da) */}
               {activeTab === "reply" && (
                 <div className="mb-2 mt-1">
@@ -1622,7 +1572,7 @@ export default function XAIModule() {
       >
         {/* Ultra glow wrapper */}
         <div
-          className={settings.mode === "apex" ? "ultra-glow-border" : ""}
+          className={settings.isUltra ? "ultra-glow-border" : ""}
           style={{
             borderRadius: "18px",
             position: "relative",
@@ -1733,26 +1683,26 @@ export default function XAIModule() {
                 </button>
               )}
 
-              {/* Ultra Mode Toggle */}
+              {/* Ultra Mode Toggle (Zap icon) */}
               <button
-                onClick={() => setSettings((s) => ({ ...s, mode: s.mode === "apex" ? "classic" : "apex" }))}
+                onClick={() => setSettings((s) => ({ ...s, isUltra: !s.isUltra }))}
                 style={{
                   width: "36px",
                   height: "36px",
                   borderRadius: "50%",
-                  border: settings.mode === "apex" ? "1px solid rgba(234, 179, 8, 0.4)" : "1px solid var(--m-icon-btn-border)",
-                  background: settings.mode === "apex" ? "rgba(234, 179, 8, 0.12)" : "transparent",
-                  color: settings.mode === "apex" ? "#eab308" : "var(--m-icon-color)",
+                  border: settings.isUltra ? "1px solid rgba(168,85,247,0.4)" : "1px solid var(--m-icon-btn-border)",
+                  background: settings.isUltra ? "rgba(168,85,247,0.12)" : "transparent",
+                  color: settings.isUltra ? "rgba(168,85,247,1)" : "var(--m-icon-color)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "all 0.3s ease",
-                  boxShadow: settings.mode === "apex" ? "0 0 12px rgba(234, 179, 8, 0.2)" : "none",
+                  boxShadow: settings.isUltra ? "0 0 12px rgba(168,85,247,0.2)" : "none",
                 }}
-                title={settings.mode === "apex" ? "Ultra mod aktif" : "Ultra moda geç"}
+                title={settings.isUltra ? "Ultra mod aktif" : "Ultra moda geç"}
               >
-                <Zap size={18} style={{ fill: settings.mode === "apex" ? "#eab308" : "none" }} />
+                <Zap size={18} style={{ fill: settings.isUltra ? "rgba(168,85,247,1)" : "none" }} />
               </button>
 
               {/* Settings */}
