@@ -392,23 +392,30 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
 /* ── Main Page ── */
 
+const SORT_OPTIONS = [
+  { value: "score", label: "Puana Göre" },
+  { value: "date", label: "Tarihe Göre" },
+];
+
 export default function TrendDashboardPage() {
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Tümü");
   const [selectedTime, setSelectedTime] = useState("all");
+  const [selectedSort, setSelectedSort] = useState("score");
   const [lastUpdated, setLastUpdated] = useState(null);
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTrend, setSelectedTrend] = useState(null);
 
-  const fetchTrends = async (category, since) => {
+  const fetchTrends = async (category, since, sort) => {
     try {
       const params = { limit: 30 };
       if (category && category !== "Tümü") params.category = category;
       if (since && since !== "all") params.since = since;
+      if (sort) params.sort = sort;
       const res = await api.get(`${API}/trends`, { params });
       setTrends(res.data.trends || []);
       if (res.data.trends?.length > 0) {
@@ -423,8 +430,8 @@ export default function TrendDashboardPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchTrends(selectedCategory, selectedTime);
-  }, [selectedCategory, selectedTime]);
+    fetchTrends(selectedCategory, selectedTime, selectedSort);
+  }, [selectedCategory, selectedTime, selectedSort]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -432,7 +439,7 @@ export default function TrendDashboardPage() {
       const res = await api.post(`${API}/trends/refresh`);
       if (res.data.success) {
         toast.success(`🔥 ${res.data.trends_analyzed || 0} trend analiz edildi!`);
-        await fetchTrends(selectedCategory, selectedTime);
+        await fetchTrends(selectedCategory, selectedTime, selectedSort);
       } else {
         toast.error(res.data.error || "Yenileme başarısız");
       }
@@ -506,6 +513,23 @@ export default function TrendDashboardPage() {
             )}
           >
             {tf.label}
+          </button>
+        ))}
+
+        <div className="w-px h-6 bg-border mx-1" />
+
+        {SORT_OPTIONS.map((s) => (
+          <button
+            key={s.value}
+            onClick={() => setSelectedSort(s.value)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+              selectedSort === s.value
+                ? "bg-orange-500/20 text-orange-400 border-orange-500/30"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {s.label}
           </button>
         ))}
       </div>
