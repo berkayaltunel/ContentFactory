@@ -1,7 +1,7 @@
 """
-Style Lab v2 - Style-Enhanced Prompt Builder
-Tüm v2 katmanlarını birleştiren prompt builder.
-Mevcut build_final_prompt'a dokunmadan, style_profile aktif olduğunda kullanılır.
+Style Lab v3 - Ghost Writer Prompt Builder
+Stil profili aktif olduğunda kullanılır.
+build_final_prompt()'a DOKUNULMAZ, sadece build_style_enhanced_prompt() değişir.
 """
 
 
@@ -24,16 +24,10 @@ def build_style_enhanced_prompt(
     image_context: str = None,
 ) -> str:
     """
-    Style Lab v2 prompt builder.
-    Mevcut builder.py fonksiyonlarını re-use eder + v2 katmanları ekler.
+    Style Lab v3 Ghost Writer prompt builder.
+    Mevcut builder.py fonksiyonlarını re-use eder + v3 Ghost Writer katmanı ekler.
     """
     # Lazy imports (circular import önleme)
-    from .system_identity import SYSTEM_IDENTITY
-    from .algorithm import (
-        ALGORITHM_KNOWLEDGE, ALGORITHM_KNOWLEDGE_COMPACT,
-        CTA_STRATEGIES, HOOK_FORMULAS, CONTENT_RULES,
-    )
-    from .quality import QUALITY_CRITERIA, APEX_MODE
     from .builder import (
         TASK_DEFINITIONS,
         build_persona_section,
@@ -45,132 +39,123 @@ def build_style_enhanced_prompt(
 
     sections = []
 
-    # ─── 0. HARD BLOCK (en üstte, model ilk bunu görmeli) ───
+    # ─── 1. GHOST WRITER IDENTITY (en başta) ───
+    sections.append(_build_ghost_writer_identity())
+
+    # ─── 2. RAG ÖRNEKLER (öne taşındı, sadeleştirildi) ───
+    sections.append(_build_rag_examples_section(reference_tweets))
+
+    # ─── 3. STİL DNA (fingerprint'ten) ───
+    sections.append(_build_style_dna_section(style_fingerprint))
+
+    # ─── 4. MİKRO KURALLAR ───
+    sections.append(_build_micro_rules_section(style_fingerprint))
+
+    # ─── 5. TYPING HABITS RULES ───
+    sections.append(_build_typing_habits_section(style_fingerprint))
+
+    # ─── 6. HARD BLOCK (sadece en kritikler) ───
     sections.append(_build_hard_block())
 
-    # ─── 1. SYSTEM IDENTITY ───
-    sections.append(SYSTEM_IDENTITY)
-
-    # ─── 2. ALGORITHM KNOWLEDGE ───
-    is_twitter = content_type in ("tweet", "quote", "reply")
-    if is_twitter:
-        sections.append(ALGORITHM_KNOWLEDGE)
-        sections.append(CONTENT_RULES)
-    else:
-        sections.append(ALGORITHM_KNOWLEDGE_COMPACT)
-
-    # ─── 3. TASK DEFINITION ───
+    # ─── 7. TASK DEFINITION ───
     task = TASK_DEFINITIONS.get(content_type, TASK_DEFINITIONS["tweet"])
     if original_tweet and "{original_tweet}" in task:
         task = task.format(original_tweet=original_tweet)
     sections.append(task)
 
-    # ─── 4. STİL DNA (v2 - fingerprint'ten) ───
-    sections.append(_build_style_dna_section(style_fingerprint))
+    # ─── 8. PERSONA + TONE (sadeleştirilmiş) ───
+    sections.append(build_persona_section(persona))
+    sections.append(build_tone_section(tone))
 
-    # ─── 5. MİKRO KURALLAR (v2 - somut, aksiyonel) ───
-    sections.append(_build_micro_rules_section(style_fingerprint))
+    # ─── 9. TOPIC ───
+    if topic:
+        sections.append(f"## KONU\n\n{topic}")
 
-    # ─── 6. VİRAL PATTERN INSIGHT'LAR (v2) ───
-    sections.append(_build_viral_insights_section(viral_patterns))
+    # ─── 10. OUTPUT INSTRUCTIONS (kısa) ───
+    sections.append("""## ÇIKTI
 
-    # ─── 7. CONSTRAINT'LER (v2 - StyleConstraints.to_prompt()) ───
+Sadece içeriği yaz. Açıklama, meta bilgi, "İşte tweet:" gibi girişler yasak.
+Her varyant gerçekten FARKLI olsun: farklı hook, farklı açı, farklı yapı.
+Karakter sayısını verilen aralıkta tut.""")
+
+    # ─── EK: CONSTRAINT'LER ───
     if constraints:
         sections.append(constraints.to_prompt())
 
-    # ─── 8. RAG ÖRNEKLERİ (v2 - engagement metadata ile) ───
-    sections.append(_build_rag_examples_section(reference_tweets))
-
-    # ─── 9. PERSONA + TONE ───
-    sections.append(build_persona_section(persona))
-    if is_twitter:
-        sections.append(HOOK_FORMULAS)
-    sections.append(build_tone_section(tone))
-
-    # ─── 10. KNOWLEDGE MODE ───
+    # ─── EK: KNOWLEDGE MODE ───
     if knowledge:
         sections.append(build_knowledge_section(knowledge))
 
-    # ─── 11. LENGTH ───
+    # ─── EK: LENGTH ───
     sections.append(build_length_section(content_type, length))
 
-    # ─── 12. REPLY MODE ───
+    # ─── EK: REPLY MODE ───
     if content_type == "reply" and reply_mode:
         sections.append(build_reply_mode_section(reply_mode))
 
-    # ─── 13. APEX MODE ───
+    # ─── EK: APEX MODE ───
     if is_apex:
+        from .quality import APEX_MODE
         sections.append(APEX_MODE)
 
-    # ─── 14. LANGUAGE ───
+    # ─── EK: LANGUAGE ───
     lang_map = {
-        "auto": "Konunun diline göre otomatik olarak Türkçe veya İngilizce yaz. Konu Türkçe ise Türkçe, İngilizce ise İngilizce.",
-        "tr": "Kesinlikle TÜRKÇE yaz. Tüm içerik Türkçe olmalı.",
-        "en": "Write in ENGLISH only. All content must be in English."
+        "auto": "Konunun diline göre otomatik olarak Türkçe veya İngilizce yaz.",
+        "tr": "Kesinlikle TÜRKÇE yaz.",
+        "en": "Write in ENGLISH only."
     }
-    sections.append(f"## 🌐 DİL\n\n{lang_map.get(language, lang_map['auto'])}")
+    sections.append(f"## DİL\n\n{lang_map.get(language, lang_map['auto'])}")
 
-    # ─── 15. ADDITIONAL CONTEXT ───
+    # ─── EK: ADDITIONAL CONTEXT ───
     combined = additional_context or ""
     if image_context:
         combined = f"{combined}\n\n{image_context}" if combined else image_context
     if combined:
-        sections.append(f"## 💡 EK BAĞLAM (Kullanıcıdan)\n\n{combined}")
+        sections.append(f"## EK BAĞLAM\n\n{combined}")
 
-    # ─── 16. TOPIC ───
-    if topic:
-        sections.append(f"## 📌 KONU\n\n{topic}")
-
-    # ─── 17. CTA STRATEGIES ───
-    sections.append(CTA_STRATEGIES)
-
-    # ─── 18. QUALITY CRITERIA ───
-    sections.append(QUALITY_CRITERIA)
-
-    # ─── 19. OUTPUT INSTRUCTIONS ───
-    sections.append("""
-## ÇIKTI
-
-Sadece içeriğin kendisini yaz. Açıklama, meta bilgi, "İşte tweet:" gibi girişler yasak.
-Thread ise numaralandır (1/, 2/, 3/). Tek içerik ise düz metin.
-Karakter sayısını verilen aralıkta tut.
-Her varyant gerçekten FARKLI olsun — farklı hook, farklı açı, farklı yapı.
-""")
+    # ─── EK: QUALITY (3 satır) ───
+    sections.append("""## KALİTE
+- Klişe ve jenerik ifadelerden kaçın, spesifik ol.
+- Okuyucunun ilk 3 saniyede ilgisini çek.
+- Doğal ve insan gibi yaz, yapay hissettirme.""")
 
     return "\n\n---\n\n".join(s for s in sections if s)
 
 
 # ═══════════════════════════════════════════
-# V2 SECTION BUILDERS
+# V3 GHOST WRITER SECTION BUILDERS
 # ═══════════════════════════════════════════
 
+def _build_ghost_writer_identity() -> str:
+    """Ghost Writer kimlik tanımı: en başta, modelin rolünü belirler"""
+    return """## GHOST WRITER
+
+Sen bu kişisin. Aşağıdaki tweet'leri SEN yazdın.
+Yeni tweet yazarken birebir aynı tarzda yaz.
+Aynı kelime tercihleri, aynı cümle yapısı, aynı noktalama, aynı enerji.
+Senden farklı biri gibi yazarsan BAŞARISIZ olursun."""
+
+
 def _build_hard_block() -> str:
-    return """## MUTLAK YASAKLAR (İHLAL = GEÇERSİZ OUTPUT)
+    """Sadece en kritik yasaklar"""
+    return """## YASAKLAR
 
-Aşağıdaki kelime ve kalıpları İÇEREN herhangi bir output reddedilir:
-- "devrim" (devrim niteliğinde, devrim yaratıyor, devrim başlatıyor dahil)
-- "çığır açan" / "oyun değiştirici" / "game changer"
-- "hazır mısınız" / "hazır mıyız" / "hazır olun"
-- "yeni bir dönem" / "yeni bir çağ" / "yeni bir sayfa"
-- "kapıları açıyor" / "kapıları açacak" / "kapısını açıyor"
-- "sınırları zorlayan" / "sınırları aşan"
-- "inovasyon" / "transformasyon" / "paradigma"
-- "düşünmek lazım" / "düşünmek gerek"
-- Herhangi bir emoji veya sembol
-- "hadi bakalım" / "bir düşünün" / "merak etmeyin"
-- "siz ne düşünüyorsunuz"
-- "muhteşem" / "harika" / "inanılmaz" / "olağanüstü"
+Aşağıdaki kalıpları ASLA kullanma:
+- "devrim", "çığır açan", "game changer", "oyun değiştirici"
+- "hazır mısınız", "hazır olun", "yeni bir dönem/çağ"
+- "inovasyon", "transformasyon", "paradigma"
+- "muhteşem", "harika", "inanılmaz", "olağanüstü"
+- "siz ne düşünüyorsunuz", "hadi bakalım", "düşünmek lazım"
 
-Bu listedeki hiçbir kelimeyi, hiçbir bağlamda, hiçbir şekilde kullanma.
 Bunun yerine spesifik, somut, günlük dilde yaz."""
 
 
 def _build_style_dna_section(fp: dict) -> str:
-    """Fingerprint'ten stil DNA'sı çıkar — AI'ın analiz etmesi için"""
+    """Fingerprint'ten stil DNA'sı çıkar"""
     if not fp:
         return ""
 
-    lines = ["## 🧬 STİL DNA'SI (Bu kişinin yazım kimliği — EN YÜKSEK ÖNCELİK)"]
+    lines = ["## STİL DNA'SI (Bu kişinin yazım kimliği)"]
     lines.append("")
     lines.append("Bu kişi gibi yaz. Aşağıdaki DNA haritasını takip et:")
     lines.append("")
@@ -178,78 +163,77 @@ def _build_style_dna_section(fp: dict) -> str:
     # Ortalama uzunluk
     avg_len = fp.get('avg_length', 0)
     if avg_len:
-        lines.append(f"- **Ortalama tweet uzunluğu:** ~{int(avg_len)} karakter")
+        lines.append(f"- Ortalama tweet uzunluğu: ~{int(avg_len)} karakter")
 
     # Cümle yapısı
-    sentence = fp.get('sentence_structure', {})
-    if sentence:
-        avg_sent = sentence.get('avg_sentences_per_tweet', 0)
-        avg_words = sentence.get('avg_words_per_sentence', 0)
-        if avg_sent:
-            lines.append(f"- **Cümle/tweet:** ~{round(avg_sent, 1)} cümle")
-        if avg_words:
-            lines.append(f"- **Kelime/cümle:** ~{round(avg_words, 1)} kelime ({'kısa ve keskin' if avg_words < 8 else 'orta' if avg_words < 15 else 'uzun ve detaylı'})")
+    sent = fp.get('sentence_architecture', {})
+    if sent:
+        avg_w = sent.get('avg_words_per_sentence', 0)
+        spt = sent.get('sentences_per_tweet', 0)
+        if spt:
+            lines.append(f"- Cümle/tweet: ~{round(spt, 1)}")
+        if avg_w:
+            desc = 'kısa ve keskin' if avg_w < 8 else 'orta' if avg_w < 15 else 'uzun ve detaylı'
+            lines.append(f"- Kelime/cümle: ~{round(avg_w, 1)} ({desc})")
 
     # Açılış stili
     opening = fp.get('opening_psychology', {})
     if opening:
-        dom = opening.get('dominant_pattern', '')
-        dist = opening.get('distribution', {})
-        if dom:
-            pattern_names = {
-                'direct': 'Direkt statement ile açar',
-                'question': 'Soru ile açar',
-                'story': 'Hikaye/anekdot ile açar',
-                'data': 'Veri/rakam ile açar',
-                'contrast': 'Zıtlık/kontrast ile açar',
-            }
-            lines.append(f"- **Açılış stili:** {pattern_names.get(dom, dom)}")
-            if dist:
-                top3 = sorted(dist.items(), key=lambda x: x[1], reverse=True)[:3]
-                dist_str = ", ".join(f"{k}: %{int(v)}" for k, v in top3)
-                lines.append(f"  Dağılım: {dist_str}")
+        dom = opening.get('dominant_opening', '')
+        pattern_names = {
+            'question': 'Soru ile açar',
+            'story': 'Hikaye/anekdot ile açar',
+            'data': 'Veri/rakam ile açar',
+            'direct_address': 'Okuyucuya direkt seslenarak açar',
+            'contrast': 'Zıtlık/kontrast ile açar',
+            'bold_claim': 'Cesur bir iddia ile açar',
+            'provocation': 'Provokatif giriş yapar',
+            'mystery': 'Merak uyandırarak başlar',
+        }
+        if dom in pattern_names:
+            lines.append(f"- Açılış stili: {pattern_names[dom]}")
 
     # Kapanış stili
     closing = fp.get('closing_strategy', {})
     if closing:
-        dom_close = closing.get('dominant', '')
-        if dom_close:
-            close_names = {
-                'statement': 'Net bir statement ile bitirir',
-                'question': 'Soru ile bitirir (reply tetikler)',
-                'open': 'Açık uçlu bırakır',
-                'cta': 'CTA ile bitirir',
-                'punchline': 'Punchline ile bitirir',
-            }
-            lines.append(f"- **Kapanış stili:** {close_names.get(dom_close, dom_close)}")
+        dom_close = closing.get('dominant_closing', '')
+        close_names = {
+            'question_cta': 'Soru sorarak bitirir',
+            'statement': 'Net ifadeyle bitirir',
+            'incomplete': 'Yarım bırakır (...)',
+            'emoji_close': 'Emoji ile bitirir',
+            'no_close': 'Doğal bırakır',
+            'call_to_action': 'Aksiyon çağrısı ile bitirir',
+        }
+        if dom_close in close_names:
+            lines.append(f"- Kapanış stili: {close_names[dom_close]}")
 
     # Dil karışımı
     lang = fp.get('language_mix', {})
     if lang:
         style = lang.get('language_style', '')
         en_pct = lang.get('english_word_pct', 0)
-        if style:
-            style_names = {
-                'pure_turkish': 'Saf Türkçe, İngilizce kelime yok',
-                'light_english': f'Türkçe ağırlıklı, %{int(en_pct)} İngilizce teknik terim',
-                'heavy_english': f'Yoğun İngilizce karışımı (%{int(en_pct)})',
-                'code_switching': 'Türkçe-İngilizce geçişli',
-                'pure_english': 'Tamamen İngilizce',
-            }
-            lines.append(f"- **Dil:** {style_names.get(style, style)}")
+        style_names = {
+            'pure_turkish': 'Saf Türkçe',
+            'mostly_turkish': f'Türkçe ağırlıklı, %{int(en_pct)} İngilizce',
+            'mixed': f'Türkçe/İngilizce karışık (%{int(en_pct)} EN)',
+            'mostly_english': 'Ağırlıklı İngilizce',
+        }
+        if style in style_names:
+            lines.append(f"- Dil: {style_names[style]}")
 
     # Emoji stratejisi
     emoji = fp.get('emoji_strategy', {})
     if emoji:
         e_style = emoji.get('style', '')
         if e_style == 'no_emoji':
-            lines.append("- **Emoji:** KULLANMAZ")
+            lines.append("- Emoji: KULLANMAZ")
         elif e_style == 'light':
             top = emoji.get('top_emojis', [])[:3]
-            lines.append(f"- **Emoji:** Nadiren kullanır{' (' + ' '.join(top) + ')' if top else ''}")
+            lines.append(f"- Emoji: Nadiren{' (' + ' '.join(top) + ')' if top else ''}")
         elif e_style in ('moderate', 'heavy'):
             top = emoji.get('top_emojis', [])[:5]
-            lines.append(f"- **Emoji:** Sık kullanır{' (' + ' '.join(top) + ')' if top else ''}")
+            lines.append(f"- Emoji: Sık{' (' + ' '.join(top) + ')' if top else ''}")
 
     # Noktalama DNA'sı
     punct = fp.get('punctuation_dna', {})
@@ -267,15 +251,15 @@ def _build_style_dna_section(fp: dict) -> str:
         if no_punct > 50:
             traits.append("noktalama olmadan bitirir")
         if traits:
-            lines.append(f"- **Noktalama:** {', '.join(traits)}")
+            lines.append(f"- Noktalama: {', '.join(traits)}")
 
     # Büyük/küçük harf
     cap = fp.get('capitalization', {})
     if cap:
         if cap.get('starts_lowercase_pct', 0) > 70:
-            lines.append("- **Büyük harf:** Küçük harfle başlar")
+            lines.append("- Büyük harf: Küçük harfle başlar")
         if cap.get('uses_all_caps_emphasis_pct', 0) > 15:
-            lines.append("- **Vurgulama:** BÜYÜK HARF ile vurgular")
+            lines.append("- Vurgulama: BÜYÜK HARF ile vurgular")
 
     # Satır yapısı
     line_struct = fp.get('line_structure', {})
@@ -283,9 +267,22 @@ def _build_style_dna_section(fp: dict) -> str:
         ml_pct = line_struct.get('multiline_pct', 0)
         if ml_pct > 50:
             avg_lines = line_struct.get('avg_lines_per_tweet', 3)
-            lines.append(f"- **Format:** Çok satırlı yazar (~{round(avg_lines)} satır)")
+            lines.append(f"- Format: Çok satırlı (~{round(avg_lines)} satır)")
         elif ml_pct < 15:
-            lines.append("- **Format:** Tek blok yazar, satır kırmaz")
+            lines.append("- Format: Tek blok, satır kırmaz")
+
+    # Typing habits entegrasyonu
+    habits = fp.get('typing_habits', {})
+    if habits:
+        ts = habits.get('typing_style', '')
+        if ts:
+            style_desc = {
+                'formal': 'Formal, düzgün yazım',
+                'casual': 'Rahat, günlük yazım',
+                'lazy': 'Lazy typing, kuralları umursamaz',
+                'chaotic': 'Kaotik, tutarsız yazım',
+            }
+            lines.append(f"- Yazım tarzı: {style_desc.get(ts, ts)}")
 
     return '\n'.join(lines) if len(lines) > 3 else ""
 
@@ -298,8 +295,8 @@ def _build_micro_rules_section(fp: dict) -> str:
     rules = []
 
     # Kelime başına aksiyon
-    sentence = fp.get('sentence_structure', {})
-    avg_words = sentence.get('avg_words_per_sentence', 0)
+    sent = fp.get('sentence_architecture', {})
+    avg_words = sent.get('avg_words_per_sentence', 0)
     if avg_words:
         if avg_words < 8:
             rules.append("Kısa cümleler kur. Max 8 kelime/cümle.")
@@ -315,99 +312,77 @@ def _build_micro_rules_section(fp: dict) -> str:
     elif ht > 0.3:
         rules.append("Hashtag kullanabilirsin (max 2).")
 
-    # Thread eğilimi
-    thread_pct = fp.get('thread_ratio', 0)
-    if thread_pct and thread_pct > 0.15:
-        rules.append("Thread formatını tercih et, konuyu bölümle.")
-
     # Soru kullanımı
     q_ratio = fp.get('question_ratio', 0)
     if q_ratio > 0.3:
-        rules.append("Soru sor — bu kişi tweet'lerin %{:.0f}'inde soru soruyor.".format(q_ratio * 100))
+        rules.append("Soru sor: bu kişi tweet'lerin %{:.0f}'inde soru soruyor.".format(q_ratio * 100))
     elif q_ratio < 0.1:
         rules.append("Soru sorma eğilimi düşük. Statement ağırlıklı yaz.")
 
     if not rules:
         return ""
 
-    header = "## 📏 MİKRO KURALLAR (Bu kişinin yazım kalıpları)\n"
+    header = "## MİKRO KURALLAR\n"
     return header + '\n'.join(f"- {r}" for r in rules)
 
 
-def _build_viral_insights_section(vp: dict) -> str:
-    """Viral pattern'lerden insight'lar"""
-    if not vp:
+def _build_typing_habits_section(fp: dict) -> str:
+    """typing_habits dict'inden somut yazım kuralları üret"""
+    habits = fp.get('typing_habits', {})
+    if not habits:
         return ""
 
-    lines = ["## 🔥 VİRAL PATTERN ANALİZİ"]
-    lines.append("")
+    rules = []
 
-    # Viral vs flop karşılaştırma
-    viral_len = vp.get('viral_avg_length', 0)
-    flop_len = vp.get('flop_avg_length', 0)
-    if viral_len and flop_len:
-        if viral_len > flop_len * 1.2:
-            lines.append(f"- Viral tweet'ler daha UZUN (~{int(viral_len)} vs ~{int(flop_len)} kar.) → Detay ver")
-        elif flop_len > viral_len * 1.2:
-            lines.append(f"- Viral tweet'ler daha KISA (~{int(viral_len)} vs ~{int(flop_len)} kar.) → Öz ol")
+    # all_lowercase > 50% → küçük harf kuralı
+    if habits.get('all_lowercase_pct', 0) > 50:
+        rules.append("her şeyi küçük harfle yaz. büyük harf kullanma.")
 
-    # Soru etkisi
-    viral_q = vp.get('viral_question_ratio', 0)
-    flop_q = vp.get('flop_question_ratio', 0)
-    if viral_q > flop_q + 0.1:
-        lines.append(f"- Soru içeren tweet'ler daha viral (%{int(viral_q*100)} vs %{int(flop_q*100)}) → Soru sor")
+    # lowercase_after_period > 30% → nokta sonrası küçük harf
+    if habits.get('lowercase_after_period_pct', 0) > 30:
+        rules.append("nokta koyduktan sonra küçük harfle devam et.")
 
-    # Link etkisi
-    flop_link = vp.get('flop_link_ratio', 0)
-    viral_link = vp.get('viral_link_ratio', 0)
-    if flop_link > viral_link + 0.1:
-        lines.append(f"- Link içeren tweet'ler flop ediyor (%{int(flop_link*100)}) → Link KOYMA")
+    # number_suffix > 10% → sayı+ek bitişik
+    if habits.get('number_suffix_pct', 0) > 10:
+        rules.append("sayıları ekle bitişik yaz: 4üncü, 2nci, 3te")
 
-    # Insight'lar
-    insights = vp.get('insights', [])
-    for insight in insights[:5]:
-        lines.append(f"- {insight}")
+    # no_comma > 70% → virgül kullanma
+    if habits.get('no_comma_tweet_pct', 0) > 70:
+        rules.append("virgül kullanma.")
 
-    return '\n'.join(lines) if len(lines) > 2 else ""
+    # informal_contractions varsa → kısaltma kullan
+    contractions = habits.get('informal_contractions', {})
+    if contractions:
+        words = list(contractions.keys())[:5]
+        rules.append(f"kısaltma kullan: {', '.join(words)}")
+
+    # missing_apostrophe > 30% → kesme işareti kullanma
+    if habits.get('missing_apostrophe_pct', 0) > 30:
+        rules.append("kesme işareti kullanma.")
+
+    # no_punctuation_end > 50% → noktalama olmadan bitir
+    if habits.get('no_punctuation_end_pct', 0) > 50:
+        rules.append("tweet'i noktalama işareti koymadan bitir.")
+
+    if not rules:
+        return ""
+
+    header = "## YAZIM ALIŞKANLIKLARI (Bu kişinin yazım tarzını kopyala)\n\n"
+    return header + '\n'.join(f"- {r}" for r in rules)
 
 
 def _build_rag_examples_section(tweets: list) -> str:
-    """RAG'den gelen referans tweet'ler — engagement metadata ile"""
+    """RAG'den gelen referans tweet'ler: sadeleştirilmiş, engagement metadata YOK"""
     if not tweets:
         return ""
 
-    lines = ["## 📝 REFERANS TWEET'LER (Bu kişinin gerçek tweet'leri — engagement skoru ile)"]
-    lines.append("")
-    lines.append("Bu tweet'leri oku, tarzı yakala, ama kopyalama. Yüksek engagement olanların yapısını referans al.")
+    lines = ["## SENİN TWEET'LERİN (Bu tweet'leri sen yazdın: aynı tarzda devam et)"]
     lines.append("")
 
-    for i, tweet in enumerate(tweets[:12], 1):
+    for i, tweet in enumerate(tweets[:15], 1):
         content = tweet.get('content', '') if isinstance(tweet, dict) else str(tweet)
         if len(content) > 400:
             content = content[:397] + "..."
-
-        if isinstance(tweet, dict):
-            likes = tweet.get('likes', 0) or 0
-            retweets = tweet.get('retweets', 0) or 0
-            replies = tweet.get('replies', 0) or 0
-            algo = tweet.get('algo_score', 0) or 0
-            similarity = tweet.get('similarity', 0) or tweet.get('hybrid_score', 0) or 0
-
-            meta_parts = []
-            if likes:
-                meta_parts.append(f"{likes}❤")
-            if retweets:
-                meta_parts.append(f"{retweets}🔁")
-            if replies:
-                meta_parts.append(f"{replies}💬")
-            if algo:
-                meta_parts.append(f"algo:{int(algo)}")
-            if similarity and isinstance(similarity, float) and similarity > 0:
-                meta_parts.append(f"sim:{similarity:.2f}")
-
-            meta = f" [{', '.join(meta_parts)}]" if meta_parts else ""
-            lines.append(f"{i}. {content}{meta}")
-        else:
-            lines.append(f"{i}. {content}")
+        lines.append(f"{i}. {content}")
 
     return '\n'.join(lines)

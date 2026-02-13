@@ -85,6 +85,9 @@ class StyleAnalyzer:
                 [t for t in tweets if t.get('is_quote')]
             ),
             
+            # Yazım alışkanlıkları (v3 Ghost Writer)
+            "typing_habits": self._typing_habits(clean_contents),
+            
             # Eski uyumluluk
             "emoji_usage": self._emoji_count_avg(clean_contents),
             "question_ratio": self._ratio_with_char(clean_contents, '?'),
@@ -726,6 +729,126 @@ class StyleAnalyzer:
                 result["quote_count"] = len(quote_contents)
         
         return result
+    
+    # ═══════════════════════════════════════════
+    # YAZIM ALIŞKANLIKLARI (v3 Ghost Writer)
+    # ═══════════════════════════════════════════
+    def _typing_habits(self, contents: List[str]) -> Dict:
+        """Informal yazım alışkanlıkları: lazy typing, küçük harf, noktalama atlama"""
+        if not contents:
+            return {}
+        
+        n = len(contents)
+        
+        # 1. Nokta sonrası küçük harfle devam eden cümle oranı
+        total_after_period = 0
+        lowercase_after_period = 0
+        for c in contents:
+            after_period_matches = re.findall(r'\.\s+[a-zA-ZğüşıöçĞÜŞİÖÇ]', c)
+            total_after_period += len(after_period_matches)
+            lowercase_after_period += len(re.findall(r'\.\s+[a-zğüşıöç]', c))
+        
+        lowercase_after_period_pct = round(
+            lowercase_after_period / max(total_after_period, 1) * 100, 1
+        )
+        
+        # 2. Tamamı küçük harf olan tweet oranı
+        all_lowercase_count = 0
+        for c in contents:
+            # Sadece harf karakterlerine bak
+            letters = re.findall(r'[a-zA-ZğüşıöçĞÜŞİÖÇ]', c)
+            if letters and all(ch.islower() or ch in 'ğüşıöç' for ch in letters):
+                all_lowercase_count += 1
+        all_lowercase_pct = round(all_lowercase_count / n * 100, 1)
+        
+        # 3. Sayı+Türkçe ek pattern oranı (birim kısaltmaları hariç)
+        unit_patterns = {'dk', 'sn', 'km', 'cm', 'mm', 'mg', 'kg', 'lt', 'gb', 'mb', 'tb', 'k', 'm', 'b'}
+        number_suffix_count = 0
+        total_number_patterns = 0
+        for c in contents:
+            matches = re.findall(r'\d+([a-zğüşıöç]{1,5})', c.lower())
+            for suffix in matches:
+                total_number_patterns += 1
+                if suffix not in unit_patterns:
+                    number_suffix_count += 1
+        number_suffix_pct = round(number_suffix_count / max(n, 1) * 100, 1)
+        
+        # 4. Hiç virgül olmayan tweet oranı
+        no_comma_count = sum(1 for c in contents if ',' not in c)
+        no_comma_tweet_pct = round(no_comma_count / n * 100, 1)
+        
+        # 5. Noktalama işareti olmadan biten tweet oranı
+        no_punct_end_count = sum(1 for c in contents if c.rstrip() and c.rstrip()[-1].isalnum())
+        no_punctuation_end_pct = round(no_punct_end_count / n * 100, 1)
+        
+        # 6. Informal kısaltmalar tespiti
+        contraction_patterns = {
+            'bi': r'\bbi\b',           # bir yerine
+            'bişey': r'\bbişey\b',     # bir şey
+            'bişi': r'\bbişi\b',       # bir şey (kısa)
+            'deil': r'\bdeil\b',       # değil
+            'naber': r'\bnaber\b',     # ne haber
+            'nası': r'\bnası\b',       # nasıl
+            'nerde': r'\bnerde\b',     # nerede
+            'napcaz': r'\bnapcaz\b',   # ne yapacağız
+            'napıyon': r'\bnapıyon\b', # ne yapıyorsun
+            'bence de': r'\bbence de\b',
+        }
+        informal_contractions = {}
+        all_text_lower = ' '.join(contents).lower()
+        for label, pattern in contraction_patterns.items():
+            count = len(re.findall(pattern, all_text_lower))
+            if count > 0:
+                informal_contractions[label] = count
+        
+        # 7. Kesme işareti eksikliği oranı (basit heuristic)
+        # Büyük harfle başlayan kelime + Türkçe ek ama kesme yok
+        tr_suffixes_for_apostrophe = (
+            'nin', 'nın', 'nun', 'nün', 'in', 'ın', 'un', 'ün',
+            'de', 'da', 'te', 'ta', 'den', 'dan', 'ten', 'tan',
+            'ye', 'ya', 'e', 'a', 'yi', 'yı', 'yu', 'yü',
+            'li', 'lı', 'lu', 'lü', 'le', 'la',
+        )
+        missing_apostrophe_count = 0
+        proper_apostrophe_count = 0
+        for c in contents:
+            # Kesme işaretli olanları say
+            proper_apostrophe_count += len(re.findall(r"[A-ZĞÜŞİÖÇ][a-zğüşıöç]+'[a-zğüşıöç]+", c))
+            # Büyük harfle başlayan + ek ama kesme yok
+            words = re.findall(r'\b([A-ZĞÜŞİÖÇ][a-zğüşıöç]{2,}(?:' + '|'.join(tr_suffixes_for_apostrophe) + r'))\b', c)
+            missing_apostrophe_count += len(words)
+        
+        total_apostrophe_cases = missing_apostrophe_count + proper_apostrophe_count
+        missing_apostrophe_pct = round(
+            missing_apostrophe_count / max(total_apostrophe_cases, 1) * 100, 1
+        )
+        
+        # 8. Nokta ayırıcı olarak kullanma (nokta + küçük harf = cümle sonu değil)
+        # Bu aslında lowercase_after_period ile aynı metrik
+        period_as_separator_pct = lowercase_after_period_pct
+        
+        # 9. Genel sınıflandırma
+        informal_count = sum(informal_contractions.values())
+        if all_lowercase_pct > 50 and no_punctuation_end_pct > 50 and informal_count > 5:
+            typing_style = "lazy"
+        elif all_lowercase_pct < 10 and no_comma_tweet_pct < 50 and no_punctuation_end_pct < 30:
+            typing_style = "formal"
+        elif all_lowercase_pct >= 10 and all_lowercase_pct <= 50:
+            typing_style = "casual"
+        else:
+            typing_style = "chaotic"
+        
+        return {
+            "lowercase_after_period_pct": lowercase_after_period_pct,
+            "all_lowercase_pct": all_lowercase_pct,
+            "number_suffix_pct": number_suffix_pct,
+            "no_comma_tweet_pct": no_comma_tweet_pct,
+            "no_punctuation_end_pct": no_punctuation_end_pct,
+            "informal_contractions": informal_contractions,
+            "missing_apostrophe_pct": missing_apostrophe_pct,
+            "period_as_separator_pct": period_as_separator_pct,
+            "typing_style": typing_style,
+        }
     
     # ═══════════════════════════════════════════
     # YARDIMCI METOTLAR

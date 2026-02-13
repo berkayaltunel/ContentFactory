@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useProfile } from "@/contexts/ProfileContext";
 import {
   Sparkles,
   Plus,
@@ -663,6 +664,7 @@ function AddProfileDialog({ open, onOpenChange, onAdd }) {
 // Main Page
 export default function StyleLabPage() {
   const navigate = useNavigate();
+  const { setActiveProfile } = useProfile();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -718,8 +720,12 @@ export default function StyleLabPage() {
     }
   };
 
-  const handleUseProfile = (profile) => {
-    navigate(`/dashboard/create?platform=x&style_profile_id=${profile.id}`);
+  const handleUseProfile = async (profile) => {
+    // ProfileContext'teki aktif profili de güncelle
+    if (setActiveProfile) {
+      await setActiveProfile(profile.id);
+    }
+    navigate(`/dashboard/create?platform=x&style=${profile.id}`);
   };
 
   if (loading) {

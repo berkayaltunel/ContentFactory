@@ -12,7 +12,7 @@ async def get_style_examples(
     source_id: str,
     supabase_client,
     openai_client,
-    limit: int = 8,
+    limit: int = 15,
     strategy: str = "hybrid"  # similarity, viral, hybrid
 ) -> List[dict]:
     """
