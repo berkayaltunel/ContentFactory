@@ -783,9 +783,9 @@ function StyleProfileBadge() {
           whiteSpace: "nowrap",
         }}
       >
-        {activeProfile?.twitter_usernames?.[0] ? (
+        {(activeProfile?.avatar_url || activeProfile?.twitter_username) ? (
           <img
-            src={`https://unavatar.io/x/${activeProfile.twitter_usernames[0]}`}
+            src={activeProfile.avatar_url || `https://unavatar.io/x/${activeProfile.twitter_username}`}
             alt=""
             style={{ width: 18, height: 18, borderRadius: "50%", objectFit: "cover" }}
             onError={(e) => { e.target.style.display = "none"; }}
@@ -833,9 +833,9 @@ function StyleProfileBadge() {
                 textAlign: "left",
               }}
             >
-              {profile.twitter_usernames?.[0] ? (
+              {(profile.avatar_url || profile.twitter_username) ? (
                 <img
-                  src={`https://unavatar.io/x/${profile.twitter_usernames[0]}`}
+                  src={profile.avatar_url || `https://unavatar.io/x/${profile.twitter_username}`}
                   alt=""
                   style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
                   onError={(e) => { e.target.onerror = null; e.target.src = ""; e.target.style.display = "none"; }}

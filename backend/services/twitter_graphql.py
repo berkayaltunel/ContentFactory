@@ -390,7 +390,7 @@ class TwitterGraphQL:
             # Rate limit between pages (3s gap to avoid 429)
             if page < max_pages - 1:
                 import asyncio
-                await asyncio.sleep(3.0)
+                await asyncio.sleep(1.5)
 
         logger.info(f"Fetched {len(all_tweets)} tweets for @{username} via GraphQL ({page + 1} pages)")
         return all_tweets[:count]

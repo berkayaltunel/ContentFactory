@@ -719,7 +719,7 @@ export default function StyleLabPage() {
   };
 
   const handleUseProfile = (profile) => {
-    navigate(`/create?platform=x&style_profile_id=${profile.id}`);
+    navigate(`/dashboard/create?platform=x&style_profile_id=${profile.id}`);
   };
 
   if (loading) {
