@@ -236,7 +236,12 @@ export default function ContentCalendar({ embedded = false }) {
     if (scrollRef.current) {
       const todayEl = scrollRef.current.querySelector('[data-today="true"]');
       if (todayEl) {
-        todayEl.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        // Only scroll horizontally within the calendar container, don't affect page scroll
+        const container = scrollRef.current;
+        const containerRect = container.getBoundingClientRect();
+        const todayRect = todayEl.getBoundingClientRect();
+        const scrollLeft = todayRect.left - containerRect.left - (containerRect.width / 2) + (todayRect.width / 2) + container.scrollLeft;
+        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
       }
     }
   }, [calendarData]);

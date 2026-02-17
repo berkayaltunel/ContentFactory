@@ -240,9 +240,11 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Scroll to top on route change
+  // Scroll to top on route change (with small delay to beat other scroll triggers)
   useEffect(() => {
     window.scrollTo(0, 0);
+    const timer = setTimeout(() => window.scrollTo(0, 0), 100);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);

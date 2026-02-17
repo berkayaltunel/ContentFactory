@@ -1507,7 +1507,7 @@ export default function XAIModule() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "calc(100vh - 80px)",
         background: "var(--m-bg)",
         display: "flex",
         flexDirection: "column",
