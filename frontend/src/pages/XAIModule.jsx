@@ -324,7 +324,7 @@ const blogLevels = [
   { id: "ultimate", label: "Ultimate", desc: "3000+ kelime rehber" },
 ];
 
-function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, activePlatform }) {
+function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, activePlatform, onGenerate }) {
   const [advOpen, setAdvOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -669,6 +669,28 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
             <div style={{ width: "36px", height: "4px", borderRadius: "999px", background: "var(--m-text-muted)", opacity: 0.3 }} />
           </div>
           {settingsContent}
+          {/* Generate button inside sheet */}
+          {onGenerate && (
+            <button
+              onClick={() => { onClose(); onGenerate(); }}
+              className="haptic-btn"
+              style={{
+                width: "100%",
+                marginTop: "12px",
+                padding: "14px",
+                borderRadius: "14px",
+                border: "none",
+                background: "linear-gradient(135deg, #a855f7, #7c3aed)",
+                color: "#fff",
+                fontSize: "15px",
+                fontWeight: "600",
+                cursor: "pointer",
+                letterSpacing: "0.01em",
+              }}
+            >
+              ⚡ Üret
+            </button>
+          )}
         </div>
       </>,
       document.body
@@ -1942,6 +1964,7 @@ export default function XAIModule() {
           onSettingsChange={setSettings}
           activeTab={activeTab}
           activePlatform={activePlatform}
+          onGenerate={handleGenerate}
         />
       </div>
 
