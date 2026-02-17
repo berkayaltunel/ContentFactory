@@ -68,7 +68,7 @@ from prompts.builder import (
 )
 from prompts.builder_v3 import build_final_prompt_v3
 
-def _select_builder(engine: str = "v2"):
+def _select_builder(engine: str = "v3"):
     """Return the appropriate prompt builder based on engine param."""
     if engine == "v3":
         return build_final_prompt_v3
@@ -434,7 +434,7 @@ async def find_similar_tweets(request: SimilarTweetsRequest, user=Depends(requir
 # ==================== CONTENT GENERATION ROUTES ====================
 
 @api_router.post("/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet(request: TweetGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet content"""
     try:
         # Input sanitization
@@ -571,7 +571,7 @@ async def generate_tweet(request: TweetGenerateRequest, engine: str = "v2", _=De
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/quote", response_model=GenerationResponse)
-async def generate_quote(request: QuoteGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate quote tweet content"""
     try:
         sanitize_generation_request(request)
@@ -686,7 +686,7 @@ async def generate_quote(request: QuoteGenerateRequest, engine: str = "v2", _=De
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/reply", response_model=GenerationResponse)
-async def generate_reply(request: ReplyGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate reply content"""
     try:
         sanitize_generation_request(request)
@@ -805,7 +805,7 @@ async def generate_reply(request: ReplyGenerateRequest, engine: str = "v2", _=De
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/article", response_model=GenerationResponse)
-async def generate_article(request: ArticleGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_article(request: ArticleGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate X article content"""
     try:
         sanitize_generation_request(request)
@@ -1560,7 +1560,7 @@ class ReplyGenerateRequestV2(BaseModel):
 # ==================== V2 ENDPOINTS ====================
 
 @api_router.post("/v2/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v2", force_model: str = None, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v3", force_model: str = None, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet with v2 settings system (Etki, Karakter, Yapı etc.)"""
     try:
         sanitize_generation_request(request)
