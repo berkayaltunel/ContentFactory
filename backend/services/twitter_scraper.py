@@ -180,10 +180,12 @@ class TwitterScraper:
         result = self._run_bird(['user-tweets', f'@{username}', '-n', '1'])
         if result and len(result) > 0:
             author = result[0].get('author', {})
+            bird_avatar = (author.get('avatar_url') or author.get('profile_image_url') or '').replace('_normal.', '_400x400.')
             return {
                 'username': author.get('username'),
                 'name': author.get('name'),
-                'user_id': result[0].get('authorId')
+                'user_id': result[0].get('authorId'),
+                'avatar_url': bird_avatar,
             }
         
         # GraphQL fallback

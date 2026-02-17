@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Sparkles,
@@ -50,6 +51,7 @@ import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import GenerationCard from "@/components/generation/GenerationCard";
 import FloatingQueue from "@/components/generation/FloatingQueue";
+import RepurposeModal from "@/components/RepurposeModal";
 import { useProfile } from "@/contexts/ProfileContext";
 
 // ══════════════════════════════════════════
@@ -761,12 +763,69 @@ function StyleProfileBadge() {
   const { profiles, activeProfile, activeProfileId, setActiveProfile, refreshProfiles } = useProfile();
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
+  const btnRef = useRef(null);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+
+  // Buton pozisyonunu hesapla (dropdown açılınca)
+  useEffect(() => {
+    if (showDropdown && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({
+        top: rect.top - 8, // butonun hemen üstü
+        left: rect.left + rect.width / 2, // ortala
+      });
+    }
+  }, [showDropdown]);
 
   if (!profiles || profiles.length === 0) return null;
+
+  const profileItem = (profile) => (
+    <button
+      key={profile.id}
+      onClick={() => { setActiveProfile(profile.id); setShowDropdown(false); }}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "8px 12px",
+        borderRadius: "8px",
+        border: "none",
+        background: profile.id === activeProfileId ? "var(--m-purple-soft)" : "transparent",
+        color: profile.id === activeProfileId ? "var(--m-purple)" : "var(--m-text-soft)",
+        fontSize: "13px",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        textAlign: "left",
+      }}
+    >
+      {(profile.avatar_url || profile.twitter_username) ? (
+        <img
+          src={profile.avatar_url || `https://unavatar.io/x/${profile.twitter_username}`}
+          alt=""
+          style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+          onError={(e) => { e.target.onerror = null; e.target.src = ""; e.target.style.display = "none"; }}
+        />
+      ) : (
+        <div style={{
+          width: "24px", height: "24px", borderRadius: "50%",
+          background: "linear-gradient(135deg, #a855f7, #ec4899)",
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--m-text)" }}>
+            {profile.name?.charAt(0)?.toUpperCase() || "S"}
+          </span>
+        </div>
+      )}
+      <span style={{ flex: 1 }}>{profile.name}</span>
+      {profile.id === activeProfileId && <Check size={14} />}
+    </button>
+  );
 
   return (
     <div style={{ position: "relative" }}>
       <button
+        ref={btnRef}
         onClick={() => setShowDropdown(!showDropdown)}
         style={{
           display: "flex",
@@ -797,111 +856,64 @@ function StyleProfileBadge() {
         <ChevronDown size={12} style={{ opacity: 0.5 }} />
       </button>
 
-      {showDropdown && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "calc(100% + 8px)",
-            left: "0",
-            background: "var(--m-popup-bg)",
-            border: "1px solid var(--m-border)",
-            borderRadius: "12px",
-            padding: "8px",
-            minWidth: "220px",
-            backdropFilter: "blur(20px)",
-            zIndex: 100,
-            boxShadow: "var(--m-shadow)",
-          }}
-        >
-          {profiles.map((profile) => (
-            <button
-              key={profile.id}
-              onClick={() => { setActiveProfile(profile.id); setShowDropdown(false); }}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "none",
-                background: profile.id === activeProfileId ? "var(--m-purple-soft)" : "transparent",
-                color: profile.id === activeProfileId ? "var(--m-purple)" : "var(--m-text-soft)",
-                fontSize: "13px",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-                textAlign: "left",
-              }}
-            >
-              {(profile.avatar_url || profile.twitter_username) ? (
-                <img
-                  src={profile.avatar_url || `https://unavatar.io/x/${profile.twitter_username}`}
-                  alt=""
-                  style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-                  onError={(e) => { e.target.onerror = null; e.target.src = ""; e.target.style.display = "none"; }}
-                />
-              ) : (
-                <div style={{
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #a855f7, #ec4899)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <span style={{ fontSize: "10px", fontWeight: "700", color: "var(--m-text)" }}>
-                    {profile.name?.charAt(0)?.toUpperCase() || "S"}
-                  </span>
-                </div>
-              )}
-              <span style={{ flex: 1 }}>{profile.name}</span>
-              {profile.id === activeProfileId && <Check size={14} />}
-            </button>
-          ))}
+      {showDropdown && createPortal(
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowDropdown(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 99998 }}
+          />
+          {/* Dropdown (yukarı açılır, fixed pozisyon) */}
+          <div
+            style={{
+              position: "fixed",
+              bottom: `${window.innerHeight - dropPos.top}px`,
+              left: `${dropPos.left}px`,
+              transform: "translateX(-50%)",
+              background: "var(--m-popup-bg)",
+              border: "1px solid var(--m-border)",
+              borderRadius: "12px",
+              padding: "8px",
+              minWidth: "220px",
+              maxHeight: "280px",
+              overflowY: "auto",
+              backdropFilter: "blur(20px)",
+              zIndex: 99999,
+              boxShadow: "0 -8px 32px rgba(0,0,0,0.4)",
+              animation: "fadeIn 0.15s ease",
+            }}
+          >
+            {profiles.map(profileItem)}
 
-          <div style={{ borderTop: "1px solid var(--m-border-light)", margin: "4px 0", paddingTop: "4px" }}>
-            <button
-              onClick={() => { setActiveProfile(null); setShowDropdown(false); }}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "none",
-                background: "transparent",
-                color: "var(--m-text-muted)",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              <X size={14} />
-              <span>Stil kapalı</span>
-            </button>
-            <button
-              onClick={() => { navigate("/dashboard/style-lab"); setShowDropdown(false); }}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "none",
-                background: "transparent",
-                color: "var(--m-purple)",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              <Dna size={14} />
-              <span>Style Lab</span>
-            </button>
+            <div style={{ borderTop: "1px solid var(--m-border-light)", margin: "4px 0", paddingTop: "4px" }}>
+              <button
+                onClick={() => { setActiveProfile(null); setShowDropdown(false); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                  padding: "8px 12px", borderRadius: "8px", border: "none",
+                  background: "transparent", color: "var(--m-text-muted)",
+                  fontSize: "13px", cursor: "pointer",
+                }}
+              >
+                <X size={14} />
+                <span>Stil kapalı</span>
+              </button>
+              <button
+                onClick={() => { navigate("/dashboard/style-lab"); setShowDropdown(false); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                  padding: "8px 12px", borderRadius: "8px", border: "none",
+                  background: "transparent", color: "var(--m-purple)",
+                  fontSize: "13px", cursor: "pointer",
+                }}
+              >
+                <Dna size={14} />
+                <span>Style Lab</span>
+              </button>
+            </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </div>
   );
@@ -1088,6 +1100,8 @@ export default function XAIModule() {
   const [imageBase64, setImageBase64] = useState(null);
   const [trendContext, setTrendContext] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [repurposeModal, setRepurposeModal] = useState({ open: false, content: "", mode: "video" });
+  const [imagePrompts, setImagePrompts] = useState({}); // unused, kept for compat
   const [generating, setGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [history, setHistory] = useState([]);
@@ -2068,28 +2082,8 @@ export default function XAIModule() {
                               {[
                                 { icon: "📋", label: "Kopyala", action: () => { navigator.clipboard.writeText(variant.content); toast.success("Kopyalandı!"); } },
                                 { icon: "♡", label: "Favori", action: () => { api.post(`${API}/favorites/toggle`, { content: variant.content, type: gen.type || "tweet", generation_id: gen.id, variant_index: idx }).then(() => toast.success("Favori güncellendi")).catch(() => toast.error("Hata")); } },
-                                { icon: "📹", label: "Video Script", action: async () => {
-                                  try {
-                                    toast.info("Video script üretiliyor...");
-                                    const res = await api.post(`${API}/repurpose/video-script`, { content: variant.content, duration: "30", platform: "reels" });
-                                    if (res.data.success) {
-                                      const scriptText = res.data.script.map(s => `[${s.time}] ${s.spoken_text}\n📝 ${s.text_overlay}\n🎬 ${s.visual_note}`).join("\n\n");
-                                      const fullText = `🎬 Video Script (30s Reels)\n\n${scriptText}\n\n🎵 Müzik: ${res.data.music_mood}\n#️⃣ ${res.data.hashtags?.join(" ")}`;
-                                      navigator.clipboard.writeText(fullText);
-                                      toast.success("Video script kopyalandı!");
-                                    } else { toast.error(res.data.error || "Hata"); }
-                                  } catch { toast.error("Video script üretilemedi"); }
-                                }},
-                                { icon: "🖼️", label: "Görsel Prompt", action: async () => {
-                                  try {
-                                    toast.info("Görsel prompt üretiliyor...");
-                                    const res = await api.post(`${API}/repurpose/image-prompt`, { content: variant.content, platform: activePlatform || "twitter" });
-                                    if (res.data.success) {
-                                      navigator.clipboard.writeText(JSON.stringify(res.data.prompt_json, null, 2));
-                                      toast.success("Görsel prompt JSON kopyalandı!");
-                                    } else { toast.error(res.data.error || "Hata"); }
-                                  } catch { toast.error("Görsel prompt üretilemedi"); }
-                                }},
+                                { icon: "📹", label: "Video Script", action: () => setRepurposeModal({ open: true, content: variant.content, mode: "video" }) },
+                                { icon: "🖼️", label: "Görsel Prompt", action: () => setRepurposeModal({ open: true, content: variant.content, mode: "image" }) },
                                 { icon: "🐦", label: "Tweetle", action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(variant.content)}`, "_blank") },
                               ].map((btn) => (
                                 <button
@@ -2126,6 +2120,14 @@ export default function XAIModule() {
 
       {/* Floating Queue */}
       <FloatingQueue jobs={jobs} onDismiss={dismissJob} />
+      <RepurposeModal
+        open={repurposeModal.open}
+        onClose={() => setRepurposeModal(prev => ({ ...prev, open: false }))}
+        content={repurposeModal.content}
+        mode={repurposeModal.mode}
+        api={api}
+        API={API}
+      />
 
       {/* Bottom Promo Card */}
       {/* Promo cards removed - saved for landing page */}

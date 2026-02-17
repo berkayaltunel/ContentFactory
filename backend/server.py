@@ -66,6 +66,13 @@ from prompts.builder import (
     REPLY_MODES,
     ARTICLE_STYLES
 )
+from prompts.builder_v3 import build_final_prompt_v3
+
+def _select_builder(engine: str = "v2"):
+    """Return the appropriate prompt builder based on engine param."""
+    if engine == "v3":
+        return build_final_prompt_v3
+    return build_final_prompt
 
 # ==================== AUTH ====================
 from middleware.auth import require_auth, optional_auth
@@ -427,7 +434,7 @@ async def find_similar_tweets(request: SimilarTweetsRequest, user=Depends(requir
 # ==================== CONTENT GENERATION ROUTES ====================
 
 @api_router.post("/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet(request: TweetGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet content"""
     try:
         # Input sanitization
@@ -511,7 +518,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
             else:
                 # Profile bulunamadı, v1'e fallback
                 logger.warning(f"Style profile {request.style_profile_id} bulunamadı, v1 pipeline kullanılıyor")
-                system_prompt = build_final_prompt(
+                system_prompt = _select_builder(engine)(
                     content_type="tweet", topic=request.topic, persona=request.persona,
                     tone=request.tone, knowledge=request.knowledge, length=request.length,
                     language=request.language, additional_context=combined_context if combined_context else None,
@@ -521,7 +528,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
                 variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
         else:
             # ── v1 pipeline (style profile yok) ──
-            system_prompt = build_final_prompt(
+            system_prompt = _select_builder(engine)(
                 content_type="tweet",
                 topic=request.topic,
                 persona=request.persona,
@@ -564,7 +571,7 @@ async def generate_tweet(request: TweetGenerateRequest, _=Depends(rate_limit), u
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/quote", response_model=GenerationResponse)
-async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_quote(request: QuoteGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate quote tweet content"""
     try:
         sanitize_generation_request(request)
@@ -633,7 +640,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
                 variants = [GeneratedContent(content=text, variant_index=i, character_count=len(text)) for i, (text, score, breakdown) in enumerate(top)]
                 logger.info(f"Style v2 quote: {gen_count} üretildi, {len(top)} seçildi")
             else:
-                system_prompt = build_final_prompt(
+                system_prompt = _select_builder(engine)(
                     content_type="quote", persona=request.persona, tone=request.tone,
                     knowledge=request.knowledge, length=request.length, language=request.language,
                     original_tweet=request.tweet_content, additional_context=quote_context if quote_context else None, platform="twitter"
@@ -642,7 +649,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
                 variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
         else:
             # ── v1 pipeline ──
-            system_prompt = build_final_prompt(
+            system_prompt = _select_builder(engine)(
                 content_type="quote",
                 persona=request.persona, tone=request.tone,
                 knowledge=request.knowledge, length=request.length,
@@ -679,7 +686,7 @@ async def generate_quote(request: QuoteGenerateRequest, _=Depends(rate_limit), u
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/reply", response_model=GenerationResponse)
-async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_reply(request: ReplyGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate reply content"""
     try:
         sanitize_generation_request(request)
@@ -749,7 +756,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
                 variants = [GeneratedContent(content=text, variant_index=i, character_count=len(text)) for i, (text, score, breakdown) in enumerate(top)]
                 logger.info(f"Style v2 reply: {gen_count} üretildi, {len(top)} seçildi")
             else:
-                system_prompt = build_final_prompt(
+                system_prompt = _select_builder(engine)(
                     content_type="reply", persona=request.persona, tone=request.tone,
                     knowledge=request.knowledge, length=request.length, language=request.language,
                     original_tweet=request.tweet_content, reply_mode=request.reply_mode,
@@ -759,7 +766,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
                 variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
         else:
             # ── v1 pipeline ──
-            system_prompt = build_final_prompt(
+            system_prompt = _select_builder(engine)(
                 content_type="reply",
                 persona=request.persona, tone=request.tone,
                 knowledge=request.knowledge, length=request.length,
@@ -798,7 +805,7 @@ async def generate_reply(request: ReplyGenerateRequest, _=Depends(rate_limit), u
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/article", response_model=GenerationResponse)
-async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_article(request: ArticleGenerateRequest, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate X article content"""
     try:
         sanitize_generation_request(request)
@@ -807,7 +814,7 @@ async def generate_article(request: ArticleGenerateRequest, _=Depends(rate_limit
         if request.title:
             topic = f"Başlık: {request.title}\n\nKonu: {topic}"
 
-        system_prompt = build_final_prompt(
+        system_prompt = _select_builder(engine)(
             content_type="article",
             topic=topic,
             persona="otorite",
@@ -1661,10 +1668,6 @@ async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limi
 
         model_config = get_model_config(request.etki, request.is_ultra)
 
-        combined_context = request.additional_context or ""
-        if request.direction:
-            combined_context = f"Kullanıcı yönlendirmesi: {request.direction}\n\n{combined_context}" if combined_context else f"Kullanıcı yönlendirmesi: {request.direction}"
-
         system_prompt = build_final_prompt_v2(
             content_type="quote",
             topic=None,
@@ -1678,11 +1681,14 @@ async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limi
             language=request.language,
             is_ultra=request.is_ultra,
             original_tweet=original_content,
-            additional_context=combined_context if combined_context else None,
+            additional_context=request.additional_context or None,
         )
 
+        # Direction'ı user message olarak gönder (daha etkili)
+        user_msg = f"Bu tweet'e quote yaz.\n\nKullanıcı talimatı: {request.direction}" if request.direction else "Bu tweet'e quote yaz."
+
         contents, tokens_used = await generate_with_openrouter(
-            system_prompt, "İçeriği üret.", model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
+            system_prompt, user_msg, model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
         )
 
         variants = [
@@ -1725,10 +1731,6 @@ async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limi
 
         model_config = get_model_config(request.etki, request.is_ultra)
 
-        combined_context = request.additional_context or ""
-        if request.direction:
-            combined_context = f"Kullanıcı yönlendirmesi: {request.direction}\n\n{combined_context}" if combined_context else f"Kullanıcı yönlendirmesi: {request.direction}"
-
         system_prompt = build_final_prompt_v2(
             content_type="reply",
             topic=None,
@@ -1743,11 +1745,14 @@ async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limi
             is_ultra=request.is_ultra,
             original_tweet=original_content,
             reply_mode=request.reply_mode,
-            additional_context=combined_context if combined_context else None,
+            additional_context=request.additional_context or None,
         )
 
+        # Direction'ı user message olarak gönder (daha etkili)
+        user_msg = f"Bu tweet'e reply yaz.\n\nKullanıcı talimatı: {request.direction}" if request.direction else "Bu tweet'e reply yaz."
+
         contents, tokens_used = await generate_with_openrouter(
-            system_prompt, "İçeriği üret.", model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
+            system_prompt, user_msg, model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
         )
 
         variants = [

@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
 
-DAILY_TOKEN_LIMIT = 50_000  # per user per day
+DAILY_TOKEN_LIMIT = 500_000  # per user per day
 
 # user_id -> {date_str: total_tokens}
 _token_usage: dict[str, dict[str, int]] = defaultdict(dict)

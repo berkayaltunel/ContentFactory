@@ -127,6 +127,11 @@ function TrendCard({ trend, onGenerate }) {
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
           <Newspaper className="h-3 w-3 flex-shrink-0" />
           <span className="truncate">{trend.source_name || "RSS"}</span>
+          {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && (
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-1 flex-shrink-0">
+              +{(trend.source_count || (trend.sample_sources?.length || 0) + 1) - 1} 📰
+            </span>
+          )}
           {trend.published_at && (
             <>
               <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>
@@ -405,6 +410,7 @@ export default function TrendDashboardPage() {
   const [selectedTime, setSelectedTime] = useState("all");
   const [selectedSort, setSelectedSort] = useState("score");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [activeTab, setActiveTab] = useState("gundem"); // "gundem" | "arsiv"
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -416,6 +422,7 @@ export default function TrendDashboardPage() {
       if (category && category !== "Tümü") params.category = category;
       if (since && since !== "all") params.since = since;
       if (sort) params.sort = sort;
+      if (activeTab === "arsiv") params.archived = true;
       const res = await api.get(`${API}/trends`, { params });
       setTrends(res.data.trends || []);
       if (res.data.trends?.length > 0) {
@@ -431,7 +438,7 @@ export default function TrendDashboardPage() {
   useEffect(() => {
     setLoading(true);
     fetchTrends(selectedCategory, selectedTime, selectedSort);
-  }, [selectedCategory, selectedTime, selectedSort]);
+  }, [selectedCategory, selectedTime, selectedSort, activeTab]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -480,6 +487,16 @@ export default function TrendDashboardPage() {
           <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
           {refreshing ? "Taranıyor..." : "🔄 Yenile"}
         </Button>
+      </div>
+
+      {/* Tabs: Gündem / Arşiv */}
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setActiveTab("gundem")} className={cn("px-4 py-2 rounded-full text-sm font-medium transition-all", activeTab === "gundem" ? "bg-orange-500 text-white" : "bg-white/5 text-gray-400 hover:text-white")}>
+          🔥 Gündem
+        </button>
+        <button onClick={() => setActiveTab("arsiv")} className={cn("px-4 py-2 rounded-full text-sm font-medium transition-all", activeTab === "arsiv" ? "bg-violet-500 text-white" : "bg-white/5 text-gray-400 hover:text-white")}>
+          📚 Arşiv
+        </button>
       </div>
 
       {/* Filters: Category + Time */}
@@ -556,11 +573,78 @@ export default function TrendDashboardPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
-            {trends.map((trend) => (
-              <TrendCard key={trend.id} trend={trend} onGenerate={handleGenerate} />
-            ))}
-          </div>
+          {/* Verified Trends Section (Gündem tab only) */}
+          {(() => {
+            const verifiedTrends = activeTab === "gundem" ? trends.filter(t => t.score >= 95 && (t.source_count >= 2 || (t.sample_sources && t.sample_sources.length >= 1))) : [];
+            const regularTrends = activeTab === "gundem" ? trends.filter(t => !(t.score >= 95 && (t.source_count >= 2 || (t.sample_sources && t.sample_sources.length >= 1)))) : trends;
+            return (
+              <>
+                {verifiedTrends.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      🔥 Doğrulanmış Gündem
+                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">çoklu kaynak</span>
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {verifiedTrends.map(trend => (
+                        <div key={trend.id} className="relative border-l-4 border-red-500 bg-gradient-to-r from-red-950/30 to-transparent rounded-xl p-5 cursor-pointer hover:from-red-950/50 transition-all" onClick={() => handleGenerate(trend)}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">
+                              🔴 {(trend.source_count || (trend.sample_sources?.length || 0) + 1)} kaynaktan doğrulandı
+                            </span>
+                            <span className="text-xs bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
+                              {trend.score}/100
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-bold text-white mb-2">{trend.topic}</h3>
+                          <p className="text-sm text-gray-400 mb-3">{trend.summary}</p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                            <span>{trend.source_name}</span>
+                            {trend.sample_sources?.map((s, i) => (
+                              <span key={i}>• {s}</span>
+                            ))}
+                            <span>• {timeAgo(trend.published_at)}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            {trend.url && (
+                              <a href={trend.url} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-400 hover:text-orange-300" onClick={e => e.stopPropagation()}>
+                                Haberi Oku ↗
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "arsiv" ? (
+                  /* Arşiv: compact list */
+                  <div className="space-y-2">
+                    {regularTrends.map(trend => (
+                      <div key={trend.id} className="flex items-center gap-4 p-3 rounded-lg border border-border bg-card hover:border-violet-500/40 transition-all cursor-pointer" onClick={() => handleGenerate(trend)}>
+                        <span className="text-xs text-muted-foreground w-20 flex-shrink-0">{timeAgo(trend.published_at)}</span>
+                        <h3 className="font-medium text-sm flex-1 truncate">{trend.topic}</h3>
+                        <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", scoreBadge(trend.score || 0).cls)}>{trend.score}</span>
+                        {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && (
+                          <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">
+                            +{(trend.source_count || (trend.sample_sources?.length || 0) + 1) - 1} 📰
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">{trend.source_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+                    {regularTrends.map((trend) => (
+                      <TrendCard key={trend.id} trend={trend} onGenerate={handleGenerate} />
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {/* Auto-refresh indicator */}
           {lastUpdated && (

@@ -18,6 +18,7 @@ import TrendDashboardPage from "@/pages/TrendDashboardPage";
 import AccountAnalysisPage from "@/pages/AccountAnalysisPage";
 import DashboardHome from "@/pages/DashboardHome";
 import YouTubeStudioPage from "@/pages/YouTubeStudioPage";
+import ABTestPage from "@/pages/ABTestPage";
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="contentfactory-theme">
@@ -48,6 +49,11 @@ function App() {
                   <Route path="account-analysis" element={<AccountAnalysisPage />} />
                   <Route path="youtube-studio" element={<YouTubeStudioPage />} />
                 </Route>
+              </Route>
+
+              {/* Hidden A/B test page */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/ab-test" element={<ABTestPage />} />
               </Route>
 
               {/* Fallback */}
