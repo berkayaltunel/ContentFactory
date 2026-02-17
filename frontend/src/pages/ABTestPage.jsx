@@ -1,13 +1,14 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, RotateCcw, Check, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, RotateCcw, Check, Trophy, ChevronDown, ChevronUp, Sparkles, User } from "lucide-react";
+import { useProfile } from "@/contexts/ProfileContext";
 
 // ══════════════════════════════════════════
-// AYARLAR (XAIModule ile aynı)
+// AYARLAR
 // ══════════════════════════════════════════
 
 const PLATFORMS = [
@@ -19,7 +20,38 @@ const PLATFORMS = [
   { id: "tiktok", label: "TikTok" },
 ];
 
-// X platformu v2 ayarları
+const CONTENT_TYPES = {
+  x: [
+    { id: "tweet", label: "Tweet" },
+    { id: "thread", label: "Thread" },
+  ],
+  youtube: [
+    { id: "video-script", label: "Video Script" },
+    { id: "title-desc", label: "Başlık + Açıklama" },
+    { id: "shorts-script", label: "Shorts Script" },
+  ],
+  instagram: [
+    { id: "caption", label: "Caption" },
+    { id: "reel-script", label: "Reel Script" },
+    { id: "story", label: "Story Metni" },
+  ],
+  tiktok: [
+    { id: "hook", label: "Hook" },
+    { id: "script", label: "Script" },
+    { id: "caption", label: "Caption" },
+  ],
+  linkedin: [
+    { id: "post", label: "Post" },
+    { id: "article", label: "Makale" },
+    { id: "carousel", label: "Carousel" },
+  ],
+  blog: [
+    { id: "blog-article", label: "Blog Yazısı" },
+    { id: "blog-listicle", label: "Listicle" },
+    { id: "blog-tutorial", label: "Tutorial" },
+  ],
+};
+
 const ETKILER = [
   { id: "patlassin", label: "Patlasın", desc: "Viral, maximum erişim" },
   { id: "konustursun", label: "Konuştursun", desc: "Tartışma başlatsın" },
@@ -71,7 +103,6 @@ const UZUNLUKLAR = [
   { id: "thread", label: "Thread" },
 ];
 
-// Diğer platformlar (v1 ayarları)
 const PERSONAS = ["saf", "otorite", "insider", "mentalist", "haber"];
 const TONES = ["natural", "raw", "polished", "unhinged"];
 const LENGTHS = ["micro", "punch", "spark", "storm", "thread"];
@@ -91,6 +122,25 @@ const SMART_DEFAULTS = {
   iz_biraksin: { karakter: "uzman",    yapi: "dogal",   uzunluk: "spark", acilis: "hikaye",   bitis: "dogal",    derinlik: "standart" },
   shitpost:    { karakter: "haberci",  yapi: "dogal",   uzunluk: "micro", acilis: "otomatik", bitis: "dogal",    derinlik: "standart" },
 };
+
+// Significance hesabı (binomial test approximation)
+const MIN_TESTS = 10;
+const SIGNIFICANCE_THRESHOLD = 0.05;
+
+function calcSignificance(wins, total) {
+  if (total < MIN_TESTS) return { significant: false, pValue: 1, needed: MIN_TESTS - total };
+  // Normal approximation to binomial (H0: p = 0.5)
+  const p0 = 0.5;
+  const z = (wins / total - p0) / Math.sqrt(p0 * (1 - p0) / total);
+  // Two-tailed p-value approximation
+  const absZ = Math.abs(z);
+  // Quick p-value from z using rational approximation
+  const t = 1 / (1 + 0.2316419 * absZ);
+  const d = 0.3989422804 * Math.exp(-absZ * absZ / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.8212560 + t * 1.3302744))));
+  const pValue = 2 * p; // two-tailed
+  return { significant: pValue < SIGNIFICANCE_THRESHOLD, pValue, needed: 0 };
+}
 
 // ══════════════════════════════════════════
 // COMPONENTS
@@ -142,24 +192,42 @@ function VariantTabs({ variants, activeIdx, onSelect }) {
   );
 }
 
-function EngineColumn({ label, variants, loading, selected, onSelect, revealed, engineName }) {
+function EngineColumn({ label, variants, loading, selected, onSelect, revealed, engineName, winner, loser }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const currentVariant = variants?.[activeIdx];
 
+  const borderClass = revealed
+    ? selected
+      ? "border-green-500 ring-2 ring-green-500/30 bg-green-500/5"
+      : "border-red-500/30 bg-red-500/5 opacity-70"
+    : selected
+      ? "border-green-500/60 bg-green-500/5"
+      : "border-white/10";
+
   return (
-    <Card className={`flex-1 p-5 bg-[#111] border transition-colors ${
-      selected ? "border-green-500/60 bg-green-500/5" : "border-white/10"
-    }`}>
+    <Card className={`flex-1 p-5 bg-[#111] border transition-all duration-500 ${borderClass}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold text-white">{label}</h3>
           {revealed && (
-            <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30 text-xs">
+            <Badge className={`text-xs ${
+              selected
+                ? "bg-green-500/20 text-green-400 border-green-500/30"
+                : "bg-red-500/20 text-red-400 border-red-500/30"
+            }`}>
               {engineName}
             </Badge>
           )}
         </div>
-        {selected && <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Seçildi ✓</Badge>}
+        {revealed && selected && (
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-4 h-4 text-yellow-400" />
+            <span className="text-green-400 font-semibold text-sm">Kazanan</span>
+          </div>
+        )}
+        {revealed && !selected && (
+          <span className="text-red-400/60 text-xs">Kaybeden</span>
+        )}
       </div>
 
       {loading ? (
@@ -173,14 +241,16 @@ function EngineColumn({ label, variants, loading, selected, onSelect, revealed, 
           <div className="bg-[#0A0A0A] rounded-lg p-4 min-h-[120px] text-white/90 text-sm leading-relaxed whitespace-pre-wrap mb-4">
             {currentVariant || "(boş)"}
           </div>
-          <Button
-            variant={selected ? "default" : "outline"}
-            className={`w-full ${selected ? "bg-green-600 hover:bg-green-700 text-white" : "border-white/20 text-white hover:bg-white/10"}`}
-            onClick={onSelect}
-          >
-            <Check className="w-4 h-4 mr-2" />
-            Bu Daha İyi
-          </Button>
+          {!revealed && (
+            <Button
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10"
+              onClick={onSelect}
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Bu Daha İyi
+            </Button>
+          )}
         </>
       ) : (
         <div className="flex items-center justify-center py-16 text-white/20 text-sm">
@@ -191,7 +261,7 @@ function EngineColumn({ label, variants, loading, selected, onSelect, revealed, 
   );
 }
 
-// localStorage sonuçlar
+// localStorage
 function saveResult(result) {
   try {
     const existing = JSON.parse(localStorage.getItem("ab_test_results") || "[]");
@@ -211,7 +281,12 @@ function getResults() {
 export default function ABTestPage() {
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState("x");
+  const [contentType, setContentType] = useState("tweet");
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Style profile
+  const { profiles, activeProfile, activeProfileId, setActiveProfile } = useProfile();
+  const [styleOpen, setStyleOpen] = useState(false);
 
   // X platformu ayarları
   const [etki, setEtki] = useState("patlassin");
@@ -242,7 +317,15 @@ export default function ABTestPage() {
 
   const isX = platform === "x";
 
-  // Etki değişince smart defaults uygula
+  // Platform değişince content type sıfırla
+  const handlePlatformChange = (p) => {
+    setPlatform(p);
+    const types = CONTENT_TYPES[p];
+    if (types && types.length > 0) {
+      setContentType(types[0].id);
+    }
+  };
+
   const handleEtkiChange = (newEtki) => {
     setEtki(newEtki);
     const defaults = SMART_DEFAULTS[newEtki];
@@ -263,7 +346,6 @@ export default function ABTestPage() {
     setColA({ loading: true, variants: null });
     setColB({ loading: true, variants: null });
 
-    // Randomize order
     const flip = Math.random() > 0.5;
     orderRef.current = flip ? { a: "v3", b: "v2" } : { a: "v2", b: "v3" };
 
@@ -272,7 +354,6 @@ export default function ABTestPage() {
         let endpoint, body;
 
         if (isX) {
-          // X platformu: v2 endpoint + engine param
           endpoint = `/v2/generate/tweet?engine=${engine}`;
           body = {
             topic: topic.trim(),
@@ -286,9 +367,10 @@ export default function ABTestPage() {
             language,
             is_ultra: isUltra,
             variants,
+            content_type: contentType,
+            style_profile_id: activeProfileId || null,
           };
         } else {
-          // Diğer platformlar: v1 endpoint + engine param
           const endpointMap = {
             linkedin: "/generate/linkedin",
             instagram: "/generate/instagram/caption",
@@ -306,6 +388,8 @@ export default function ABTestPage() {
             knowledge,
             is_apex: isApex,
             variants,
+            content_type: contentType,
+            style_profile_id: activeProfileId || null,
           };
         }
 
@@ -329,7 +413,7 @@ export default function ABTestPage() {
     ]);
     setColA({ loading: false, variants: rA.status === "fulfilled" ? rA.value : [`Hata: ${rA.reason}`] });
     setColB({ loading: false, variants: rB.status === "fulfilled" ? rB.value : [`Hata: ${rB.reason}`] });
-  }, [topic, platform, isX, etki, karakter, yapi, uzunluk, acilis, bitis, derinlik, isUltra, persona, tone, length, knowledge, isApex, language, variants]);
+  }, [topic, platform, isX, etki, karakter, yapi, uzunluk, acilis, bitis, derinlik, isUltra, persona, tone, length, knowledge, isApex, language, variants, contentType, activeProfileId]);
 
   const selectWinner = (col) => {
     setWinner(col);
@@ -340,21 +424,32 @@ export default function ABTestPage() {
       timestamp: new Date().toISOString(),
       topic,
       platform,
+      contentType,
       winner: winnerEngine,
       loser: col === "a" ? orderRef.current.b : orderRef.current.a,
       settings: isX
         ? { etki, karakter, yapi, uzunluk, acilis, bitis, derinlik, isUltra }
         : { persona, tone, length, knowledge, isApex },
+      styleProfileId: activeProfileId || null,
     };
 
     saveResult(result);
-    console.log("[AB Blind Test]", result);
   };
 
   const results = getResults();
   const v2Wins = results.filter(r => r.winner === "v2").length;
   const v3Wins = results.filter(r => r.winner === "v3").length;
   const totalTests = results.length;
+
+  const significance = useMemo(() => {
+    const maxWins = Math.max(v2Wins, v3Wins);
+    return calcSignificance(maxWins, totalTests);
+  }, [v2Wins, v3Wins, totalTests]);
+
+  const conclusionEngine = v2Wins > v3Wins ? "V2" : v3Wins > v2Wins ? "V3" : null;
+  const conclusionPct = totalTests > 0 ? Math.round((Math.max(v2Wins, v3Wins) / totalTests) * 100) : 0;
+
+  const currentContentTypes = CONTENT_TYPES[platform] || [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -372,14 +467,14 @@ export default function ABTestPage() {
             className="border-white/20 text-white/60 hover:text-white hover:bg-white/10"
           >
             <Trophy className="w-4 h-4 mr-2" />
-            Skorboard
+            Skorboard ({totalTests})
           </Button>
         </div>
 
         {/* Scoreboard */}
         {showStats && (
           <Card className="p-4 mb-6 bg-[#111] border-white/10">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-8 flex-wrap">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{totalTests}</div>
                 <div className="text-xs text-white/40">Toplam</div>
@@ -396,7 +491,7 @@ export default function ABTestPage() {
               {totalTests > 0 && (
                 <>
                   <div className="w-px h-10 bg-white/10" />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[200px]">
                     <div className="flex h-3 rounded-full overflow-hidden bg-white/5">
                       <div className="bg-blue-500 transition-all" style={{ width: `${(v2Wins / totalTests) * 100}%` }} />
                       <div className="bg-violet-500 transition-all" style={{ width: `${(v3Wins / totalTests) * 100}%` }} />
@@ -419,6 +514,32 @@ export default function ABTestPage() {
                 </Button>
               )}
             </div>
+
+            {/* Significance banner */}
+            {totalTests > 0 && (
+              <div className={`mt-4 p-3 rounded-lg text-sm ${
+                significance.significant
+                  ? "bg-green-500/10 border border-green-500/20 text-green-400"
+                  : "bg-white/5 border border-white/10 text-white/50"
+              }`}>
+                {significance.significant ? (
+                  <>
+                    <Sparkles className="w-4 h-4 inline mr-2" />
+                    <strong>Sonuç:</strong> {conclusionEngine} istatistiksel olarak anlamlı şekilde daha iyi ({conclusionPct}% kazanma, p={significance.pValue.toFixed(3)}).
+                    Teste devam edebilirsin ama sonuç net.
+                  </>
+                ) : totalTests < MIN_TESTS ? (
+                  <>
+                    📊 Henüz yeterli veri yok. Anlamlı sonuç için en az <strong>{significance.needed} test daha</strong> gerekiyor.
+                  </>
+                ) : (
+                  <>
+                    📊 {totalTests} test yapıldı ama henüz istatistiksel anlamlılık yok (p={significance.pValue.toFixed(3)}).
+                    {conclusionEngine ? ` ${conclusionEngine} önde ama fark kesin değil.` : " Şu an eşitler."} Teste devam et.
+                  </>
+                )}
+              </div>
+            )}
           </Card>
         )}
 
@@ -433,7 +554,58 @@ export default function ABTestPage() {
           />
 
           {/* Platform pills */}
-          <PillGroup items={PLATFORMS} value={platform} onChange={setPlatform} />
+          <PillGroup items={PLATFORMS} value={platform} onChange={handlePlatformChange} />
+
+          {/* Content type pills */}
+          {currentContentTypes.length > 1 && (
+            <PillGroup items={currentContentTypes} value={contentType} onChange={setContentType} label="İçerik Türü" />
+          )}
+
+          {/* Style Profile */}
+          {profiles && profiles.length > 0 && (
+            <div>
+              <button
+                onClick={() => setStyleOpen(!styleOpen)}
+                className="flex items-center gap-2 text-xs text-white/40 hover:text-white/60 transition-colors"
+              >
+                <User className="w-3 h-3" />
+                {activeProfile ? (
+                  <span className="text-violet-400">Stil: {activeProfile.name?.split(" ")[0]}</span>
+                ) : (
+                  <span>Stil Profili</span>
+                )}
+                {styleOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {styleOpen && (
+                <div className="flex gap-1.5 flex-wrap mt-2">
+                  <button
+                    onClick={() => setActiveProfile(null)}
+                    className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                      !activeProfileId
+                        ? "bg-white text-black font-medium"
+                        : "bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10"
+                    }`}
+                  >
+                    Kapalı
+                  </button>
+                  {profiles.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setActiveProfile(p.id)}
+                      className={`px-3 py-1 rounded-full text-xs transition-colors flex items-center gap-1.5 ${
+                        activeProfileId === p.id
+                          ? "bg-violet-500/20 text-violet-400 font-medium border border-violet-500/30"
+                          : "bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10"
+                      }`}
+                    >
+                      {p.avatar_url && <img src={p.avatar_url} className="w-4 h-4 rounded-full" alt="" />}
+                      {p.name?.split(" ")[0] || "Stil"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* X Platformu: Etki + Gelişmiş Ayarlar */}
           {isX && (
@@ -465,7 +637,7 @@ export default function ABTestPage() {
             </div>
           )}
 
-          {/* Diğer Platformlar: Persona/Ton/Uzunluk/Knowledge */}
+          {/* Diğer Platformlar */}
           {!isX && (
             <div className="space-y-3">
               <PillGroup items={PERSONAS} value={persona} onChange={setPersona} label="Persona" />
@@ -513,7 +685,7 @@ export default function ABTestPage() {
                 "⚡ Üret & Karşılaştır"
               )}
             </Button>
-            {(colA.variants || colB.variants) && (
+            {(colA.variants || colB.variants) && !colA.loading && !colB.loading && (
               <Button variant="outline" onClick={generate} className="border-white/20 text-white hover:bg-white/10">
                 <RotateCcw className="w-4 h-4 mr-2" /> Tekrar
               </Button>
@@ -523,15 +695,20 @@ export default function ABTestPage() {
 
         {/* Reveal banner */}
         {revealed && winner && (
-          <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-3">
-            <Trophy className="w-5 h-5 text-green-400" />
-            <span className="text-green-400 font-medium">
-              {winner === "a" ? "Sol" : "Sağ"} kazandı →{" "}
-              <span className="text-white font-bold">{orderRef.current[winner].toUpperCase()}</span>
-            </span>
-            <span className="text-white/40 text-sm ml-2">
-              (Sol = {orderRef.current.a.toUpperCase()}, Sağ = {orderRef.current.b.toUpperCase()})
-            </span>
+          <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 via-green-500/5 to-transparent border border-green-500/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+              </div>
+              <div>
+                <div className="text-green-400 font-semibold">
+                  {winner === "a" ? "Sol" : "Sağ"} kazandı → <span className="text-white text-lg">{orderRef.current[winner].toUpperCase()}</span>
+                </div>
+                <div className="text-white/40 text-xs mt-0.5">
+                  Sol = {orderRef.current.a.toUpperCase()} · Sağ = {orderRef.current.b.toUpperCase()}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
