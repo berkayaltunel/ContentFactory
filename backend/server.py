@@ -1281,7 +1281,7 @@ V2_MODEL_CONFIG = {
         "temperature_base": 0.8,
     },
     "ultra": {
-        "model": "anthropic/claude-sonnet-4.5",
+        "model": "anthropic/claude-sonnet-4.6",
         "provider": "openrouter",
         "max_tokens": 2048,
         "temperature_base": 0.8,
