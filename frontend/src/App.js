@@ -53,7 +53,7 @@ function App() {
 
               {/* Hidden A/B test page */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/ab-test" element={<ABTestPage />} />
+                <Route path="/ab-test" element={<ProfileProvider><ABTestPage /></ProfileProvider>} />
               </Route>
 
               {/* Fallback */}
