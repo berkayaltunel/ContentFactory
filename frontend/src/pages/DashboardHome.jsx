@@ -147,7 +147,7 @@ function ToolCardBig({ icon: Icon, label, desc, path, gradient, accentColor, del
   return (
     <button
       onClick={() => navigate(path)}
-      className="tool-card bento-card relative overflow-hidden group flex flex-col p-5 rounded-2xl bg-card/70 backdrop-blur-sm border border-border/40 hover:border-transparent transition-all duration-300 text-left"
+      className="tool-card bento-card relative overflow-hidden group flex flex-col p-3.5 md:p-5 rounded-xl md:rounded-2xl bg-card/70 backdrop-blur-sm border border-border/40 hover:border-transparent transition-all duration-300 text-left haptic-btn"
       style={{ "--bento-i": delay }}
     >
       {/* Glow orb on hover */}
@@ -157,16 +157,16 @@ function ToolCardBig({ icon: Icon, label, desc, path, gradient, accentColor, del
       )} />
 
       <div className={cn(
-        "shrink-0 h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br mb-4 group-hover:scale-110 transition-transform duration-300",
+        "shrink-0 h-9 w-9 md:h-12 md:w-12 rounded-lg md:rounded-xl flex items-center justify-center bg-gradient-to-br mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300",
         gradient
       )}>
-        <Icon className="h-5 w-5 text-white" />
+        <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold mb-1 group-hover:text-purple-500 transition-colors">{label}</p>
-        <p className="text-[12px] text-muted-foreground leading-relaxed">{desc}</p>
+        <p className="text-xs md:text-sm font-bold mb-0.5 md:mb-1 group-hover:text-purple-500 transition-colors">{label}</p>
+        <p className="text-[11px] md:text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{desc}</p>
       </div>
-      <div className="flex items-center gap-1 mt-3 text-[11px] font-medium text-muted-foreground/50 group-hover:text-purple-500/70 transition-colors">
+      <div className="flex items-center gap-1 mt-2 md:mt-3 text-[10px] md:text-[11px] font-medium text-muted-foreground/50 group-hover:text-purple-500/70 transition-colors">
         <span>Keşfet</span>
         <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
       </div>
@@ -183,7 +183,7 @@ function PlatformCard({ icon: Icon, label, path, gradient, delay }) {
   return (
     <button
       onClick={() => navigate(path)}
-      className="bento-card group flex flex-col items-center gap-2.5 p-4 rounded-2xl bg-card/50 border border-border/30 hover:border-border/60 hover:bg-card/80 transition-all duration-300"
+      className="bento-card group flex flex-col items-center gap-2 md:gap-2.5 p-3 md:p-4 rounded-xl md:rounded-2xl bg-card/50 border border-border/30 hover:border-border/60 hover:bg-card/80 transition-all duration-300 haptic-btn min-h-[72px]"
       style={{ "--bento-i": delay }}
     >
       <div className={cn(
@@ -285,8 +285,8 @@ export default function DashboardHome() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-1">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-auto">
+    <div className="max-w-6xl mx-auto px-0 sm:px-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-auto">
 
         {/* ═══════════════════════════════════════
             ROW 1: GREETING (2col) + STATS (1+1)
@@ -294,7 +294,7 @@ export default function DashboardHome() {
 
         {/* 1. Greeting + Search */}
         <div
-          className="bento-card relative md:col-span-2 rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-2 md:col-span-2 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 0 }}
         >
           <div className="bento-orb w-32 h-32 bg-purple-500/15 top-[-20px] right-[-20px]" />
@@ -303,7 +303,7 @@ export default function DashboardHome() {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-2xl">{getGreetingEmoji()}</span>
-              <h1 className="font-outfit text-2xl md:text-3xl font-bold tracking-tight">
+              <h1 className="font-outfit text-xl md:text-3xl font-bold tracking-tight">
                 {getGreeting()}, {firstName}
               </h1>
             </div>
@@ -335,41 +335,41 @@ export default function DashboardHome() {
 
         {/* 2. Total Generations */}
         <div
-          className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-1 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 1 }}
         >
           <div className="bento-orb w-20 h-20 bg-purple-500/10 top-[-10px] right-[-10px]" />
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500/15 to-indigo-500/15 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-purple-500" />
+            <div className="flex items-center justify-between mb-2 md:mb-3">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-purple-500/15 to-indigo-500/15 flex items-center justify-center">
+                <Zap className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
               </div>
-              <Badge className="text-[10px] bg-purple-500/10 text-purple-500 border-0 rounded-lg">Bu ay</Badge>
+              <Badge className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-500 border-0 rounded-lg">Bu ay</Badge>
             </div>
-            <p className="font-outfit text-3xl font-bold tracking-tight mb-0.5">
+            <p className="font-outfit text-2xl md:text-3xl font-bold tracking-tight mb-0.5">
               <AnimatedCounter value={stats.generations || 0} />
             </p>
-            <p className="text-xs text-muted-foreground">Toplam Üretim</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground">Toplam Üretim</p>
           </div>
         </div>
 
         {/* 3. Favorites */}
         <div
-          className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-1 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 2 }}
         >
           <div className="bento-orb w-20 h-20 bg-rose-500/10 top-[-10px] right-[-10px]" />
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500/15 to-pink-500/15 flex items-center justify-center">
-                <Heart className="h-5 w-5 text-rose-500" />
+            <div className="flex items-center justify-between mb-2 md:mb-3">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-rose-500/15 to-pink-500/15 flex items-center justify-center">
+                <Heart className="h-4 w-4 md:h-5 md:w-5 text-rose-500" />
               </div>
-              <Badge className="text-[10px] bg-rose-500/10 text-rose-500 border-0 rounded-lg">Koleksiyon</Badge>
+              <Badge className="text-[9px] md:text-[10px] bg-rose-500/10 text-rose-500 border-0 rounded-lg">Koleksiyon</Badge>
             </div>
-            <p className="font-outfit text-3xl font-bold tracking-tight mb-0.5">
+            <p className="font-outfit text-2xl md:text-3xl font-bold tracking-tight mb-0.5">
               <AnimatedCounter value={stats.favorites || 0} />
             </p>
-            <p className="text-xs text-muted-foreground">Favori İçerik</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground">Favori İçerik</p>
           </div>
         </div>
 
@@ -377,7 +377,7 @@ export default function DashboardHome() {
             ROW 2: ARAÇLAR (full width, prominent!)
             ═══════════════════════════════════════ */}
         <div
-          className="bento-card relative md:col-span-4 rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-2 md:col-span-4 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 3 }}
         >
           <div className="bento-orb w-40 h-40 bg-purple-500/8 bottom-[-30px] right-[10%]" />
@@ -426,7 +426,7 @@ export default function DashboardHome() {
 
         {/* 4. Content Calendar (embedded, no double Card) */}
         <div
-          className="bento-card relative md:col-span-2 md:row-span-2 rounded-3xl overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-2 md:col-span-2 md:row-span-2 rounded-2xl md:rounded-3xl overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 9 }}
         >
           {/* Gradient top accent */}
@@ -436,7 +436,7 @@ export default function DashboardHome() {
 
         {/* 5. Streak & Weekly */}
         <div
-          className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-1 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 10 }}
         >
           <div className="relative z-10">
@@ -469,7 +469,7 @@ export default function DashboardHome() {
 
         {/* 6. Style Profile */}
         <div
-          className="bento-card relative rounded-3xl p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-1 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 11 }}
         >
           <div className="bento-orb w-20 h-20 bg-indigo-500/10 bottom-[-10px] right-[-10px]" style={{ animationDelay: "1s" }} />
@@ -518,7 +518,7 @@ export default function DashboardHome() {
 
         {/* 7. Recent Generation Preview */}
         <div
-          className="bento-card relative rounded-3xl p-5 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
+          className="bento-card relative col-span-1 rounded-2xl md:rounded-3xl p-4 md:p-5 overflow-hidden bg-card/80 backdrop-blur-sm border border-border/40"
           style={{ "--bento-i": 12 }}
         >
           <div className="relative z-10">
@@ -565,7 +565,7 @@ export default function DashboardHome() {
 
         {/* 8. Bugünün İlhamı */}
         <div
-          className="bento-card relative rounded-3xl p-6 overflow-hidden bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.05] border border-amber-500/10"
+          className="bento-card relative col-span-1 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-gradient-to-br from-amber-500/[0.08] to-orange-500/[0.05] border border-amber-500/10"
           style={{ "--bento-i": 13 }}
         >
           <div className="bento-orb w-24 h-24 bg-amber-500/10 top-[-15px] left-[-15px]" style={{ animationDelay: "3s" }} />

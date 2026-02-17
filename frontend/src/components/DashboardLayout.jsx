@@ -507,18 +507,53 @@ export default function DashboardLayout() {
       </header>
 
       {/* ── Mobile Top Bar ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-2 bg-[#0A0A0A] border-b border-white/[0.06]">
+      <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-2 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-white/[0.06] safe-area-top">
         <NavLink to="/dashboard" className="flex items-center gap-2">
           <img src="/logo.png" alt="Type Hype" className="h-8 w-8 rounded-lg object-cover" />
           <span className="font-outfit text-sm font-bold text-white">
             Type<span className="text-purple-400">Hype</span>
           </span>
         </NavLink>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {/* Mobile Platform Quick Selector */}
+          {location.pathname.includes("/create") && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] border border-white/[0.1] text-white/70 text-xs font-medium haptic-btn focus:outline-none">
+                  {(() => {
+                    const currentPlatform = new URLSearchParams(location.search).get("platform") || "twitter";
+                    const platformIcons = { twitter: FaXTwitter, youtube: FaYoutube, instagram: FaInstagram, tiktok: FaTiktok, linkedin: FaLinkedinIn, blog: HiDocumentText };
+                    const PIcon = platformIcons[currentPlatform] || FaXTwitter;
+                    return <PIcon style={{ width: "12px", height: "12px" }} />;
+                  })()}
+                  <ChevronDown className="h-3 w-3 opacity-50" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} className="w-44 rounded-xl bg-[#1A1A1A] border-white/10 text-white shadow-2xl">
+                {[
+                  { id: "twitter", label: "X / Twitter", Icon: FaXTwitter },
+                  { id: "youtube", label: "YouTube", Icon: FaYoutube },
+                  { id: "instagram", label: "Instagram", Icon: FaInstagram },
+                  { id: "tiktok", label: "TikTok", Icon: FaTiktok },
+                  { id: "linkedin", label: "LinkedIn", Icon: FaLinkedinIn },
+                  { id: "blog", label: "Blog", Icon: HiDocumentText },
+                ].map((p) => (
+                  <DropdownMenuItem
+                    key={p.id}
+                    onClick={() => navigate(`/dashboard/create?platform=${p.id}`)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                  >
+                    <p.Icon style={{ width: "14px", height: "14px" }} />
+                    <span className="text-sm">{p.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 rounded-full focus:outline-none">
+                <button className="p-1 rounded-full focus:outline-none haptic-btn">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
                     <AvatarImage src={primaryAvatarUrl || user.avatar_url} alt={user.name} onError={(e) => { e.target.style.display = 'none'; }} />
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
@@ -553,16 +588,16 @@ export default function DashboardLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <button onClick={() => navigate("/login")} className="px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-medium">Giriş Yap</button>
+            <button onClick={() => navigate("/login")} className="px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-medium haptic-btn">Giriş Yap</button>
           )}
         </div>
       </header>
 
       {/* ── Mobile Bottom Tab Bar ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around px-2 py-1 bg-[#0A0A0A] border-t border-white/[0.06] safe-area-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around px-1 pt-1.5 pb-1 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.08] safe-area-bottom">
         {[
           { path: "/dashboard", label: "Home", icon: Home, exact: true },
-          { path: "/dashboard/create?platform=twitter", label: "X", icon: (p) => <BI Icon={FaXTwitter} {...p} /> },
+          { path: "/dashboard/create?platform=twitter", label: "Üret", icon: Sparkles },
           { path: "/dashboard/trends", label: "Trend", icon: TrendingUp },
           { path: "/dashboard/style-lab", label: "Stil", icon: Dna },
           { path: "/dashboard/history", label: "Geçmiş", icon: History },
@@ -574,17 +609,26 @@ export default function DashboardLayout() {
               key={item.path}
               to={item.path}
               end={item.exact}
-              className="flex flex-col items-center gap-0.5 py-1.5 px-2 min-w-[48px]"
+              className={cn(
+                "relative flex flex-col items-center gap-0.5 py-2 px-3 min-w-[52px] min-h-[44px] haptic-btn rounded-xl transition-all duration-300",
+                active && "mobile-tab-active"
+              )}
             >
-              <Icon className={cn("h-5 w-5 transition-colors", active ? "text-purple-400" : "text-white/40")} />
-              <span className={cn("text-[10px] transition-colors", active ? "text-purple-400 font-medium" : "text-white/40")}>{item.label}</span>
+              <Icon className={cn(
+                "h-5 w-5 transition-all duration-300",
+                active ? "text-purple-400 scale-110" : "text-white/40"
+              )} />
+              <span className={cn(
+                "text-[10px] transition-all duration-300",
+                active ? "text-purple-400 font-semibold" : "text-white/35"
+              )}>{item.label}</span>
             </NavLink>
           );
         })}
       </nav>
 
       {/* ── Main Content ── */}
-      <main className="pt-14 md:pt-20 pb-20 md:pb-8 px-3 md:px-8">
+      <main className="pt-14 md:pt-20 pb-24 md:pb-8 px-3 md:px-8">
         <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>

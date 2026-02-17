@@ -565,6 +565,10 @@ input[type="url"]:focus {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* Hide scrollbar for horizontal scroll containers */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -572,4 +576,112 @@ input[type="url"]:focus {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ===== Mobile UI Overhaul ===== */
+
+/* Touch-friendly: prevent zoom on input focus (iOS) */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Smooth scrolling on iOS */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Haptic-ready button press */
+@media (max-width: 640px) {
+  .haptic-btn {
+    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  }
+  .haptic-btn:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+}
+
+/* Mobile bottom tab bar styles */
+@keyframes tab-indicator {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.mobile-tab-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background: #a855f7;
+  animation: tab-indicator 0.3s ease-out;
+}
+
+/* Mobile bottom sheet overlay */
+.mobile-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 60;
+  opacity: 0;
+  animation: fadeInOverlay 0.2s ease-out forwards;
+}
+
+@keyframes fadeInOverlay {
+  to { opacity: 1; }
+}
+
+.mobile-sheet-content {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 61;
+  background: #1a1a1a;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  animation: slideUpSheet 0.3s ease-out forwards;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+@keyframes slideUpSheet {
+  to { transform: translateY(0); }
+}
+
+/* Mobile sticky generate button */
+.mobile-sticky-generate {
+  position: fixed;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  right: 16px;
+  z-index: 45;
+  padding: 12px;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+
+/* Mobile compact pills */
+@media (max-width: 640px) {
+  .mobile-pill {
+    padding: 5px 11px !important;
+    font-size: 12px !important;
+  }
+  
+  .mobile-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
 }

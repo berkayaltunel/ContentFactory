@@ -327,6 +327,13 @@ const blogLevels = [
 
 function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, activePlatform }) {
   const [advOpen, setAdvOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   if (!open) return null;
 
@@ -354,25 +361,28 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
 
   // Pill renderer: tekrar eden kod yerine helper
   const renderPills = (items, activeId, field, opts = {}) => (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: isMobile ? "6px" : "8px" }}>
       {items.map((item) => {
         const id = item.id;
         const isActive = activeId === id;
-        // v2 yapi uyumluluk: uyumsuz pill'i kırmızı border ile göster
         const isWarning = opts.checkCompat && id === "cesur" && v2KarakterYapiUyum[settings.karakter]?.[id] === false;
         return (
           <button
             key={id || "none"}
             onClick={() => onSettingsChange({ ...settings, [field]: id })}
+            className="haptic-btn"
             style={{
-              padding: "6px 14px",
+              padding: isMobile ? "5px 11px" : "6px 14px",
               borderRadius: "999px",
               border: isActive ? "none" : isWarning ? "1px solid rgba(239,68,68,0.5)" : "1px solid var(--m-border)",
               background: isActive ? "var(--m-pill-active-bg)" : "transparent",
               color: isActive ? "var(--m-pill-active-text)" : isWarning ? "rgba(239,68,68,0.7)" : "var(--m-text-soft)",
-              fontSize: "13px",
+              fontSize: isMobile ? "12px" : "13px",
               cursor: "pointer",
               transition: "all 0.2s ease",
+              minHeight: "36px",
+              display: "flex",
+              alignItems: "center",
             }}
           >
             {item.label}{item.range ? <span style={{ opacity: 0.5, marginLeft: "4px" }}>{item.range}</span> : null}
@@ -389,36 +399,20 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
     ) : null;
   };
 
-  return (
+  // Mobile: bottom sheet, Desktop: inline popup
+  const settingsContent = (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div
-        style={{ position: "relative", zIndex: 50, width: "100%", marginTop: "8px" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          style={{
-            background: "var(--m-popup-bg)",
-            border: "1px solid var(--m-border)",
-            borderRadius: "16px",
-            padding: "14px 16px",
-            backdropFilter: "blur(20px)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0",
-            maxHeight: "70vh",
-            overflowY: "auto",
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text)" }}>
-              Üretim Ayarları
-            </span>
-            <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--m-text-muted)", cursor: "pointer" }}>
-              <X size={16} />
-            </button>
-          </div>
+      <div className="flex items-center justify-between mb-3">
+        {isMobile && (
+          <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.2)", position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)" }} />
+        )}
+        <span style={{ fontSize: isMobile ? "15px" : "13px", fontWeight: "600", color: "var(--m-text)" }}>
+          Üretim Ayarları
+        </span>
+        <button onClick={onClose} className="haptic-btn" style={{ background: "transparent", border: "none", color: "var(--m-text-muted)", cursor: "pointer", padding: "4px" }}>
+          <X size={18} />
+        </button>
+      </div>
 
           {/* ══════ X PLATFORM: V2 SETTINGS ══════ */}
           {isTwitter && activeTab !== "article" ? (
@@ -663,6 +657,44 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               </button>
             </div>
           </div>
+    </>
+  );
+
+  if (isMobile) {
+    return createPortal(
+      <>
+        <div className="mobile-sheet-overlay" onClick={onClose} />
+        <div className="mobile-sheet-content" style={{ padding: "20px 16px 16px" }} onClick={(e) => e.stopPropagation()}>
+          {settingsContent}
+        </div>
+      </>,
+      document.body
+    );
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div
+        style={{ position: "relative", zIndex: 50, width: "100%", marginTop: "8px" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            background: "var(--m-popup-bg)",
+            border: "1px solid var(--m-border)",
+            borderRadius: "16px",
+            padding: "14px 16px",
+            backdropFilter: "blur(20px)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0",
+            maxHeight: "70vh",
+            overflowY: "auto",
+          }}
+        >
+          {settingsContent}
         </div>
       </div>
     </>
@@ -1478,7 +1510,7 @@ export default function XAIModule() {
         justifyContent: "flex-start",
         fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
         color: "var(--m-text)",
-        padding: "24px 16px",
+        padding: window.innerWidth < 640 ? "12px 12px" : "24px 16px",
         position: "relative",
         overflow: "hidden",
         transition: "background 0.35s ease, color 0.35s ease, border-color 0.35s ease",
@@ -1495,7 +1527,7 @@ export default function XAIModule() {
       />
 
       {/* Vertical spacer - pushes content toward center */}
-      <div style={{ height: "15vh", flexShrink: 0 }} />
+      <div style={{ height: window.innerWidth < 640 ? "4vh" : "15vh", flexShrink: 0 }} />
 
       {/* Style Profile Badge (top) */}
       <div
@@ -1535,7 +1567,7 @@ export default function XAIModule() {
       {/* Main Heading */}
       <h1
         style={{
-          fontSize: "clamp(28px, 5vw, 42px)",
+          fontSize: "clamp(22px, 5vw, 42px)",
           fontWeight: "400",
           fontFamily: "'Georgia', 'Times New Roman', 'Noto Serif', serif",
           textAlign: "center",
@@ -1579,7 +1611,7 @@ export default function XAIModule() {
           </button>
 
           {/* Direction Pills */}
-          <div style={{ display: "flex", gap: "6px", marginTop: "10px", flexWrap: "wrap" }}>
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap" style={{ gap: "6px", marginTop: "10px" }}>
             {[
               { id: "support", label: "👍 Destekle", color: "#22c55e" },
               { id: "oppose", label: "⚔️ Karşı Çık", color: "#ef4444" },
@@ -1589,15 +1621,20 @@ export default function XAIModule() {
               <button
                 key={d.id}
                 onClick={() => setInputValue(prev => prev === d.id ? "" : d.id)}
+                className="haptic-btn"
                 style={{
-                  padding: "5px 10px",
+                  padding: "6px 10px",
                   borderRadius: "999px",
                   border: inputValue === d.id ? `1px solid ${d.color}` : "1px solid var(--m-border)",
                   background: inputValue === d.id ? `${d.color}15` : "transparent",
                   color: inputValue === d.id ? d.color : "var(--m-text-muted)",
-                  fontSize: "11px",
+                  fontSize: "12px",
                   cursor: "pointer",
                   transition: "all 0.2s ease",
+                  minHeight: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {d.label}
@@ -1634,7 +1671,7 @@ export default function XAIModule() {
             background: "var(--m-input-bg)",
             border: "1px solid var(--m-input-border)",
             borderRadius: "16px",
-            padding: "16px 18px 12px",
+            padding: window.innerWidth < 640 ? "12px 14px 10px" : "16px 18px 12px",
             position: "relative",
             boxShadow: "var(--m-shadow)",
             transition: "background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease",
@@ -1941,11 +1978,12 @@ export default function XAIModule() {
                   setSettings((s) => ({ ...s, length: "punch" }));
                 }
               }}
+              className="haptic-btn"
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
-                padding: "9px 18px",
+                gap: window.innerWidth < 640 ? "5px" : "8px",
+                padding: window.innerWidth < 640 ? "7px 13px" : "9px 18px",
                 borderRadius: "999px",
                 border: isActive
                   ? "1px solid var(--m-text-faint)"
@@ -1954,7 +1992,7 @@ export default function XAIModule() {
                 color: isActive
                   ? "var(--m-text)"
                   : "var(--m-text-soft)",
-                fontSize: "13.5px",
+                fontSize: window.innerWidth < 640 ? "12px" : "13.5px",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
                 fontFamily: "inherit",
@@ -2056,12 +2094,13 @@ export default function XAIModule() {
                   {/* Summary row */}
                   <button
                     onClick={() => setExpandedHistoryId(isExpanded ? null : gen.id)}
+                    className="haptic-btn"
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "12px",
+                      gap: window.innerWidth < 640 ? "8px" : "12px",
                       width: "100%",
-                      padding: "12px 16px",
+                      padding: window.innerWidth < 640 ? "10px 12px" : "12px 16px",
                       background: "transparent",
                       border: "none",
                       cursor: "pointer",
