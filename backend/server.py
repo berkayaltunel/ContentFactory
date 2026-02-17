@@ -1560,7 +1560,7 @@ class ReplyGenerateRequestV2(BaseModel):
 # ==================== V2 ENDPOINTS ====================
 
 @api_router.post("/v2/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v2", force_model: str = None, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet with v2 settings system (Etki, Karakter, Yapı etc.)"""
     try:
         sanitize_generation_request(request)
@@ -1583,7 +1583,11 @@ async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v2",
             combined_context = f"{combined_context}\n\n{image_context}" if combined_context else image_context
 
         # Determine model
-        model_config = get_model_config(request.etki, request.is_ultra)
+        if force_model and force_model in V2_MODEL_CONFIG:
+            model_config = V2_MODEL_CONFIG[force_model]
+            logger.info(f"V2 tweet: force_model={force_model}, model={model_config['model']}")
+        else:
+            model_config = get_model_config(request.etki, request.is_ultra)
         logger.info(f"V2 tweet: etki={request.etki}, karakter={request.karakter}, yapi={request.yapi}, model={model_config['model']}, ultra={request.is_ultra}")
 
         # Auto-inject BeatstoBytes style for shitpost
