@@ -30,15 +30,31 @@ _TASK_TEMPLATES = {
 }
 
 
+_DIRECTION_RULES = {
+    "support": "⚠️ YÖN: Bu tweet'e KATIL ve DESTEKLE. Üstüne koy, güçlendir, ek perspektif sun. Karşı çıkma.",
+    "oppose": "⚠️ YÖN: Bu tweet'e KARŞI ÇIK. Zıt görüş belirt, argümanı çürüt veya sorgula. Ama saygılı kal, trolleme.",
+    "add": "⚠️ YÖN: Bu tweet'in ÜSTÜNE BİLGİ EKLE. Yeni bir perspektif, veri, örnek veya bağlam sun. Tekrar etme, değer kat.",
+    "roast": "⚠️ YÖN: Bu tweet'le DALGA GEÇ. İronik, komik, zekice yaklaş. Kırıcı değil eğlenceli ol. Shitpost energy.",
+}
+
+
 def _build_gorev(content_type: str, topic: str = None, original_tweet: str = None,
                  reply_mode: str = None, article_style: str = None,
-                 references: list = None, additional_context: str = None) -> str:
+                 references: list = None, additional_context: str = None,
+                 direction: str = None, direction_custom: str = None) -> str:
     """Section 1: GÖREV — ne üretilecek."""
     task = _TASK_TEMPLATES.get(content_type, _TASK_TEMPLATES["tweet"])
     if original_tweet and "{original_tweet}" in task:
         task = task.format(original_tweet=original_tweet)
 
     parts = [f"## GÖREV\n\n{task}"]
+
+    # Direction (quote/reply yönlendirme)
+    if content_type in ("quote", "reply"):
+        if direction_custom:
+            parts.append(f"⚠️ YÖN (kullanıcı talimatı): {direction_custom}")
+        elif direction and direction in _DIRECTION_RULES:
+            parts.append(_DIRECTION_RULES[direction])
 
     if reply_mode and reply_mode in REPLY_MODES:
         rm = REPLY_MODES[reply_mode]
@@ -301,6 +317,8 @@ def build_final_prompt_v3(
     style_prompt: str = None,
     example_tweets: list = None,
     platform: str = "twitter",
+    direction: str = None,
+    direction_custom: str = None,
     # Accept but ignore v1 extras for compatibility
     **kwargs,
 ) -> str:
@@ -326,6 +344,8 @@ def build_final_prompt_v3(
         article_style=article_style,
         references=references,
         additional_context=additional_context,
+        direction=direction,
+        direction_custom=direction_custom,
     ))
 
     # 2. SES

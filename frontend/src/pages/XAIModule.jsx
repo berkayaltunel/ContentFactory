@@ -1576,6 +1576,36 @@ export default function XAIModule() {
           >
             ← Farklı tweet seç
           </button>
+
+          {/* Direction Pills */}
+          <div style={{ display: "flex", gap: "6px", marginTop: "10px", flexWrap: "wrap" }}>
+            {[
+              { id: "support", label: "👍 Destekle", color: "#22c55e" },
+              { id: "oppose", label: "⚔️ Karşı Çık", color: "#ef4444" },
+              { id: "add", label: "💡 Bilgi Ekle", color: "#3b82f6" },
+              { id: "roast", label: "🔥 Dalga Geç", color: "#f59e0b" },
+            ].map(d => (
+              <button
+                key={d.id}
+                onClick={() => setInputValue(prev => prev === d.id ? "" : d.id)}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: "999px",
+                  border: inputValue === d.id ? `1px solid ${d.color}` : "1px solid var(--m-border)",
+                  background: inputValue === d.id ? `${d.color}15` : "transparent",
+                  color: inputValue === d.id ? d.color : "var(--m-text-muted)",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {d.label}
+              </button>
+            ))}
+            <span style={{ fontSize: "11px", color: "var(--m-text-muted)", alignSelf: "center", marginLeft: "4px" }}>
+              veya kendi yönünü yaz ↓
+            </span>
+          </div>
         </div>
       )}
 

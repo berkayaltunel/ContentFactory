@@ -1706,24 +1706,30 @@ async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limi
 
         model_config = get_model_config(request.etki, request.is_ultra)
 
-        system_prompt = build_final_prompt_v2(
+        # Parse direction: preset keywords vs custom text
+        dir_preset = None
+        dir_custom = None
+        if request.direction:
+            if request.direction in ("support", "oppose", "add", "roast"):
+                dir_preset = request.direction
+            else:
+                dir_custom = request.direction
+
+        system_prompt = build_final_prompt_v3(
             content_type="quote",
             topic=None,
-            etki=request.etki,
-            karakter=request.karakter,
-            yapi=request.yapi,
-            uzunluk=request.uzunluk,
-            acilis=request.acilis,
-            bitis=request.bitis,
-            derinlik=request.derinlik,
+            persona=request.karakter,
+            tone=request.yapi,
+            length=request.uzunluk,
             language=request.language,
-            is_ultra=request.is_ultra,
+            is_apex=request.is_ultra,
             original_tweet=original_content,
             additional_context=request.additional_context or None,
+            direction=dir_preset,
+            direction_custom=dir_custom,
         )
 
-        # Direction'ı user message olarak gönder (daha etkili)
-        user_msg = f"Bu tweet'e quote yaz.\n\nKullanıcı talimatı: {request.direction}" if request.direction else "Bu tweet'e quote yaz."
+        user_msg = "Bu tweet'e quote yaz."
 
         contents, tokens_used = await generate_with_openrouter(
             system_prompt, user_msg, model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
@@ -1769,25 +1775,31 @@ async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limi
 
         model_config = get_model_config(request.etki, request.is_ultra)
 
-        system_prompt = build_final_prompt_v2(
+        # Parse direction: preset keywords vs custom text
+        dir_preset = None
+        dir_custom = None
+        if request.direction:
+            if request.direction in ("support", "oppose", "add", "roast"):
+                dir_preset = request.direction
+            else:
+                dir_custom = request.direction
+
+        system_prompt = build_final_prompt_v3(
             content_type="reply",
             topic=None,
-            etki=request.etki,
-            karakter=request.karakter,
-            yapi=request.yapi,
-            uzunluk=request.uzunluk,
-            acilis=request.acilis,
-            bitis=request.bitis,
-            derinlik=request.derinlik,
+            persona=request.karakter,
+            tone=request.yapi,
+            length=request.uzunluk,
             language=request.language,
-            is_ultra=request.is_ultra,
+            is_apex=request.is_ultra,
             original_tweet=original_content,
             reply_mode=request.reply_mode,
             additional_context=request.additional_context or None,
+            direction=dir_preset,
+            direction_custom=dir_custom,
         )
 
-        # Direction'ı user message olarak gönder (daha etkili)
-        user_msg = f"Bu tweet'e reply yaz.\n\nKullanıcı talimatı: {request.direction}" if request.direction else "Bu tweet'e reply yaz."
+        user_msg = "Bu tweet'e reply yaz."
 
         contents, tokens_used = await generate_with_openrouter(
             system_prompt, user_msg, model_config, request.variants, user_id=user.id, uzunluk=request.uzunluk,
