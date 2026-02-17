@@ -646,7 +646,7 @@ input[type="url"]:focus {
   background: #1a1a1a;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  max-height: 85vh;
+  max-height: 75vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   transform: translateY(100%);
@@ -683,5 +683,13 @@ input[type="url"]:focus {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
+  }
+}
+
+/* Content type tabs: left-align on mobile */
+@media (max-width: 767px) {
+  .scrollbar-hide {
+    justify-content: flex-start !important;
+    padding-left: 4px;
   }
 }

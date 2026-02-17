@@ -419,12 +419,12 @@ export default function GenerationCard({ job }) {
           : "border-border hover:border-primary/20"
       )}
     >
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
         {/* Header: Avatar + Prompt + Tags */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2.5 sm:gap-3">
           {/* Avatar */}
           <div
-            className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-sm"
+            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs sm:text-sm"
             style={{ backgroundColor: color }}
           >
             {isGenerating ? (
@@ -478,15 +478,15 @@ export default function GenerationCard({ job }) {
                       <Badge variant="outline">Varyant {index + 1}</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleCopy(variant.content)}
-                      className="gap-1.5"
+                      className="gap-1 min-h-[36px] min-w-[36px] sm:min-w-0"
                     >
                       <Copy className="h-4 w-4" />
-                      Kopyala
+                      <span className="hidden sm:inline">Kopyala</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -532,10 +532,10 @@ export default function GenerationCard({ job }) {
                       variant="default"
                       size="sm"
                       onClick={() => handleTweet(variant.content)}
-                      className="gap-1.5 bg-sky-500 hover:bg-sky-600 text-white"
+                      className="gap-1 bg-sky-500 hover:bg-sky-600 text-white min-h-[36px] min-w-[36px] sm:min-w-0"
                     >
                       <Send className="h-4 w-4" />
-                      Tweetle
+                      <span className="hidden sm:inline">Tweetle</span>
                     </Button>
                   </div>
                 </div>

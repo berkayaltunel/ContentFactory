@@ -599,7 +599,7 @@ export default function DashboardLayout() {
           { path: "/dashboard", label: "Home", icon: Home, exact: true },
           { path: "/dashboard/create?platform=twitter", label: "Üret", icon: Sparkles },
           { path: "/dashboard/trends", label: "Trend", icon: TrendingUp },
-          { path: "/dashboard/style-lab", label: "Stil", icon: Dna },
+          { path: "/dashboard/favorites", label: "Favori", icon: Heart },
           { path: "/dashboard/history", label: "Geçmiş", icon: History },
         ].map((item) => {
           const active = isActive(item);

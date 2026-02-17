@@ -664,7 +664,11 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
     return createPortal(
       <>
         <div className="mobile-sheet-overlay" onClick={onClose} />
-        <div className="mobile-sheet-content" style={{ padding: "20px 16px 16px" }} onClick={(e) => e.stopPropagation()}>
+        <div className="mobile-sheet-content" style={{ padding: "12px 16px 16px" }} onClick={(e) => e.stopPropagation()}>
+          {/* Drag Handle */}
+          <div onClick={onClose} style={{ display: "flex", justifyContent: "center", paddingBottom: "10px", cursor: "pointer" }}>
+            <div style={{ width: "36px", height: "4px", borderRadius: "999px", background: "var(--m-text-muted)", opacity: 0.3 }} />
+          </div>
           {settingsContent}
         </div>
       </>,
@@ -905,13 +909,14 @@ function StyleProfileBadge() {
             style={{
               position: "fixed",
               bottom: `${window.innerHeight - dropPos.top}px`,
-              left: `${dropPos.left}px`,
-              transform: "translateX(-50%)",
+              left: `clamp(12px, ${dropPos.left}px, calc(100vw - 232px))`,
+              transform: dropPos.left < 120 ? "none" : dropPos.left > window.innerWidth - 120 ? "none" : "translateX(-50%)",
               background: "var(--m-popup-bg)",
               border: "1px solid var(--m-border)",
               borderRadius: "12px",
               padding: "8px",
               minWidth: "220px",
+              maxWidth: "calc(100vw - 24px)",
               maxHeight: "280px",
               overflowY: "auto",
               backdropFilter: "blur(20px)",
@@ -1538,7 +1543,7 @@ export default function XAIModule() {
           background: "var(--m-border-light)",
           borderRadius: "999px",
           padding: "6px 4px",
-          marginBottom: "32px",
+          marginBottom: window.innerWidth < 640 ? "16px" : "32px",
           border: "1px solid var(--m-border-light)",
           opacity: isLoaded ? 1 : 0,
           transform: isLoaded ? "translateY(0)" : "translateY(-8px)",
@@ -1567,11 +1572,11 @@ export default function XAIModule() {
       {/* Main Heading */}
       <h1
         style={{
-          fontSize: "clamp(22px, 5vw, 42px)",
+          fontSize: "clamp(20px, 5vw, 42px)",
           fontWeight: "400",
           fontFamily: "'Georgia', 'Times New Roman', 'Noto Serif', serif",
           textAlign: "center",
-          marginBottom: "36px",
+          marginBottom: window.innerWidth < 640 ? "20px" : "36px",
           letterSpacing: "-0.01em",
           lineHeight: "1.25",
           fontStyle: "italic",
@@ -1727,7 +1732,7 @@ export default function XAIModule() {
               border: "none",
               outline: "none",
               color: "var(--m-text)",
-              fontSize: "15px",
+              fontSize: "16px",
               lineHeight: "1.55",
               resize: "none",
               fontFamily: "inherit",
@@ -1950,6 +1955,7 @@ export default function XAIModule() {
           gap: "8px",
           justifyContent: "center",
           maxWidth: "680px",
+          width: "100%",
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
           marginBottom: jobs.length > 0 ? "24px" : "80px",
@@ -2019,7 +2025,7 @@ export default function XAIModule() {
             marginBottom: "80px",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: window.innerWidth < 640 ? "10px" : "16px" }}>
             {jobs.map((job) => (
               <GenerationCard key={job.id} job={job} />
             ))}
