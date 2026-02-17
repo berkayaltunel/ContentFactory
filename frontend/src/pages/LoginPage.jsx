@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Lock, ArrowRight, Loader2, Zap, Shield, Sparkles } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, Zap, Shield, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -29,7 +29,7 @@ const stagger = { show: { transition: { staggerChildren: 0.1 } } };
 const features = [
   { icon: Zap, text: '6 platform, tek tık' },
   { icon: Shield, text: 'Verileriniz güvende' },
-  { icon: Sparkles, text: 'AI destekli içerik' },
+  { icon: Rocket, text: 'AI destekli içerik' },
 ];
 
 export default function LoginPage() {

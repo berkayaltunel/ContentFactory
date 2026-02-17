@@ -3,7 +3,7 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RotateCcw, Check, Trophy, Sparkles } from "lucide-react";
+import { Loader2, RotateCcw, Check, Trophy, Award } from "lucide-react";
 
 // ══════════════════════════════════════════
 // CONFIG — 3 mode: RAG, No RAG, User Style
@@ -264,7 +264,7 @@ export default function ABTestPage() {
 
           {totalTests >= MIN_TESTS && (
             <div className="mt-4 p-3 rounded-lg text-sm bg-green-500/10 border border-green-500/20 text-green-400">
-              <Sparkles className="w-4 h-4 inline mr-2" />
+              <Award className="w-4 h-4 inline mr-2" />
               <strong>Lider:</strong> {MODES[topMode].label} ({topPct}%, {wins[topMode]}/{totalTests})
             </div>
           )}

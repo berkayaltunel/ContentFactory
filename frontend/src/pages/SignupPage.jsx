@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Lock, User, ArrowRight, Loader2, Check, Zap, Shield, Sparkles } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader2, Check, Zap, Shield, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -25,7 +25,7 @@ const stagger = { show: { transition: { staggerChildren: 0.1 } } };
 const features = [
   { icon: Zap, text: '6 platform, tek tık' },
   { icon: Shield, text: 'Verileriniz güvende' },
-  { icon: Sparkles, text: 'AI destekli içerik' },
+  { icon: Rocket, text: 'AI destekli içerik' },
 ];
 
 export default function SignupPage() {

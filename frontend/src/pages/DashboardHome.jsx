@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  Sparkles, Heart, Copy, ArrowRight, Twitter, FileText,
+  Heart, Copy, ArrowRight, Twitter, FileText, PenLine,
   MessageSquare, Quote, Search, Lightbulb, Dna,
   BarChart3, TrendingUp, ExternalLink, Zap, Flame,
   ChevronRight, Rocket, Target, Compass, Brain,
@@ -327,7 +327,7 @@ export default function DashboardHome() {
                 onClick={handleTopicSubmit}
                 className="h-11 px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium shimmer-btn"
               >
-                <Sparkles className="h-4 w-4 mr-1.5" /> Üret
+                <PenLine className="h-4 w-4 mr-1.5" /> Üret
               </Button>
             </div>
           </div>
@@ -556,7 +556,7 @@ export default function DashboardHome() {
               </div>
             ) : (
               <div className="text-center py-4">
-                <Sparkles className="h-6 w-6 text-muted-foreground/20 mx-auto mb-2" />
+                <PenLine className="h-6 w-6 text-muted-foreground/20 mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground/60">Henüz üretim yok</p>
               </div>
             )}
@@ -584,7 +584,7 @@ export default function DashboardHome() {
               onClick={() => navigate(`/dashboard/create?platform=twitter?topic=${encodeURIComponent(dailyPrompt)}`)}
               className="w-full h-9 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-medium"
             >
-              <Sparkles className="h-3.5 w-3.5 mr-1" /> Bu Konuda Üret
+              <PenLine className="h-3.5 w-3.5 mr-1" /> Bu Konuda Üret
             </Button>
           </div>
         </div>

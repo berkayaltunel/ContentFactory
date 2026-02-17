@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  Sparkles,
   Zap,
   ChevronDown,
   ChevronUp,

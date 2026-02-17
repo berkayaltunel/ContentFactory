@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
-  Sparkles,
+  Star,
   Plus,
   TrendingUp,
   Heart,
@@ -339,7 +339,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
           {sections.length > 0 && (
             <div className="space-y-4">
               <h4 className="font-semibold text-lg flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-yellow-400" />
+                <Star className="h-5 w-5 text-yellow-400" />
                 AI Derinlemesine Analiz
               </h4>
               <div className="space-y-3">

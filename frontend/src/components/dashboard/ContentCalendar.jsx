@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ChevronLeft, ChevronRight, Copy, Heart, ExternalLink,
-  Sparkles, Flame, Calendar, Twitter, Quote, MessageSquare,
+  Flame, Calendar, Twitter, Quote, MessageSquare, PenLine,
   FileText, ArrowRight, TrendingUp
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -395,7 +395,7 @@ export default function ContentCalendar({ embedded = false }) {
               {/* Summary bar */}
               <div className="flex items-center justify-between mb-4 p-3 rounded-2xl bg-purple-500/5 border border-purple-500/10">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  <PenLine className="h-4 w-4 text-purple-500" />
                   <span className="text-sm font-medium">
                     {selectedDate === todayStr ? "Bugün" : new Date(selectedDate + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
                     {" "}
@@ -421,7 +421,7 @@ export default function ContentCalendar({ embedded = false }) {
             /* Empty state */
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center mb-3">
-                <Sparkles className="h-6 w-6 text-purple-500/40" />
+                <PenLine className="h-6 w-6 text-purple-500/40" />
               </div>
               <p className="text-sm text-muted-foreground mb-1">
                 {selectedDate === todayStr
@@ -438,7 +438,7 @@ export default function ContentCalendar({ embedded = false }) {
                     onClick={() => navigate("/dashboard/create?platform=twitter")}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl gap-1.5"
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> İçerik Üret
+                    <PenLine className="h-3.5 w-3.5" /> İçerik Üret
                   </Button>
                 </>
               )}

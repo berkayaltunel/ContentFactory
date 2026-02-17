@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun, Moon, Settings, Layers, LogOut, User, History, Heart,
-  ChevronDown, Sparkles, Dna, TrendingUp, BarChart3, FileText,
+  ChevronDown, Dna, TrendingUp, BarChart3, FileText, Compass,
   Home, MoreHorizontal, Search, Check, Star, Pencil, Trash2, X
 } from "lucide-react";
 import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
+import { PenNib } from "@phosphor-icons/react";
 import { HiDocumentText } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
@@ -45,7 +46,7 @@ const moreItems = [
   { path: "/dashboard/style-lab", label: "Style Lab", icon: Dna },
   { path: "/dashboard/trends", label: "Trendler", icon: TrendingUp },
   { path: "/dashboard/account-analysis", label: "Hesap Analizi", icon: BarChart3 },
-  { path: "/dashboard/coach", label: "AI Coach", icon: Sparkles },
+  { path: "/dashboard/coach", label: "AI Coach", icon: Compass },
 ];
 
 const profileMenuItems = [
@@ -599,7 +600,7 @@ export default function DashboardLayout() {
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around px-1 pt-1.5 pb-1 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.08] safe-area-bottom">
         {[
           { path: "/dashboard", label: "Home", icon: Home, exact: true },
-          { path: "/dashboard/create?platform=twitter", label: "Üret", icon: Sparkles },
+          { path: "/dashboard/create?platform=twitter", label: "Üret", icon: (p) => <PenNib weight="duotone" {...p} /> },
           { path: "/dashboard/trends", label: "Trend", icon: TrendingUp },
           { path: "/dashboard/favorites", label: "Favori", icon: Heart },
           { path: "/dashboard/history", label: "Geçmiş", icon: History },
