@@ -134,7 +134,7 @@ const v2SmartDefaults = {
   konustursun: { karakter: "iceriden", yapi: "dogal",   uzunluk: "spark", acilis: "tartisma", bitis: "soru",     derinlik: "karsi_gorus" },
   ogretsin:    { karakter: "otorite",  yapi: "kurgulu", uzunluk: "punch", acilis: "merak",    bitis: "dogal",    derinlik: "uzmanlik" },
   iz_biraksin: { karakter: "uzman",    yapi: "dogal",   uzunluk: "spark", acilis: "hikaye",   bitis: "dogal",    derinlik: "standart" },
-  shitpost:    { karakter: "haberci",  yapi: "dogal",   uzunluk: "micro", acilis: "otomatik", bitis: "dogal",    derinlik: "standart" },
+  shitpost:    { karakter: null,       yapi: "dogal",   uzunluk: null,    acilis: "otomatik", bitis: "dogal",    derinlik: "standart" },
 };
 
 const v2KarakterYapiUyum = {
@@ -467,7 +467,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                 )}
               </div>
 
-              {/* Uzunluk */}
+              {/* Uzunluk — shitpost'ta gizle */}
+              {settings.etki !== "shitpost" && (
               <div className="mb-2.5">
                 <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Uzunluk</label>
                 {renderPills(
@@ -476,6 +477,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                   "uzunluk"
                 )}
               </div>
+              )}
 
               {/* Gelişmiş Ayarlar (collapsible) */}
               <button
@@ -553,11 +555,13 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                 {renderDesc(tones, settings.tone)}
               </div>
 
-              {/* Length */}
+              {/* Length — shitpost'ta gizle */}
+              {settings.etki !== "shitpost" && (
               <div className="mb-2">
                 <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Uzunluk</label>
                 {renderPills(currentLengths, settings.length, "length")}
               </div>
+              )}
 
               {/* Knowledge */}
               <div className="mb-2">

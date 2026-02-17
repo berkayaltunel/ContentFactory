@@ -74,6 +74,8 @@ _PLATFORM_PROMPTS = {
 
 def _extract_persona_essence(persona_id: str) -> str:
     """Persona'nın özünü 3-5 cümleye sıkıştır."""
+    if not persona_id:
+        return ""
     p = PERSONAS.get(persona_id, PERSONAS.get("otorite"))
     if not p:
         return ""
