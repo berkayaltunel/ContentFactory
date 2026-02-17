@@ -48,12 +48,8 @@ function App() {
                   <Route path="trends" element={<TrendDashboardPage />} />
                   <Route path="account-analysis" element={<AccountAnalysisPage />} />
                   <Route path="youtube-studio" element={<YouTubeStudioPage />} />
+                  <Route path="ab-test" element={<ABTestPage />} />
                 </Route>
-              </Route>
-
-              {/* Hidden A/B test page */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/ab-test" element={<ProfileProvider><ABTestPage /></ProfileProvider>} />
               </Route>
 
               {/* Fallback */}
