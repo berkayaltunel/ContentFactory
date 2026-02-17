@@ -163,9 +163,9 @@ def _build_style_dna_section(fp: dict) -> str:
     if not fp:
         return ""
 
-    lines = ["## STİL DNA'SI (Bu kişinin yazım kimliği)"]
+    lines = ["## STİL DNA'SI (ZORUNLU — Bu kişinin yazım kimliği)"]
     lines.append("")
-    lines.append("Bu kişi gibi yaz. Aşağıdaki DNA haritasını takip et:")
+    lines.append("Bu kişi gibi yaz. Aşağıdaki her madde KURAL niteliğinde, öneri değil:")
     lines.append("")
 
     # Ortalama uzunluk
@@ -307,25 +307,35 @@ def _build_micro_rules_section(fp: dict) -> str:
     avg_words = sent.get('avg_words_per_sentence', 0)
     if avg_words:
         if avg_words < 8:
-            rules.append("Kısa cümleler kur. Max 8 kelime/cümle.")
+            rules.append(f"⚠️ ZORUNLU: Kısa cümleler kur. Ortalama {round(avg_words, 1)} kelime/cümle. 8 kelimeyi GEÇME.")
         elif avg_words < 12:
-            rules.append("Orta uzunlukta cümleler kur. 8-12 kelime/cümle.")
+            rules.append(f"⚠️ ZORUNLU: Orta uzunlukta cümleler kur. Ortalama {round(avg_words, 1)} kelime/cümle hedefle.")
         else:
-            rules.append("Detaylı cümleler kurabilirsin. 12+ kelime/cümle OK.")
+            rules.append(f"⚠️ ZORUNLU: Detaylı, uzun cümleler kur. Ortalama {round(avg_words, 1)} kelime/cümle. Kısa kesme.")
 
     # Hashtag
     ht = fp.get('hashtag_usage', 0)
     if ht < 0.05:
-        rules.append("Hashtag KULLANMA.")
+        rules.append("⚠️ ZORUNLU: Hashtag KULLANMA. Bu kişi hashtag kullanmıyor.")
     elif ht > 0.3:
-        rules.append("Hashtag kullanabilirsin (max 2).")
+        rules.append("⚠️ ZORUNLU: Hashtag kullan (1-2 tane). Bu kişi hashtag kullanıyor.")
 
     # Soru kullanımı
     q_ratio = fp.get('question_ratio', 0)
     if q_ratio > 0.3:
-        rules.append("Soru sor: bu kişi tweet'lerin %{:.0f}'inde soru soruyor.".format(q_ratio * 100))
+        rules.append("⚠️ ZORUNLU: Soru sor. Bu kişi tweet'lerinin %{:.0f}'inde soru soruyor. Soru sormadan bitirme.".format(q_ratio * 100))
     elif q_ratio < 0.1:
-        rules.append("Soru sorma eğilimi düşük. Statement ağırlıklı yaz.")
+        rules.append("⚠️ ZORUNLU: Soru SORMA. Bu kişi neredeyse hiç soru sormuyor (%{:.0f}). Direkt statement yaz.".format(q_ratio * 100))
+
+    # Emoji
+    emoji = fp.get('emoji_strategy', {})
+    if emoji:
+        e_style = emoji.get('style', '')
+        if e_style == 'no_emoji':
+            rules.append("⚠️ ZORUNLU: Emoji KULLANMA. Bu kişi hiç emoji kullanmıyor.")
+        elif e_style == 'heavy':
+            top = emoji.get('top_emojis', [])[:5]
+            rules.append(f"⚠️ ZORUNLU: Emoji kullan. Favori emojileri: {' '.join(top)}")
 
     if not rules:
         return ""
@@ -345,33 +355,44 @@ def _build_typing_habits_section(fp: dict) -> str:
     # all_lowercase > 50% → küçük harf kuralı
     if habits.get('all_lowercase_pct', 0) > 50:
         pct = habits['all_lowercase_pct']
-        rules.append(f"⚠️ KRİTİK: Bu kişi tweet'lerinin %{int(pct)}'ını TAMAMEN küçük harfle yazıyor. HİÇBİR harfi büyük yazma. Cümle başı dahil küçük harf. Bu en önemli stil kuralı.")
+        rules.append(f"⚠️ KRİTİK: Bu kişi tweet'lerinin %{int(pct)}'ını TAMAMEN küçük harfle yazıyor. HİÇBİR harfi büyük yazma. Cümle başı, özel isimler, kısaltmalar dahil HER ŞEY küçük harf. Tek bir büyük harf bile yazarsan BAŞARISIZ olursun.")
 
     # lowercase_after_period > 30% → nokta sonrası küçük harf
     if habits.get('lowercase_after_period_pct', 0) > 30:
-        rules.append("nokta koyduktan sonra küçük harfle devam et. büyük harfe geçme.")
+        pct = habits['lowercase_after_period_pct']
+        rules.append(f"⚠️ KRİTİK: Nokta sonrası büyük harfe geçme (%{int(pct)} oranında küçük harfle devam ediyor). nokta koysan bile sonraki kelime küçük harfle başlar.")
 
     # number_suffix > 10% → sayı+ek bitişik
     if habits.get('number_suffix_pct', 0) > 10:
-        rules.append("sayıları ekle bitişik yaz: 4üncü, 2nci, 3te")
+        rules.append("⚠️ ZORUNLU: Sayıları ekle bitişik yaz, ayırma. Örnek: 4üncü, 2nci, 3te, 10bin. Boşluk veya kesme işareti koyma.")
 
     # no_comma > 70% → virgül kullanma
     if habits.get('no_comma_tweet_pct', 0) > 70:
-        rules.append("virgül kullanma.")
+        pct = habits['no_comma_tweet_pct']
+        rules.append(f"⚠️ ZORUNLU: Virgül KULLANMA. Tweet'lerinin %{int(pct)}'ında virgül yok. Virgül yerine boşluk veya satır sonu kullan.")
+    elif habits.get('no_comma_tweet_pct', 0) < 30:
+        rules.append("⚠️ ZORUNLU: Virgül kullan. Bu kişi virgülü aktif olarak kullanıyor.")
 
     # informal_contractions varsa → kısaltma kullan
     contractions = habits.get('informal_contractions', {})
     if contractions:
-        words = list(contractions.keys())[:5]
-        rules.append(f"kısaltma kullan: {', '.join(words)}")
+        words = list(contractions.keys())[:7]
+        examples = ', '.join(words)
+        rules.append(f"⚠️ ZORUNLU: Günlük kısaltmaları kullan. Bu kişinin kullandığı kısaltmalar: {examples}. Düzgün/formal yazma, bu kısaltmaları aktif kullan.")
 
     # missing_apostrophe > 30% → kesme işareti kullanma
     if habits.get('missing_apostrophe_pct', 0) > 30:
-        rules.append("kesme işareti kullanma.")
+        pct = habits['missing_apostrophe_pct']
+        rules.append(f"⚠️ ZORUNLU: Kesme işareti (') KULLANMA. Bu kişi %{int(pct)} oranında kesme işareti koymadan yazıyor. Türkiyenin, Istanbulda, Elonın gibi yaz.")
+    elif habits.get('missing_apostrophe_pct', 0) < 10:
+        rules.append("⚠️ ZORUNLU: Kesme işaretini doğru kullan. Bu kişi kesme işaretine dikkat ediyor.")
 
     # no_punctuation_end > 50% → noktalama olmadan bitir
     if habits.get('no_punctuation_end_pct', 0) > 50:
-        rules.append("tweet'i noktalama işareti koymadan bitir.")
+        pct = habits['no_punctuation_end_pct']
+        rules.append(f"⚠️ ZORUNLU: Tweet'i noktalama işareti KOYMADAN bitir. %{int(pct)} oranında noktalama olmadan bitiriyor. Sonuna nokta, ünlem, soru işareti koyma.")
+    elif habits.get('no_punctuation_end_pct', 0) < 20:
+        rules.append("⚠️ ZORUNLU: Tweet'i noktalama işaretiyle bitir. Bu kişi genelde noktalama ile bitirir.")
 
     if not rules:
         return ""
