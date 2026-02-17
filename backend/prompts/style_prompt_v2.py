@@ -55,7 +55,7 @@ def build_style_enhanced_prompt(
     sections.append(_build_typing_habits_section(style_fingerprint))
 
     # ─── 6. HARD BLOCK (sadece en kritikler) ───
-    sections.append(_build_hard_block())
+    sections.append(_build_hard_block(style_fingerprint))
 
     # ─── 7. TASK DEFINITION ───
     task = TASK_DEFINITIONS.get(content_type, TASK_DEFINITIONS["tweet"])
@@ -132,13 +132,13 @@ def _build_ghost_writer_identity() -> str:
 
 Sen bu kişisin. Aşağıdaki tweet'leri SEN yazdın.
 Yeni tweet yazarken birebir aynı tarzda yaz.
-Aynı kelime tercihleri, aynı cümle yapısı, aynı noktalama, aynı enerji.
-Senden farklı biri gibi yazarsan BAŞARISIZ olursun."""
+Aynı kelime tercihleri, aynı cümle yapısı, aynı noktalama, aynı büyük/küçük harf kullanımı, aynı enerji.
+YAZIM ALIŞKANLIKLARI bölümündeki kurallar MUTLAK: ihlal edersen BAŞARISIZ olursun."""
 
 
-def _build_hard_block() -> str:
+def _build_hard_block(fp: dict = None) -> str:
     """Sadece en kritik yasaklar"""
-    return """## YASAKLAR
+    base = """## YASAKLAR
 
 Aşağıdaki kalıpları ASLA kullanma:
 - "devrim", "çığır açan", "game changer", "oyun değiştirici"
@@ -148,6 +148,14 @@ Aşağıdaki kalıpları ASLA kullanma:
 - "siz ne düşünüyorsunuz", "hadi bakalım", "düşünmek lazım"
 
 Bunun yerine spesifik, somut, günlük dilde yaz."""
+
+    # Dinamik yasak: küçük harf profili ise büyük harf yasak
+    if fp:
+        habits = fp.get('typing_habits', {})
+        if habits.get('all_lowercase_pct', 0) > 50:
+            base += "\n\n⚠️ BÜYÜK HARF YASAĞI: Bu kişi küçük harfle yazıyor. Cümle başında bile büyük harf KULLANMA. Özel isimler dahil her şey küçük."
+    
+    return base
 
 
 def _build_style_dna_section(fp: dict) -> str:
@@ -336,11 +344,12 @@ def _build_typing_habits_section(fp: dict) -> str:
 
     # all_lowercase > 50% → küçük harf kuralı
     if habits.get('all_lowercase_pct', 0) > 50:
-        rules.append("her şeyi küçük harfle yaz. büyük harf kullanma.")
+        pct = habits['all_lowercase_pct']
+        rules.append(f"⚠️ KRİTİK: Bu kişi tweet'lerinin %{int(pct)}'ını TAMAMEN küçük harfle yazıyor. HİÇBİR harfi büyük yazma. Cümle başı dahil küçük harf. Bu en önemli stil kuralı.")
 
     # lowercase_after_period > 30% → nokta sonrası küçük harf
     if habits.get('lowercase_after_period_pct', 0) > 30:
-        rules.append("nokta koyduktan sonra küçük harfle devam et.")
+        rules.append("nokta koyduktan sonra küçük harfle devam et. büyük harfe geçme.")
 
     # number_suffix > 10% → sayı+ek bitişik
     if habits.get('number_suffix_pct', 0) > 10:
@@ -367,7 +376,7 @@ def _build_typing_habits_section(fp: dict) -> str:
     if not rules:
         return ""
 
-    header = "## YAZIM ALIŞKANLIKLARI (Bu kişinin yazım tarzını kopyala)\n\n"
+    header = "## YAZIM ALIŞKANLIKLARI (ZORUNLU — İhlal etme)\n\n"
     return header + '\n'.join(f"- {r}" for r in rules)
 
 
