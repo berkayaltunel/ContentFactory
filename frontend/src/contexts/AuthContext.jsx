@@ -28,6 +28,11 @@ export function AuthProvider({ children }) {
             avatar_url: session.user.user_metadata?.avatar_url || null,
           });
         }
+        // Clear Supabase auth hash fragment to prevent auto-scroll
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          window.scrollTo(0, 0);
+        }
       } catch (error) {
         console.error('Session check failed:', error);
       } finally {
@@ -57,6 +62,11 @@ export function AuthProvider({ children }) {
             name: newSession.user.user_metadata?.name || newSession.user.email?.split('@')[0] || 'User',
             avatar_url: newSession.user.user_metadata?.avatar_url || null,
           });
+          // Clear Supabase auth hash fragment to prevent auto-scroll
+          if (window.location.hash && window.location.hash.includes('access_token')) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            window.scrollTo(0, 0);
+          }
         }
         // If newSession is null but event is NOT SIGNED_OUT (e.g. TOKEN_REFRESHED edge case),
         // keep existing session/user — don't wipe state.
