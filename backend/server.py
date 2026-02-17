@@ -1560,7 +1560,7 @@ class ReplyGenerateRequestV2(BaseModel):
 # ==================== V2 ENDPOINTS ====================
 
 @api_router.post("/v2/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v3", force_model: str = None, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v3", force_model: str = None, force_rag: str = None, _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet with v2 settings system (Etki, Karakter, Yapı etc.)"""
     try:
         sanitize_generation_request(request)
@@ -1590,12 +1590,32 @@ async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v3",
             model_config = get_model_config(request.etki, request.is_ultra)
         logger.info(f"V2 tweet: etki={request.etki}, karakter={request.karakter}, yapi={request.yapi}, model={model_config['model']}, ultra={request.is_ultra}")
 
-        # Auto-inject BeatstoBytes style for shitpost
+        # Auto-inject style for shitpost (controlled by force_rag param)
         shitpost_style_prompt = None
         shitpost_examples = None
         if request.etki == "shitpost":
-            shitpost_style_prompt, shitpost_examples = _get_shitpost_style()
-            logger.info(f"V2 shitpost: injecting BeatstoBytes style ({len(shitpost_style_prompt)} chars, {len(shitpost_examples)} examples)")
+            if force_rag == "none":
+                logger.info("V2 shitpost: RAG disabled (force_rag=none)")
+            elif force_rag == "user_style":
+                # Use user's style profile instead of BeatstoBytes
+                if request.style_profile_id:
+                    try:
+                        result = supabase.table("style_profiles").select("*").eq("id", request.style_profile_id).eq("user_id", user.id).execute()
+                        if result.data:
+                            profile = result.data[0]
+                            from prompts.style_prompt_v2 import build_style_enhanced_prompt
+                            source_ids = profile.get("source_ids", [])
+                            examples_result = supabase.table("source_tweets").select("text").in_("source_id", source_ids).order("created_at", desc=True).limit(20).execute()
+                            user_examples = [t["text"] for t in examples_result.data] if examples_result.data else []
+                            shitpost_style_prompt = build_style_enhanced_prompt(profile, user_examples)
+                            shitpost_examples = user_examples
+                            logger.info(f"V2 shitpost: user style injected ({len(shitpost_style_prompt)} chars, {len(shitpost_examples)} examples)")
+                    except Exception as e:
+                        logger.error(f"V2 shitpost user_style error: {e}")
+            else:
+                # Default: BeatstoBytes RAG
+                shitpost_style_prompt, shitpost_examples = _get_shitpost_style()
+                logger.info(f"V2 shitpost: injecting BeatstoBytes style ({len(shitpost_style_prompt)} chars, {len(shitpost_examples)} examples)")
 
         # Build prompt (v2 or v3 engine)
         if engine == "v3":

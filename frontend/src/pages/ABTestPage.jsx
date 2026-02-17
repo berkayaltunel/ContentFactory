@@ -6,25 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, RotateCcw, Check, Trophy, Sparkles } from "lucide-react";
 
 // ══════════════════════════════════════════
-// CONFIG
+// CONFIG — 3 mode: RAG, No RAG, User Style
 // ══════════════════════════════════════════
 
-const MODELS = {
-  normal: { id: "normal", label: "Gemini 3 Flash", color: "blue" },
-  shitpost: { id: "shitpost", label: "Mistral Large", color: "violet" },
+const MODES = {
+  beatstobytes: { id: "beatstobytes", label: "BeatstoBytes RAG", color: "violet", forceRag: "beatstobytes" },
+  none:         { id: "none",         label: "Saf Mistral",      color: "blue",   forceRag: "none" },
+  user_style:   { id: "user_style",   label: "Kullanıcı Stili",  color: "amber",  forceRag: "user_style" },
 };
 
+const MODE_KEYS = Object.keys(MODES);
 const MIN_TESTS = 10;
+const STORAGE_KEY = "ab_shitpost_3way_results";
 
-function calcSignificance(wins, total) {
-  if (total < MIN_TESTS) return { significant: false, pValue: 1, needed: MIN_TESTS - total };
-  const p0 = 0.5;
-  const z = (wins / total - p0) / Math.sqrt(p0 * (1 - p0) / total);
-  const absZ = Math.abs(z);
-  const t = 1 / (1 + 0.2316419 * absZ);
-  const d = 0.3989422804 * Math.exp(-absZ * absZ / 2);
-  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.8212560 + t * 1.3302744))));
-  return { significant: 2 * p < 0.05, pValue: 2 * p, needed: 0 };
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 // ══════════════════════════════════════════
@@ -50,14 +51,14 @@ function VariantTabs({ variants, activeIdx, onSelect }) {
   );
 }
 
-function EngineColumn({ label, variants, loading, selected, onSelect, revealed, engineLabel }) {
+function ColumnCard({ label, variants, loading, selected, onSelect, revealed, modeLabel, colorClass }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const currentVariant = variants?.[activeIdx];
 
   const borderClass = revealed
     ? selected
       ? "border-green-500 ring-2 ring-green-500/30 bg-green-500/5"
-      : "border-red-500/30 bg-red-500/5 opacity-70"
+      : "border-white/5 bg-white/[0.02] opacity-60"
     : "border-white/10";
 
   return (
@@ -66,12 +67,8 @@ function EngineColumn({ label, variants, loading, selected, onSelect, revealed, 
         <h3 className="text-lg font-semibold text-white">{label}</h3>
         <div className="flex items-center gap-2">
           {revealed && (
-            <Badge className={`text-xs ${
-              selected
-                ? "bg-green-500/20 text-green-400 border-green-500/30"
-                : "bg-red-500/20 text-red-400 border-red-500/30"
-            }`}>
-              {engineLabel}
+            <Badge className={`text-xs ${colorClass}`}>
+              {modeLabel}
             </Badge>
           )}
           {revealed && selected && <Trophy className="w-4 h-4 text-yellow-400" />}
@@ -111,15 +108,23 @@ function EngineColumn({ label, variants, loading, selected, onSelect, revealed, 
 
 function saveResult(result) {
   try {
-    const existing = JSON.parse(localStorage.getItem("ab_shitpost_results") || "[]");
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     existing.push(result);
-    localStorage.setItem("ab_shitpost_results", JSON.stringify(existing));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
   } catch (e) { /* ignore */ }
 }
 
 function getResults() {
-  try { return JSON.parse(localStorage.getItem("ab_shitpost_results") || "[]"); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
 }
+
+const COLOR_MAP = {
+  beatstobytes: "bg-violet-500/20 text-violet-400 border-violet-500/30",
+  none: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  user_style: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+};
+
+const LABELS = ["Sol", "Orta", "Sağ"];
 
 // ══════════════════════════════════════════
 // MAIN
@@ -127,40 +132,44 @@ function getResults() {
 
 export default function ABTestPage() {
   const [topic, setTopic] = useState("");
-  const [variants, setVariants] = useState(3);
-  const [colA, setColA] = useState({ loading: false, variants: null });
-  const [colB, setColB] = useState({ loading: false, variants: null });
+  const [variantCount, setVariantCount] = useState(3);
+  const [cols, setCols] = useState([
+    { loading: false, variants: null },
+    { loading: false, variants: null },
+    { loading: false, variants: null },
+  ]);
   const [winner, setWinner] = useState(null);
   const [revealed, setRevealed] = useState(false);
-  const [showStats, setShowStats] = useState(true);
 
-  const orderRef = useRef({ a: "normal", b: "shitpost" });
+  const orderRef = useRef(MODE_KEYS); // shuffled each round
 
   const generate = useCallback(async () => {
     if (!topic.trim()) return;
     setWinner(null);
     setRevealed(false);
-    setColA({ loading: true, variants: null });
-    setColB({ loading: true, variants: null });
+    setCols([
+      { loading: true, variants: null },
+      { loading: true, variants: null },
+      { loading: true, variants: null },
+    ]);
 
-    // Randomize
-    const flip = Math.random() > 0.5;
-    orderRef.current = flip ? { a: "shitpost", b: "normal" } : { a: "normal", b: "shitpost" };
+    // Randomize order
+    const order = shuffle(MODE_KEYS);
+    orderRef.current = order;
 
-    const fetchModel = async (modelKey) => {
+    const fetchMode = async (modeKey) => {
+      const mode = MODES[modeKey];
       try {
-        const res = await api.post(`/v2/generate/tweet?engine=v3&force_model=${modelKey}`, {
+        const res = await api.post(`/v2/generate/tweet?engine=v3&force_model=shitpost&force_rag=${mode.forceRag}`, {
           topic: topic.trim(),
           etki: "shitpost",
-          karakter: "haberci",
           yapi: "dogal",
-          uzunluk: "micro",
           acilis: "otomatik",
           bitis: "dogal",
           derinlik: "standart",
           language: "auto",
           is_ultra: false,
-          variants,
+          variants: variantCount,
         });
         const data = res.data;
         if (data.variants && Array.isArray(data.variants)) {
@@ -173,75 +182,70 @@ export default function ABTestPage() {
       }
     };
 
-    const [rA, rB] = await Promise.allSettled([
-      fetchModel(orderRef.current.a),
-      fetchModel(orderRef.current.b),
-    ]);
-    setColA({ loading: false, variants: rA.status === "fulfilled" ? rA.value : [`Hata: ${rA.reason}`] });
-    setColB({ loading: false, variants: rB.status === "fulfilled" ? rB.value : [`Hata: ${rB.reason}`] });
-  }, [topic, variants]);
+    const results = await Promise.allSettled(order.map(fetchMode));
+    setCols(results.map(r => ({
+      loading: false,
+      variants: r.status === "fulfilled" ? r.value : [`Hata: ${r.reason}`],
+    })));
+  }, [topic, variantCount]);
 
-  const selectWinner = (col) => {
-    setWinner(col);
+  const selectWinner = (colIdx) => {
+    setWinner(colIdx);
     setRevealed(true);
-    const winnerModel = orderRef.current[col];
+    const winnerMode = orderRef.current[colIdx];
     saveResult({
       timestamp: new Date().toISOString(),
       topic,
-      winner: winnerModel,
-      loser: col === "a" ? orderRef.current.b : orderRef.current.a,
+      winner: winnerMode,
+      losers: orderRef.current.filter((_, i) => i !== colIdx),
     });
   };
 
   const results = getResults();
-  const geminiWins = results.filter(r => r.winner === "normal").length;
-  const mistralWins = results.filter(r => r.winner === "shitpost").length;
+  const wins = {};
+  MODE_KEYS.forEach(k => { wins[k] = results.filter(r => r.winner === k).length; });
   const totalTests = results.length;
 
-  const significance = useMemo(() => {
-    const maxWins = Math.max(geminiWins, mistralWins);
-    return calcSignificance(maxWins, totalTests);
-  }, [geminiWins, mistralWins, totalTests]);
-
-  const conclusionModel = geminiWins > mistralWins ? "Gemini 3 Flash" : mistralWins > geminiWins ? "Mistral Large" : null;
-  const conclusionPct = totalTests > 0 ? Math.round((Math.max(geminiWins, mistralWins) / totalTests) * 100) : 0;
+  const topMode = MODE_KEYS.reduce((a, b) => (wins[a] >= wins[b] ? a : b));
+  const topPct = totalTests > 0 ? Math.round((wins[topMode] / totalTests) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-1">🧪 Shitpost Model A/B Test</h1>
-          <p className="text-white/40 text-sm">Gemini 3 Flash vs Mistral Large — ikisi de BeatstoBytes RAG ile. Hangisi daha iyi shitpost üretiyor?</p>
+          <h1 className="text-2xl font-bold mb-1">🧪 Shitpost A/B/C Test</h1>
+          <p className="text-white/40 text-sm">Mistral Large: BeatstoBytes RAG vs Saf Model vs Kullanıcı Stili</p>
         </div>
 
         {/* Scoreboard */}
         <Card className="p-4 mb-6 bg-[#111] border-white/10">
-          <div className="flex items-center gap-8 flex-wrap">
+          <div className="flex items-center gap-6 flex-wrap">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">{totalTests}</div>
               <div className="text-xs text-white/40">Toplam</div>
             </div>
             <div className="w-px h-10 bg-white/10" />
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">{geminiWins}</div>
-              <div className="text-xs text-white/40">Gemini</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-violet-400">{mistralWins}</div>
-              <div className="text-xs text-white/40">Mistral</div>
-            </div>
+            {MODE_KEYS.map(k => (
+              <div key={k} className="text-center">
+                <div className={`text-2xl font-bold ${k === "beatstobytes" ? "text-violet-400" : k === "none" ? "text-blue-400" : "text-amber-400"}`}>
+                  {wins[k]}
+                </div>
+                <div className="text-xs text-white/40">{MODES[k].label}</div>
+              </div>
+            ))}
             {totalTests > 0 && (
               <>
                 <div className="w-px h-10 bg-white/10" />
                 <div className="flex-1 min-w-[200px]">
                   <div className="flex h-3 rounded-full overflow-hidden bg-white/5">
-                    <div className="bg-blue-500 transition-all" style={{ width: `${(geminiWins / totalTests) * 100}%` }} />
-                    <div className="bg-violet-500 transition-all" style={{ width: `${(mistralWins / totalTests) * 100}%` }} />
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-white/40">
-                    <span>Gemini {totalTests > 0 ? Math.round((geminiWins / totalTests) * 100) : 0}%</span>
-                    <span>Mistral {totalTests > 0 ? Math.round((mistralWins / totalTests) * 100) : 0}%</span>
+                    {MODE_KEYS.map(k => (
+                      <div
+                        key={k}
+                        className={`transition-all ${k === "beatstobytes" ? "bg-violet-500" : k === "none" ? "bg-blue-500" : "bg-amber-500"}`}
+                        style={{ width: `${totalTests > 0 ? (wins[k] / totalTests) * 100 : 0}%` }}
+                      />
+                    ))}
                   </div>
                 </div>
               </>
@@ -250,7 +254,7 @@ export default function ABTestPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { if (confirm("Tüm sonuçları sıfırla?")) { localStorage.removeItem("ab_shitpost_results"); window.location.reload(); } }}
+                onClick={() => { if (confirm("Tüm sonuçları sıfırla?")) { localStorage.removeItem(STORAGE_KEY); window.location.reload(); } }}
                 className="text-red-400/60 hover:text-red-400 text-xs"
               >
                 Sıfırla
@@ -258,23 +262,15 @@ export default function ABTestPage() {
             )}
           </div>
 
-          {/* Significance */}
-          {totalTests > 0 && (
-            <div className={`mt-4 p-3 rounded-lg text-sm ${
-              significance.significant
-                ? "bg-green-500/10 border border-green-500/20 text-green-400"
-                : "bg-white/5 border border-white/10 text-white/50"
-            }`}>
-              {significance.significant ? (
-                <>
-                  <Sparkles className="w-4 h-4 inline mr-2" />
-                  <strong>Sonuç:</strong> {conclusionModel} istatistiksel olarak daha iyi ({conclusionPct}%, p={significance.pValue.toFixed(3)}).
-                </>
-              ) : totalTests < MIN_TESTS ? (
-                <>📊 {MIN_TESTS - totalTests} test daha gerekiyor. ({totalTests}/{MIN_TESTS})</>
-              ) : (
-                <>📊 Henüz anlamlı fark yok (p={significance.pValue.toFixed(3)}). Teste devam et.</>
-              )}
+          {totalTests >= MIN_TESTS && (
+            <div className="mt-4 p-3 rounded-lg text-sm bg-green-500/10 border border-green-500/20 text-green-400">
+              <Sparkles className="w-4 h-4 inline mr-2" />
+              <strong>Lider:</strong> {MODES[topMode].label} ({topPct}%, {wins[topMode]}/{totalTests})
+            </div>
+          )}
+          {totalTests > 0 && totalTests < MIN_TESTS && (
+            <div className="mt-4 p-3 rounded-lg text-sm bg-white/5 border border-white/10 text-white/50">
+              📊 {MIN_TESTS - totalTests} test daha gerekiyor. ({totalTests}/{MIN_TESTS})
             </div>
           )}
         </Card>
@@ -296,9 +292,9 @@ export default function ABTestPage() {
                 {[1, 2, 3].map(n => (
                   <button
                     key={n}
-                    onClick={() => setVariants(n)}
+                    onClick={() => setVariantCount(n)}
                     className={`w-7 h-7 rounded-md text-xs transition-colors ${
-                      variants === n ? "bg-white text-black font-medium" : "bg-white/5 text-white/50 hover:bg-white/10"
+                      variantCount === n ? "bg-white text-black font-medium" : "bg-white/5 text-white/50 hover:bg-white/10"
                     }`}
                   >
                     {n}
@@ -310,16 +306,16 @@ export default function ABTestPage() {
             <div className="flex gap-3 ml-auto">
               <Button
                 onClick={generate}
-                disabled={!topic.trim() || colA.loading}
+                disabled={!topic.trim() || cols[0].loading}
                 className="bg-white text-black hover:bg-white/90 px-8 font-medium"
               >
-                {colA.loading || colB.loading ? (
+                {cols[0].loading ? (
                   <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Üretiliyor...</>
                 ) : (
                   "⚡ Üret & Karşılaştır"
                 )}
               </Button>
-              {colA.variants && !colA.loading && (
+              {cols[0].variants && !cols[0].loading && (
                 <Button variant="outline" onClick={generate} className="border-white/20 text-white hover:bg-white/10">
                   <RotateCcw className="w-4 h-4 mr-2" /> Tekrar
                 </Button>
@@ -329,7 +325,7 @@ export default function ABTestPage() {
         </div>
 
         {/* Reveal */}
-        {revealed && winner && (
+        {revealed && winner !== null && (
           <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-green-500/10 via-green-500/5 to-transparent border border-green-500/20">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -337,36 +333,31 @@ export default function ABTestPage() {
               </div>
               <div>
                 <div className="text-green-400 font-semibold">
-                  {winner === "a" ? "Sol" : "Sağ"} kazandı → <span className="text-white text-lg">{MODELS[orderRef.current[winner]].label}</span>
+                  {LABELS[winner]} kazandı → <span className="text-white text-lg">{MODES[orderRef.current[winner]].label}</span>
                 </div>
                 <div className="text-white/40 text-xs mt-0.5">
-                  Sol = {MODELS[orderRef.current.a].label} · Sağ = {MODELS[orderRef.current.b].label}
+                  {orderRef.current.map((k, i) => `${LABELS[i]} = ${MODES[k].label}`).join(" · ")}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <EngineColumn
-            label="Sol ◼"
-            variants={colA.variants}
-            loading={colA.loading}
-            selected={winner === "a"}
-            onSelect={() => !winner && selectWinner("a")}
-            revealed={revealed}
-            engineLabel={MODELS[orderRef.current.a].label}
-          />
-          <EngineColumn
-            label="Sağ ◼"
-            variants={colB.variants}
-            loading={colB.loading}
-            selected={winner === "b"}
-            onSelect={() => !winner && selectWinner("b")}
-            revealed={revealed}
-            engineLabel={MODELS[orderRef.current.b].label}
-          />
+        {/* 3 Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[0, 1, 2].map(i => (
+            <ColumnCard
+              key={i}
+              label={`${LABELS[i]} ◼`}
+              variants={cols[i].variants}
+              loading={cols[i].loading}
+              selected={winner === i}
+              onSelect={() => winner === null && selectWinner(i)}
+              revealed={revealed}
+              modeLabel={MODES[orderRef.current[i]]?.label || ""}
+              colorClass={COLOR_MAP[orderRef.current[i]] || ""}
+            />
+          ))}
         </div>
       </div>
     </div>
