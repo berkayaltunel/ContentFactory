@@ -28,6 +28,7 @@ import {
   Lightbulb,
   MessageSquare,
   Quote,
+  MessageCircleReply,
   FileText,
   Send,
   Mic,
@@ -190,16 +191,16 @@ const languages = [
 // Content type tabs for quick actions
 const contentTypes = [
   { id: "tweet", icon: MessageSquare, label: "Tweet" },
-  { id: "quote", icon: Quote, label: "Alıntı" },
-  { id: "reply", icon: Repeat2, label: "Yanıt" },
+  { id: "quote", icon: Repeat2, label: "Alıntı" },
+  { id: "reply", icon: MessageCircleReply, label: "Yanıt" },
   { id: "thread", icon: FileText, label: "Thread" },
 ];
 
 const PLATFORM_CONTENT_TYPES = {
   twitter: [
     { id: "tweet", icon: MessageSquare, label: "Tweet" },
-    { id: "quote", icon: Quote, label: "Alıntı" },
-    { id: "reply", icon: Repeat2, label: "Yanıt" },
+    { id: "quote", icon: Repeat2, label: "Alıntı" },
+    { id: "reply", icon: MessageCircleReply, label: "Yanıt" },
     { id: "thread", icon: FileText, label: "Thread" },
   ],
   youtube: [
