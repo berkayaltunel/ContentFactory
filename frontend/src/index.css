@@ -559,3 +559,17 @@ input[type="url"]:focus {
 :root:not(.dark) .tool-card:hover::after {
   background: linear-gradient(90deg, transparent, rgba(168,85,247,0.06), transparent);
 }
+
+/* Mobile safe area for bottom nav */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide scrollbar for horizontal scroll containers */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -1590,12 +1590,12 @@ export default function XAIModule() {
                 key={d.id}
                 onClick={() => setInputValue(prev => prev === d.id ? "" : d.id)}
                 style={{
-                  padding: "5px 12px",
+                  padding: "5px 10px",
                   borderRadius: "999px",
                   border: inputValue === d.id ? `1px solid ${d.color}` : "1px solid var(--m-border)",
                   background: inputValue === d.id ? `${d.color}15` : "transparent",
                   color: inputValue === d.id ? d.color : "var(--m-text-muted)",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                 }}
@@ -1603,8 +1603,8 @@ export default function XAIModule() {
                 {d.label}
               </button>
             ))}
-            <span style={{ fontSize: "11px", color: "var(--m-text-muted)", alignSelf: "center", marginLeft: "4px" }}>
-              veya kendi yönünü yaz ↓
+            <span style={{ fontSize: "10px", color: "var(--m-text-muted)", alignSelf: "center", marginLeft: "2px" }}>
+              veya yaz ↓
             </span>
           </div>
         </div>
@@ -1906,12 +1906,15 @@ export default function XAIModule() {
 
       {/* Quick Action Chips (Content Type Tabs) */}
       <div
+        className="scrollbar-hide"
         style={{
           display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
+          flexWrap: "nowrap",
+          gap: "8px",
           justifyContent: "center",
           maxWidth: "680px",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
           marginBottom: jobs.length > 0 ? "24px" : "80px",
           opacity: isLoaded ? 1 : 0,
           transform: isLoaded ? "translateY(0)" : "translateY(12px)",
@@ -1956,6 +1959,7 @@ export default function XAIModule() {
                 transition: "all 0.2s ease",
                 fontFamily: "inherit",
                 whiteSpace: "nowrap",
+                flexShrink: 0,
                 letterSpacing: "0.01em",
                 fontWeight: isActive ? "500" : "400",
               }}

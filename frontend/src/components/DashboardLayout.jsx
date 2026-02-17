@@ -322,8 +322,8 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ── Floating Top Nav Bar ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-4 pointer-events-none">
+      {/* ── Floating Top Nav Bar (desktop) ── */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-4 pointer-events-none hidden md:flex">
         <nav
           className={cn(
             "flex items-center gap-1 px-2 py-1.5 rounded-full pointer-events-auto",
@@ -506,8 +506,85 @@ export default function DashboardLayout() {
         </nav>
       </header>
 
+      {/* ── Mobile Top Bar ── */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex md:hidden items-center justify-between px-4 py-2 bg-[#0A0A0A] border-b border-white/[0.06]">
+        <NavLink to="/dashboard" className="flex items-center gap-2">
+          <img src="/logo.png" alt="Type Hype" className="h-8 w-8 rounded-lg object-cover" />
+          <span className="font-outfit text-sm font-bold text-white">
+            Type<span className="text-purple-400">Hype</span>
+          </span>
+        </NavLink>
+        <div className="flex items-center gap-1">
+          {isAuthenticated && user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1 rounded-full focus:outline-none">
+                  <Avatar className="h-7 w-7 ring-1 ring-white/20">
+                    <AvatarImage src={primaryAvatarUrl || user.avatar_url} alt={user.name} onError={(e) => { e.target.style.display = 'none'; }} />
+                    <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
+                      {user.name?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} className="w-56 rounded-xl bg-[#1A1A1A] border-white/10 text-white shadow-2xl">
+                <div className="px-3 py-2.5 border-b border-white/10">
+                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-xs text-white/50 truncate">{user.email}</p>
+                </div>
+                <ConnectedAccountsSection accounts={connectedAccounts} onSave={handleSaveAccount} onDelete={handleDeleteAccount} onSetPrimary={handleSetPrimary} />
+                <DropdownMenuSeparator className="bg-white/10" />
+                {profileMenuItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                      <Icon className="h-4 w-4" /><span className="text-sm">{item.label}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                  <Settings className="h-4 w-4" /><span className="text-sm">Ayarlar</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300">
+                  <LogOut className="h-4 w-4" /><span className="text-sm">Çıkış Yap</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button onClick={() => navigate("/login")} className="px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-medium">Giriş Yap</button>
+          )}
+        </div>
+      </header>
+
+      {/* ── Mobile Bottom Tab Bar ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around px-2 py-1 bg-[#0A0A0A] border-t border-white/[0.06] safe-area-bottom">
+        {[
+          { path: "/dashboard", label: "Home", icon: Home, exact: true },
+          { path: "/dashboard/create?platform=twitter", label: "X", icon: (p) => <BI Icon={FaXTwitter} {...p} /> },
+          { path: "/dashboard/trends", label: "Trend", icon: TrendingUp },
+          { path: "/dashboard/style-lab", label: "Stil", icon: Dna },
+          { path: "/dashboard/history", label: "Geçmiş", icon: History },
+        ].map((item) => {
+          const active = isActive(item);
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.exact}
+              className="flex flex-col items-center gap-0.5 py-1.5 px-2 min-w-[48px]"
+            >
+              <Icon className={cn("h-5 w-5 transition-colors", active ? "text-purple-400" : "text-white/40")} />
+              <span className={cn("text-[10px] transition-colors", active ? "text-purple-400 font-medium" : "text-white/40")}>{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
+
       {/* ── Main Content ── */}
-      <main className="pt-20 pb-8 px-4 md:px-8">
+      <main className="pt-14 md:pt-20 pb-20 md:pb-8 px-3 md:px-8">
         <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>
