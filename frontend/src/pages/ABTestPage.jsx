@@ -6,16 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, RotateCcw, Check, Trophy, ChevronDown, ChevronUp } from "lucide-react";
 
+// ══════════════════════════════════════════
+// AYARLAR (XAIModule ile aynı)
+// ══════════════════════════════════════════
+
 const PLATFORMS = [
-  { id: "x", label: "X", endpoint: "/generate/tweet" },
-  { id: "linkedin", label: "LinkedIn", endpoint: "/generate/linkedin" },
-  { id: "instagram", label: "Instagram", endpoint: "/generate/instagram/caption" },
-  { id: "blog", label: "Blog", endpoint: "/generate/blog/full" },
-  { id: "youtube", label: "YouTube", endpoint: "/generate/tweet" },
-  { id: "tiktok", label: "TikTok", endpoint: "/generate/tiktok/caption" },
+  { id: "x", label: "X" },
+  { id: "linkedin", label: "LinkedIn" },
+  { id: "instagram", label: "Instagram" },
+  { id: "blog", label: "Blog" },
+  { id: "youtube", label: "YouTube" },
+  { id: "tiktok", label: "TikTok" },
 ];
 
-// v2 X ayarları
+// X platformu v2 ayarları
 const ETKILER = [
   { id: "patlassin", label: "Patlasın", desc: "Viral, maximum erişim" },
   { id: "konustursun", label: "Konuştursun", desc: "Tartışma başlatsın" },
@@ -25,17 +29,17 @@ const ETKILER = [
 ];
 
 const KARAKTERLER = [
-  { id: "uzman", label: "Uzman", desc: "Bilen, güvenilir" },
-  { id: "otorite", label: "Otorite", desc: "Kesin, kanıt odaklı" },
-  { id: "iceriden", label: "İçeriden", desc: "Insider bilgi" },
-  { id: "mentalist", label: "Mentalist", desc: "Psikolojik insight" },
-  { id: "haberci", label: "Haberci", desc: "Faktüel, hızlı" },
+  { id: "uzman", label: "Uzman" },
+  { id: "otorite", label: "Otorite" },
+  { id: "iceriden", label: "İçeriden" },
+  { id: "mentalist", label: "Mentalist" },
+  { id: "haberci", label: "Haberci" },
 ];
 
 const YAPILAR = [
-  { id: "dogal", label: "Doğal", desc: "Akıcı, samimi" },
-  { id: "kurgulu", label: "Kurgulu", desc: "Yapılandırılmış" },
-  { id: "cesur", label: "Cesur", desc: "Provokatif, vurucu" },
+  { id: "dogal", label: "Doğal" },
+  { id: "kurgulu", label: "Kurgulu" },
+  { id: "cesur", label: "Cesur" },
 ];
 
 const ACILISLAR = [
@@ -67,10 +71,12 @@ const UZUNLUKLAR = [
   { id: "thread", label: "Thread" },
 ];
 
-// Diğer platform ayarları
+// Diğer platformlar (v1 ayarları)
 const PERSONAS = ["saf", "otorite", "insider", "mentalist", "haber"];
 const TONES = ["natural", "raw", "polished", "unhinged"];
+const LENGTHS = ["micro", "punch", "spark", "storm", "thread"];
 const KNOWLEDGE_MODES = [
+  { id: null, label: "Yok" },
   { id: "insider", label: "Insider" },
   { id: "contrarian", label: "Contrarian" },
   { id: "hidden", label: "Hidden" },
@@ -86,25 +92,32 @@ const SMART_DEFAULTS = {
   shitpost:    { karakter: "haberci",  yapi: "dogal",   uzunluk: "micro", acilis: "otomatik", bitis: "dogal",    derinlik: "standart" },
 };
 
-function PillSelect({ options, value, onChange, label }) {
+// ══════════════════════════════════════════
+// COMPONENTS
+// ══════════════════════════════════════════
+
+function PillGroup({ items, value, onChange, label }) {
   return (
     <div>
-      {label && <div className="text-xs text-white/40 mb-1.5">{label}</div>}
+      {label && <div className="text-xs text-white/30 mb-1.5">{label}</div>}
       <div className="flex gap-1.5 flex-wrap">
-        {options.map((o) => (
-          <button
-            key={o.id || o}
-            onClick={() => onChange(o.id || o)}
-            className={`px-3 py-1 text-xs rounded-full transition-colors ${
-              (o.id || o) === value
-                ? "bg-white text-black font-medium"
-                : "bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10"
-            }`}
-            title={o.desc || ""}
-          >
-            {o.label || o}
-          </button>
-        ))}
+        {items.map((item) => {
+          const id = typeof item === "string" ? item : item.id;
+          const lbl = typeof item === "string" ? item : item.label;
+          return (
+            <button
+              key={id ?? "null"}
+              onClick={() => onChange(id)}
+              className={`px-3 py-1 rounded-full text-xs transition-colors ${
+                value === id
+                  ? "bg-white text-black font-medium"
+                  : "bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10"
+              }`}
+            >
+              {lbl}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -178,6 +191,7 @@ function EngineColumn({ label, variants, loading, selected, onSelect, revealed, 
   );
 }
 
+// localStorage sonuçlar
 function saveResult(result) {
   try {
     const existing = JSON.parse(localStorage.getItem("ab_test_results") || "[]");
@@ -187,17 +201,19 @@ function saveResult(result) {
 }
 
 function getResults() {
-  try {
-    return JSON.parse(localStorage.getItem("ab_test_results") || "[]");
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem("ab_test_results") || "[]"); } catch { return []; }
 }
+
+// ══════════════════════════════════════════
+// MAIN PAGE
+// ══════════════════════════════════════════
 
 export default function ABTestPage() {
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState("x");
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // X platform settings
+  // X platformu ayarları
   const [etki, setEtki] = useState("patlassin");
   const [karakter, setKarakter] = useState("uzman");
   const [yapi, setYapi] = useState("kurgulu");
@@ -207,7 +223,7 @@ export default function ABTestPage() {
   const [derinlik, setDerinlik] = useState("standart");
   const [isUltra, setIsUltra] = useState(false);
 
-  // Other platform settings
+  // Diğer platform ayarları
   const [persona, setPersona] = useState("otorite");
   const [tone, setTone] = useState("natural");
   const [length, setLength] = useState("punch");
@@ -226,7 +242,7 @@ export default function ABTestPage() {
 
   const isX = platform === "x";
 
-  // Smart defaults when etki changes
+  // Etki değişince smart defaults uygula
   const handleEtkiChange = (newEtki) => {
     setEtki(newEtki);
     const defaults = SMART_DEFAULTS[newEtki];
@@ -240,10 +256,6 @@ export default function ABTestPage() {
     }
   };
 
-  const getEndpoint = useCallback(() => {
-    return PLATFORMS.find((p) => p.id === platform)?.endpoint || "/generate/tweet";
-  }, [platform]);
-
   const generate = useCallback(async () => {
     if (!topic.trim()) return;
     setWinner(null);
@@ -251,37 +263,53 @@ export default function ABTestPage() {
     setColA({ loading: true, variants: null });
     setColB({ loading: true, variants: null });
 
+    // Randomize order
     const flip = Math.random() > 0.5;
     orderRef.current = flip ? { a: "v3", b: "v2" } : { a: "v2", b: "v3" };
 
-    const endpoint = getEndpoint();
-
-    const body = isX ? {
-      topic: topic.trim(),
-      etki,
-      karakter,
-      yapi,
-      uzunluk,
-      acilis,
-      bitis,
-      derinlik,
-      is_ultra: isUltra,
-      variants,
-      language,
-    } : {
-      topic: topic.trim(),
-      persona,
-      tone,
-      length,
-      knowledge,
-      language,
-      is_apex: isApex,
-      variants,
-    };
-
     const fetchEngine = async (engine) => {
       try {
-        const res = await api.post(`${endpoint}?engine=${engine}`, body);
+        let endpoint, body;
+
+        if (isX) {
+          // X platformu: v2 endpoint + engine param
+          endpoint = `/v2/generate/tweet?engine=${engine}`;
+          body = {
+            topic: topic.trim(),
+            etki,
+            karakter,
+            yapi,
+            uzunluk,
+            acilis,
+            bitis,
+            derinlik,
+            language,
+            is_ultra: isUltra,
+            variants,
+          };
+        } else {
+          // Diğer platformlar: v1 endpoint + engine param
+          const endpointMap = {
+            linkedin: "/generate/linkedin",
+            instagram: "/generate/instagram/caption",
+            blog: "/generate/blog/full",
+            youtube: "/generate/tweet",
+            tiktok: "/generate/tiktok/caption",
+          };
+          endpoint = `${endpointMap[platform] || "/generate/tweet"}?engine=${engine}`;
+          body = {
+            topic: topic.trim(),
+            persona,
+            tone,
+            length,
+            language,
+            knowledge,
+            is_apex: isApex,
+            variants,
+          };
+        }
+
+        const res = await api.post(endpoint, body);
         const data = res.data;
         if (data.variants && Array.isArray(data.variants)) {
           return data.variants.map((v) => (typeof v === "string" ? v : v.text || v.content || JSON.stringify(v)));
@@ -301,25 +329,22 @@ export default function ABTestPage() {
     ]);
     setColA({ loading: false, variants: rA.status === "fulfilled" ? rA.value : [`Hata: ${rA.reason}`] });
     setColB({ loading: false, variants: rB.status === "fulfilled" ? rB.value : [`Hata: ${rB.reason}`] });
-  }, [topic, platform, isX, etki, karakter, yapi, uzunluk, acilis, bitis, derinlik, isUltra, persona, tone, length, knowledge, language, isApex, variants, getEndpoint]);
+  }, [topic, platform, isX, etki, karakter, yapi, uzunluk, acilis, bitis, derinlik, isUltra, persona, tone, length, knowledge, isApex, language, variants]);
 
   const selectWinner = (col) => {
     setWinner(col);
     setRevealed(true);
 
     const winnerEngine = orderRef.current[col];
-    const loserEngine = col === "a" ? orderRef.current.b : orderRef.current.a;
-
     const result = {
       timestamp: new Date().toISOString(),
       topic,
       platform,
+      winner: winnerEngine,
+      loser: col === "a" ? orderRef.current.b : orderRef.current.a,
       settings: isX
         ? { etki, karakter, yapi, uzunluk, acilis, bitis, derinlik, isUltra }
-        : { persona, tone, length, knowledge, language, isApex },
-      winner: winnerEngine,
-      loser: loserEngine,
-      order: { ...orderRef.current },
+        : { persona, tone, length, knowledge, isApex },
     };
 
     saveResult(result);
@@ -338,7 +363,7 @@ export default function ABTestPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold mb-1">🧪 Blind A/B Test</h1>
-            <p className="text-white/40 text-sm">Hangisi daha iyi? Seçene kadar engine gizli.</p>
+            <p className="text-white/40 text-sm">Hangisi daha iyi? Seçene kadar hangisi hangisi bilinmiyor.</p>
           </div>
           <Button
             variant="outline"
@@ -347,7 +372,7 @@ export default function ABTestPage() {
             className="border-white/20 text-white/60 hover:text-white hover:bg-white/10"
           >
             <Trophy className="w-4 h-4 mr-2" />
-            Skorboard ({totalTests})
+            Skorboard
           </Button>
         </div>
 
@@ -387,7 +412,7 @@ export default function ABTestPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { if (confirm("Tüm sonuçları sil?")) { localStorage.removeItem("ab_test_results"); setShowStats(false); }}}
+                  onClick={() => { if (confirm("Tüm sonuçları sil?")) { localStorage.removeItem("ab_test_results"); setShowStats(false); } }}
                   className="text-red-400/60 hover:text-red-400 text-xs"
                 >
                   Sıfırla
@@ -408,131 +433,72 @@ export default function ABTestPage() {
           />
 
           {/* Platform pills */}
-          <div className="flex gap-2 flex-wrap">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPlatform(p.id)}
-                className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
-                  platform === p.id
-                    ? "bg-white text-black font-medium"
-                    : "bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+          <PillGroup items={PLATFORMS} value={platform} onChange={setPlatform} />
 
-          {/* X Platform Settings */}
+          {/* X Platformu: Etki + Gelişmiş Ayarlar */}
           {isX && (
             <div className="space-y-3">
-              <PillSelect options={ETKILER} value={etki} onChange={handleEtkiChange} label="Etki" />
-              <PillSelect options={KARAKTERLER} value={karakter} onChange={setKarakter} label="Karakter" />
-              <div className="flex gap-6">
-                <PillSelect options={YAPILAR} value={yapi} onChange={setYapi} label="Yapı" />
-                <PillSelect options={UZUNLUKLAR} value={uzunluk} onChange={setUzunluk} label="Uzunluk" />
-              </div>
+              <PillGroup items={ETKILER} value={etki} onChange={handleEtkiChange} label="Etki" />
 
-              {/* Gelişmiş ayarlar */}
               <button
                 onClick={() => setAdvancedOpen(!advancedOpen)}
-                className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/50 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/60 transition-colors"
               >
                 {advancedOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 Gelişmiş Ayarlar
               </button>
 
               {advancedOpen && (
-                <div className="space-y-3 pl-2 border-l border-white/5">
-                  <PillSelect options={ACILISLAR} value={acilis} onChange={setAcilis} label="Açılış" />
-                  <PillSelect options={BITISLER} value={bitis} onChange={setBitis} label="Bitiş" />
-                  <PillSelect options={DERINLIKLER} value={derinlik} onChange={setDerinlik} label="Derinlik" />
+                <div className="space-y-3 p-4 rounded-lg bg-white/[0.02] border border-white/5">
+                  <PillGroup items={KARAKTERLER} value={karakter} onChange={setKarakter} label="Karakter" />
+                  <PillGroup items={YAPILAR} value={yapi} onChange={setYapi} label="Yapı" />
+                  <PillGroup items={UZUNLUKLAR} value={uzunluk} onChange={setUzunluk} label="Uzunluk" />
+                  <PillGroup items={ACILISLAR} value={acilis} onChange={setAcilis} label="Açılış" />
+                  <PillGroup items={BITISLER} value={bitis} onChange={setBitis} label="Bitiş" />
+                  <PillGroup items={DERINLIKLER} value={derinlik} onChange={setDerinlik} label="Derinlik" />
+                  <label className="flex items-center gap-2 text-sm text-white/60 cursor-pointer">
+                    <Checkbox checked={isUltra} onCheckedChange={setIsUltra} />
+                    Ultra
+                  </label>
                 </div>
               )}
-
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm text-white/60 cursor-pointer">
-                  <Checkbox checked={isUltra} onCheckedChange={setIsUltra} />
-                  Ultra
-                </label>
-                <PillSelect
-                  options={LANGUAGES.map(l => ({ id: l, label: l.toUpperCase() }))}
-                  value={language}
-                  onChange={setLanguage}
-                  label=""
-                />
-                <div className="flex items-center gap-2 text-xs text-white/40">
-                  <span>Varyant:</span>
-                  {[1, 3, 5].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setVariants(n)}
-                      className={`px-2 py-0.5 rounded ${variants === n ? "bg-white/20 text-white" : "bg-white/5 text-white/40 hover:text-white/60"}`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 
-          {/* Other Platform Settings */}
+          {/* Diğer Platformlar: Persona/Ton/Uzunluk/Knowledge */}
           {!isX && (
             <div className="space-y-3">
-              <PillSelect
-                options={PERSONAS.map(p => ({ id: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
-                value={persona}
-                onChange={setPersona}
-                label="Persona"
-              />
-              <PillSelect
-                options={TONES.map(t => ({ id: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
-                value={tone}
-                onChange={setTone}
-                label="Ton"
-              />
-              <div className="flex gap-6">
-                <PillSelect
-                  options={UZUNLUKLAR}
-                  value={length}
-                  onChange={setLength}
-                  label="Uzunluk"
-                />
-                <PillSelect
-                  options={[{ id: "", label: "Yok" }, ...KNOWLEDGE_MODES]}
-                  value={knowledge || ""}
-                  onChange={(v) => setKnowledge(v || null)}
-                  label="Knowledge"
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm text-white/60 cursor-pointer">
-                  <Checkbox checked={isApex} onCheckedChange={setIsApex} />
-                  APEX
-                </label>
-                <PillSelect
-                  options={LANGUAGES.map(l => ({ id: l, label: l.toUpperCase() }))}
-                  value={language}
-                  onChange={setLanguage}
-                  label=""
-                />
-                <div className="flex items-center gap-2 text-xs text-white/40">
-                  <span>Varyant:</span>
-                  {[1, 3, 5].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => setVariants(n)}
-                      className={`px-2 py-0.5 rounded ${variants === n ? "bg-white/20 text-white" : "bg-white/5 text-white/40 hover:text-white/60"}`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <PillGroup items={PERSONAS} value={persona} onChange={setPersona} label="Persona" />
+              <PillGroup items={TONES} value={tone} onChange={setTone} label="Ton" />
+              <PillGroup items={LENGTHS} value={length} onChange={setLength} label="Uzunluk" />
+              <PillGroup items={KNOWLEDGE_MODES} value={knowledge} onChange={setKnowledge} label="Knowledge" />
+              <label className="flex items-center gap-2 text-sm text-white/60 cursor-pointer">
+                <Checkbox checked={isApex} onCheckedChange={setIsApex} />
+                APEX
+              </label>
             </div>
           )}
+
+          {/* Dil + Varyant */}
+          <div className="flex items-center gap-3">
+            <PillGroup items={LANGUAGES} value={language} onChange={setLanguage} label="Dil" />
+            <div>
+              <div className="text-xs text-white/30 mb-1.5">Varyant</div>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setVariants(n)}
+                    className={`w-7 h-7 rounded-md text-xs transition-colors ${
+                      variants === n ? "bg-white text-black font-medium" : "bg-white/5 text-white/50 hover:bg-white/10"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Generate */}
           <div className="flex gap-3">

@@ -1560,7 +1560,7 @@ class ReplyGenerateRequestV2(BaseModel):
 # ==================== V2 ENDPOINTS ====================
 
 @api_router.post("/v2/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet_v2(request: TweetGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v2", _=Depends(rate_limit), user=Depends(require_auth)):
     """Generate tweet with v2 settings system (Etki, Karakter, Yapı etc.)"""
     try:
         sanitize_generation_request(request)
@@ -1593,24 +1593,38 @@ async def generate_tweet_v2(request: TweetGenerateRequestV2, _=Depends(rate_limi
             shitpost_style_prompt, shitpost_examples = _get_shitpost_style()
             logger.info(f"V2 shitpost: injecting BeatstoBytes style ({len(shitpost_style_prompt)} chars, {len(shitpost_examples)} examples)")
 
-        # Build v2 prompt
-        system_prompt = build_final_prompt_v2(
-            content_type="tweet",
-            topic=request.topic,
-            etki=request.etki,
-            karakter=request.karakter,
-            yapi=request.yapi,
-            uzunluk=request.uzunluk,
-            acilis=request.acilis,
-            bitis=request.bitis,
-            derinlik=request.derinlik,
-            language=request.language,
-            is_ultra=request.is_ultra,
-            additional_context=combined_context if combined_context else None,
-            trend_context=request.trend_context,
-            style_prompt=shitpost_style_prompt if shitpost_style_prompt else None,
-            example_tweets=shitpost_examples if shitpost_examples else None,
-        )
+        # Build prompt (v2 or v3 engine)
+        if engine == "v3":
+            system_prompt = build_final_prompt_v3(
+                content_type="tweet",
+                topic=request.topic,
+                persona=request.karakter,
+                tone=request.yapi,
+                length=request.uzunluk,
+                language=request.language,
+                is_apex=request.is_ultra,
+                additional_context=combined_context if combined_context else None,
+                style_prompt=shitpost_style_prompt if shitpost_style_prompt else None,
+                example_tweets=shitpost_examples if shitpost_examples else None,
+            )
+        else:
+            system_prompt = build_final_prompt_v2(
+                content_type="tweet",
+                topic=request.topic,
+                etki=request.etki,
+                karakter=request.karakter,
+                yapi=request.yapi,
+                uzunluk=request.uzunluk,
+                acilis=request.acilis,
+                bitis=request.bitis,
+                derinlik=request.derinlik,
+                language=request.language,
+                is_ultra=request.is_ultra,
+                additional_context=combined_context if combined_context else None,
+                trend_context=request.trend_context,
+                style_prompt=shitpost_style_prompt if shitpost_style_prompt else None,
+                example_tweets=shitpost_examples if shitpost_examples else None,
+            )
 
         # Generate via OpenRouter
         contents, tokens_used = await generate_with_openrouter(
