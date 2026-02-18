@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from "react";
+import { useTranslation } from 'react-i18next';
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,9 +11,9 @@ import { Loader2, RotateCcw, Check, Trophy, Award } from "lucide-react";
 // ══════════════════════════════════════════
 
 const MODES = {
-  beatstobytes: { id: "beatstobytes", label: "BeatstoBytes RAG", color: "violet", forceRag: "beatstobytes" },
-  none:         { id: "none",         label: "Saf Mistral",      color: "blue",   forceRag: "none" },
-  user_style:   { id: "user_style",   label: "Kullanıcı Stili",  color: "amber",  forceRag: "user_style" },
+  beatstobytes: { id: "beatstobytes", labelKey: "abTest.modes.beatstobytes", color: "violet", forceRag: "beatstobytes" },
+  none:         { id: "none",         labelKey: "abTest.modes.none",         color: "blue",   forceRag: "none" },
+  user_style:   { id: "user_style",   labelKey: "abTest.modes.userStyle",    color: "amber",  forceRag: "user_style" },
 };
 
 const MODE_KEYS = Object.keys(MODES);
@@ -52,6 +53,7 @@ function VariantTabs({ variants, activeIdx, onSelect }) {
 }
 
 function ColumnCard({ label, variants, loading, selected, onSelect, revealed, modeLabel, colorClass }) {
+  const { t } = useTranslation();
   const [activeIdx, setActiveIdx] = useState(0);
   const currentVariant = variants?.[activeIdx];
 
@@ -78,7 +80,7 @@ function ColumnCard({ label, variants, loading, selected, onSelect, revealed, mo
       {loading ? (
         <div className="flex items-center justify-center py-16 text-white/40">
           <Loader2 className="w-6 h-6 animate-spin mr-2" />
-          Üretiliyor...
+          {t('abTest.generating')}
         </div>
       ) : variants ? (
         <>
@@ -93,13 +95,13 @@ function ColumnCard({ label, variants, loading, selected, onSelect, revealed, mo
               onClick={onSelect}
             >
               <Check className="w-4 h-4 mr-2" />
-              Bu Daha İyi
+              {t('abTest.thisBetter')}
             </Button>
           )}
         </>
       ) : (
         <div className="flex items-center justify-center py-16 text-white/20 text-sm">
-          Henüz üretilmedi
+          {t('abTest.notGenerated')}
         </div>
       )}
     </Card>
@@ -124,13 +126,14 @@ const COLOR_MAP = {
   user_style: "bg-amber-500/20 text-amber-400 border-amber-500/30",
 };
 
-const LABELS = ["Sol", "Orta", "Sağ"];
+const LABEL_KEYS = ["abTest.left", "abTest.center", "abTest.right"];
 
 // ══════════════════════════════════════════
 // MAIN
 // ══════════════════════════════════════════
 
 export default function ABTestPage() {
+  const { t } = useTranslation();
   const [topic, setTopic] = useState("");
   const [variantCount, setVariantCount] = useState(3);
   const [cols, setCols] = useState([
@@ -214,8 +217,8 @@ export default function ABTestPage() {
       <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-1">🧪 Shitpost A/B/C Test</h1>
-          <p className="text-white/40 text-sm">Mistral Large: BeatstoBytes RAG vs Saf Model vs Kullanıcı Stili</p>
+          <h1 className="text-2xl font-bold mb-1">{t('abTest.title')}</h1>
+          <p className="text-white/40 text-sm">{t('abTest.subtitle')}</p>
         </div>
 
         {/* Scoreboard */}
@@ -223,7 +226,7 @@ export default function ABTestPage() {
           <div className="flex items-center gap-6 flex-wrap">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">{totalTests}</div>
-              <div className="text-xs text-white/40">Toplam</div>
+              <div className="text-xs text-white/40">{t('abTest.total')}</div>
             </div>
             <div className="w-px h-10 bg-white/10" />
             {MODE_KEYS.map(k => (
@@ -231,7 +234,7 @@ export default function ABTestPage() {
                 <div className={`text-2xl font-bold ${k === "beatstobytes" ? "text-violet-400" : k === "none" ? "text-blue-400" : "text-amber-400"}`}>
                   {wins[k]}
                 </div>
-                <div className="text-xs text-white/40">{MODES[k].label}</div>
+                <div className="text-xs text-white/40">{t(MODES[k].labelKey)}</div>
               </div>
             ))}
             {totalTests > 0 && (
@@ -254,10 +257,10 @@ export default function ABTestPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { if (confirm("Tüm sonuçları sıfırla?")) { localStorage.removeItem(STORAGE_KEY); window.location.reload(); } }}
+                onClick={() => { if (confirm(t('abTest.resetConfirm'))) { localStorage.removeItem(STORAGE_KEY); window.location.reload(); } }}
                 className="text-red-400/60 hover:text-red-400 text-xs"
               >
-                Sıfırla
+                {t('abTest.reset')}
               </Button>
             )}
           </div>
@@ -265,12 +268,12 @@ export default function ABTestPage() {
           {totalTests >= MIN_TESTS && (
             <div className="mt-4 p-3 rounded-lg text-sm bg-green-500/10 border border-green-500/20 text-green-400">
               <Award className="w-4 h-4 inline mr-2" />
-              <strong>Lider:</strong> {MODES[topMode].label} ({topPct}%, {wins[topMode]}/{totalTests})
+              <strong>{t('abTest.leader')}:</strong> {t(MODES[topMode].labelKey)} ({topPct}%, {wins[topMode]}/{totalTests})
             </div>
           )}
           {totalTests > 0 && totalTests < MIN_TESTS && (
             <div className="mt-4 p-3 rounded-lg text-sm bg-white/5 border border-white/10 text-white/50">
-              📊 {MIN_TESTS - totalTests} test daha gerekiyor. ({totalTests}/{MIN_TESTS})
+              📊 {t('abTest.moreTestsNeeded', { count: MIN_TESTS - totalTests })} ({totalTests}/{MIN_TESTS})
             </div>
           )}
         </Card>
@@ -280,14 +283,14 @@ export default function ABTestPage() {
           <textarea
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="Shitpost konusu yaz..."
+            placeholder={t('abTest.topicPlaceholder')}
             rows={2}
             className="w-full bg-[#141414] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
           />
 
           <div className="flex items-center gap-4">
             <div>
-              <div className="text-xs text-white/30 mb-1.5">Varyant</div>
+              <div className="text-xs text-white/30 mb-1.5">{t('abTest.variantLabel')}</div>
               <div className="flex gap-1">
                 {[1, 2, 3].map(n => (
                   <button
@@ -310,14 +313,14 @@ export default function ABTestPage() {
                 className="bg-white text-black hover:bg-white/90 px-8 font-medium"
               >
                 {cols[0].loading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Üretiliyor...</>
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> {t('abTest.generating')}</>
                 ) : (
-                  "⚡ Üret & Karşılaştır"
+                  t('abTest.generateAndCompare')
                 )}
               </Button>
               {cols[0].variants && !cols[0].loading && (
                 <Button variant="outline" onClick={generate} className="border-white/20 text-white hover:bg-white/10">
-                  <RotateCcw className="w-4 h-4 mr-2" /> Tekrar
+                  <RotateCcw className="w-4 h-4 mr-2" /> {t('abTest.retry')}
                 </Button>
               )}
             </div>
@@ -333,10 +336,11 @@ export default function ABTestPage() {
               </div>
               <div>
                 <div className="text-green-400 font-semibold">
-                  {LABELS[winner]} kazandı → <span className="text-white text-lg">{MODES[orderRef.current[winner]].label}</span>
+
+                  {t('abTest.won', { label: t(LABEL_KEYS[winner]) })} → <span className="text-white text-lg">{t(MODES[orderRef.current[winner]].labelKey)}</span>
                 </div>
                 <div className="text-white/40 text-xs mt-0.5">
-                  {orderRef.current.map((k, i) => `${LABELS[i]} = ${MODES[k].label}`).join(" · ")}
+                  {orderRef.current.map((k, i) => `${t(LABEL_KEYS[i])} = ${t(MODES[k].labelKey)}`).join(" · ")}
                 </div>
               </div>
             </div>
@@ -348,13 +352,13 @@ export default function ABTestPage() {
           {[0, 1, 2].map(i => (
             <ColumnCard
               key={i}
-              label={`${LABELS[i]} ◼`}
+              label={`${t(LABEL_KEYS[i])} ◼`}
               variants={cols[i].variants}
               loading={cols[i].loading}
               selected={winner === i}
               onSelect={() => winner === null && selectWinner(i)}
               revealed={revealed}
-              modeLabel={MODES[orderRef.current[i]]?.label || ""}
+              modeLabel={MODES[orderRef.current[i]]?.labelKey ? t(MODES[orderRef.current[i]].labelKey) : ""}
               colorClass={COLOR_MAP[orderRef.current[i]] || ""}
             />
           ))}

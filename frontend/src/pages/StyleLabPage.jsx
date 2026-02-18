@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
@@ -78,15 +79,16 @@ function Avatar({ url, name, size = 48 }) {
 
 // Style Profile Card (eski detaylı tasarım + avatar)
 function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis }) {
+  const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await onRefresh(profile.id);
-      toast.success("Stil profili güncellendi! (100 tweet + AI analiz)");
+      toast.success(t('styleLab.refreshed'));
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Güncelleme başarısız");
+      toast.error(error.response?.data?.detail || t('styleLab.refreshError'));
     } finally {
       setRefreshing(false);
     }
@@ -128,7 +130,7 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
               onClick={handleRefresh}
               disabled={refreshing}
               className="h-8 w-8"
-              title="Stili Yenile (100 tweet + AI analiz)"
+              title={t('styleLab.refreshProfile')}
             >
               <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
             </Button>
@@ -146,15 +148,15 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
         {/* Style Summary - 3 columns */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-secondary/50">
-            <p className="text-xs text-muted-foreground">Tweet</p>
+            <p className="text-xs text-muted-foreground">{t('styleLab.stats.tweets')}</p>
             <p className="font-semibold">{tweetCount}</p>
           </div>
           <div className="p-3 rounded-lg bg-secondary/50">
-            <p className="text-xs text-muted-foreground">Ort. Uzunluk</p>
+            <p className="text-xs text-muted-foreground">{t('styleLab.stats.avgLength')}</p>
             <p className="font-semibold">{profile.style_summary?.avg_length || 0} kr</p>
           </div>
           <div className="p-3 rounded-lg bg-secondary/50">
-            <p className="text-xs text-muted-foreground">Algo Skoru</p>
+            <p className="text-xs text-muted-foreground">{t('styleLab.stats.algoScore')}</p>
             <p className="font-semibold">{algoScore != null ? Math.round(algoScore) : "—"}</p>
           </div>
         </div>
@@ -163,19 +165,19 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
         {Object.keys(constraints).length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {constraints.emoji_policy === "BANNED" && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/40 text-red-400">emoji yok</Badge>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/40 text-red-400">{t('styleLab.constraints.noEmoji')}</Badge>
             )}
             {constraints.hashtag_policy === "BANNED" && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/40 text-red-400">hashtag yok</Badge>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/40 text-red-400">{t('styleLab.constraints.noHashtag')}</Badge>
             )}
             {constraints.link_policy === "BANNED" && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-orange-500/40 text-orange-400">link yok</Badge>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-orange-500/40 text-orange-400">{t('styleLab.constraints.noLink')}</Badge>
             )}
             {constraints.line_break_policy === "BANNED" && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-orange-500/40 text-orange-400">tek satır</Badge>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-orange-500/40 text-orange-400">{t('styleLab.constraints.singleLine')}</Badge>
             )}
             {constraints.line_break_policy === "REQUIRED" && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-500/40 text-blue-400">çok satır</Badge>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-500/40 text-blue-400">{t('styleLab.constraints.multiLine')}</Badge>
             )}
           </div>
         )}
@@ -187,7 +189,7 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
           className="w-full mb-3 border-purple-500/30 hover:bg-purple-500/10"
         >
           <Brain className="h-4 w-4 mr-2" />
-          Detaylı Analizi Gör
+          {t('styleLab.viewAnalysis')}
         </Button>
 
         <Button
@@ -195,7 +197,7 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
           className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
         >
           <Wand2 className="h-4 w-4 mr-2" />
-          Bu Stille Üret
+          {t('styleLab.generateWithStyle')}
         </Button>
       </CardContent>
     </Card>
@@ -204,6 +206,7 @@ function StyleProfileCard({ profile, onDelete, onUse, onRefresh, onViewAnalysis 
 
 // Detaylı AI Analiz Dialog
 function AIAnalysisDialog({ open, onOpenChange, profileData }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
   if (!profileData) return null;
@@ -216,7 +219,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(stylePrompt);
     setCopied(true);
-    toast.success("Stil prompt kopyalandı!");
+    toast.success(t('styleLab.analysis.promptCopied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -243,10 +246,10 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-400" />
-            AI Stil Analizi: {profileData.name}
+            {t('styleLab.analysis.title', { name: profileData.name })}
           </DialogTitle>
           <DialogDescription>
-            {fp.tweet_count || 0} tweet analiz edildi · GPT-4o ile derinlemesine inceleme
+            {t('styleLab.analysis.tweetsAnalyzed', { count: fp.tweet_count || 0 })}
           </DialogDescription>
         </DialogHeader>
 
@@ -255,19 +258,19 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
           <div className="grid grid-cols-4 gap-3">
             <div className="p-3 rounded-xl bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-500/20 text-center">
               <p className="text-2xl font-bold text-sky-400">{fp.tweet_count || 0}</p>
-              <p className="text-xs text-muted-foreground">Tweet</p>
+              <p className="text-xs text-muted-foreground">{t('styleLab.stats.tweets')}</p>
             </div>
             <div className="p-3 rounded-xl bg-gradient-to-br from-pink-500/10 to-red-500/10 border border-pink-500/20 text-center">
               <p className="text-2xl font-bold text-pink-400">{fp.avg_length || 0}</p>
-              <p className="text-xs text-muted-foreground">Ort. Karakter</p>
+              <p className="text-xs text-muted-foreground">{t('styleLab.analysis.avgCharacter')}</p>
             </div>
             <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 text-center">
               <p className="text-2xl font-bold text-green-400">{fp.avg_engagement?.likes?.toFixed(0) || 0}</p>
-              <p className="text-xs text-muted-foreground">Ort. Beğeni</p>
+              <p className="text-xs text-muted-foreground">{t('styleLab.analysis.avgLike')}</p>
             </div>
             <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 text-center">
               <p className="text-2xl font-bold text-purple-400">{fp.emoji_usage?.toFixed(1) || 0}</p>
-              <p className="text-xs text-muted-foreground">Emoji/Tweet</p>
+              <p className="text-xs text-muted-foreground">{t('styleLab.analysis.emojiPerTweet')}</p>
             </div>
           </div>
 
@@ -276,11 +279,11 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
               <h4 className="font-medium mb-3 flex items-center gap-2">
                 <Target className="h-4 w-4 text-sky-400" />
-                Uzunluk Dağılımı
+                {t('styleLab.analysis.lengthDistribution')}
               </h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Kısa (&lt;100)</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.short')}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
                       <div className="h-full bg-sky-400 rounded-full" style={{ width: `${fp.length_distribution?.short || 0}%` }} />
@@ -289,7 +292,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Orta (100-200)</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.medium')}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
                       <div className="h-full bg-purple-400 rounded-full" style={{ width: `${fp.length_distribution?.medium || 0}%` }} />
@@ -298,7 +301,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Uzun (200+)</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.long')}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
                       <div className="h-full bg-pink-400 rounded-full" style={{ width: `${fp.length_distribution?.long || 0}%` }} />
@@ -312,23 +315,23 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
               <h4 className="font-medium mb-3 flex items-center gap-2">
                 <Zap className="h-4 w-4 text-yellow-400" />
-                Kullanım Oranları
+                {t('styleLab.analysis.usageRates')}
               </h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Soru (?) kullanımı</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.questionUsage')}</span>
                   <span className="text-sm font-medium">{fp.question_ratio || 0}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Ünlem (!) kullanımı</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.exclamationUsage')}</span>
                   <span className="text-sm font-medium">{fp.exclamation_ratio || 0}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Link paylaşımı</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.linkSharing')}</span>
                   <span className="text-sm font-medium">{fp.link_usage || 0}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Hashtag/tweet</span>
+                  <span className="text-sm text-muted-foreground">{t('styleLab.analysis.hashtagPerTweet')}</span>
                   <span className="text-sm font-medium">{fp.hashtag_usage || 0}</span>
                 </div>
               </div>
@@ -340,7 +343,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="space-y-4">
               <h4 className="font-semibold text-lg flex items-center gap-2">
                 <Star className="h-5 w-5 text-yellow-400" />
-                AI Derinlemesine Analiz
+                {t('styleLab.analysis.deepAnalysis')}
               </h4>
               <div className="space-y-3">
                 {sections.map((section, idx) => (
@@ -360,10 +363,10 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
               <h4 className="font-medium mb-2 flex items-center gap-2">
                 <Fingerprint className="h-4 w-4 text-purple-400" />
-                Stil Parmak İzi
+                {t('styleLab.analysis.styleFingerprint')}
               </h4>
               <p className="text-sm text-muted-foreground">
-                Henüz AI analizi yapılmadı. "Stili Yenile" butonuna tıklayarak detaylı AI analizi başlatabilirsiniz.
+                {t('styleLab.analysis.noAnalysisYet')}
               </p>
             </div>
           )}
@@ -373,7 +376,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="space-y-3">
               <h4 className="font-medium flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-400" />
-                En İyi Tweet'ler
+                {t('styleLab.analysis.topTweets')}
               </h4>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {examples.slice(0, 5).map((tweet, idx) => (
@@ -393,7 +396,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
           {fp.banned_patterns?.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-semibold flex items-center gap-2">
-                🚫 Asla Yapmaz
+                {t('styleLab.analysis.neverDoes')}
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {fp.banned_patterns.map((pattern, idx) => (
@@ -409,17 +412,17 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
           {profileData.viral_patterns && (
             <div className="space-y-3">
               <h4 className="font-semibold flex items-center gap-2">
-                🔥 Ne Zaman Viral Oluyor?
+                {t('styleLab.analysis.viralPatterns')}
               </h4>
               {profileData.viral_patterns.viral_avg_length && profileData.viral_patterns.flop_avg_length && (
                 <div className="flex gap-3 mb-2">
                   <div className="flex-1 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
                     <p className="text-lg font-bold text-green-400">{Math.round(profileData.viral_patterns.viral_avg_length)}</p>
-                    <p className="text-xs text-muted-foreground">Viral ort. uzunluk</p>
+                    <p className="text-xs text-muted-foreground">{t('styleLab.analysis.viralAvgLength')}</p>
                   </div>
                   <div className="flex-1 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
                     <p className="text-lg font-bold text-red-400">{Math.round(profileData.viral_patterns.flop_avg_length)}</p>
-                    <p className="text-xs text-muted-foreground">Flop ort. uzunluk</p>
+                    <p className="text-xs text-muted-foreground">{t('styleLab.analysis.flopAvgLength')}</p>
                   </div>
                 </div>
               )}
@@ -440,12 +443,12 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="space-y-3">
               <h4 className="font-semibold flex items-center gap-2">
                 <Target className="h-4 w-4 text-sky-400" />
-                Açılış & Kapanış
+                {t('styleLab.analysis.openingClosing')}
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 {fp.opening_psychology && (
                   <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
-                    <p className="text-xs text-muted-foreground mb-1">Nasıl Açıyor?</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('styleLab.analysis.howOpens')}</p>
                     <p className="text-sm font-medium mb-3">{fp.opening_psychology.dominant_pattern || "—"}</p>
                     {fp.opening_psychology.distribution && (
                       <div className="space-y-1.5">
@@ -464,7 +467,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
                 )}
                 {fp.closing_strategy && (
                   <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
-                    <p className="text-xs text-muted-foreground mb-1">Nasıl Kapıyor?</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t('styleLab.analysis.howCloses')}</p>
                     <p className="text-sm font-medium mb-3">{fp.closing_strategy.dominant || "—"}</p>
                     {fp.closing_strategy.distribution && (
                       <div className="space-y-1.5">
@@ -501,7 +504,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             if (rules.length === 0) return null;
             return (
               <div className="space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">⚙️ Yazım Kuralları</h4>
+                <h4 className="font-semibold flex items-center gap-2">{t('styleLab.analysis.writingRules')}</h4>
                 <div className="grid grid-cols-2 gap-2">
                   {rules.map((r, idx) => (
                     <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 text-sm">
@@ -524,7 +527,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
               <div className="flex items-center justify-between">
                 <h4 className="font-medium flex items-center gap-2">
                   <Wand2 className="h-4 w-4 text-pink-400" />
-                  Stil Prompt (AI Üretimde Kullanılan)
+                  {t('styleLab.analysis.stylePrompt')}
                 </h4>
                 <Button
                   variant="ghost"
@@ -533,7 +536,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
                   className="h-8 text-xs"
                 >
                   {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                  {copied ? "Kopyalandı" : "Kopyala"}
+                  {copied ? t('common.copied') : t('styleLab.analysis.copyPrompt')}
                 </Button>
               </div>
               <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 font-mono text-xs whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
@@ -549,6 +552,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
 
 // Add Profile Dialog (direkt @username ile profil oluştur)
 function AddProfileDialog({ open, onOpenChange, onAdd }) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -557,13 +561,13 @@ function AddProfileDialog({ open, onOpenChange, onAdd }) {
   const handleAdd = async () => {
     const handle = username.trim().replace("@", "");
     if (!handle) {
-      toast.error("Kullanıcı adı girin");
+      toast.error(t('styleLab.addDialog.emptyError'));
       return;
     }
 
     setLoading(true);
     setProgress(10);
-    setStatus("Kullanıcı aranıyor...");
+    setStatus(t('styleLab.addDialog.searching'));
 
     const progressTimer = setInterval(() => {
       setProgress((p) => {
@@ -574,22 +578,22 @@ function AddProfileDialog({ open, onOpenChange, onAdd }) {
       });
     }, 800);
 
-    const statusTimer = setTimeout(() => setStatus("Tweetler çekiliyor..."), 3000);
-    const statusTimer2 = setTimeout(() => setStatus("Stil analizi yapılıyor..."), 8000);
-    const statusTimer3 = setTimeout(() => setStatus("Profil oluşturuluyor..."), 14000);
+    const statusTimer = setTimeout(() => setStatus(t('styleLab.addDialog.fetchingTweets')), 3000);
+    const statusTimer2 = setTimeout(() => setStatus(t('styleLab.addDialog.analyzing')), 8000);
+    const statusTimer3 = setTimeout(() => setStatus(t('styleLab.addDialog.creatingProfile')), 14000);
 
     try {
       const response = await api.post(`${API}/styles/create-from-handle`, {
         twitter_username: handle,
       });
       setProgress(100);
-      setStatus("Tamamlandı!");
+      setStatus(t('styleLab.addDialog.done'));
       await onAdd(response.data);
-      toast.success(`@${handle} stil profili oluşturuldu!`);
+      toast.success(t('styleLab.addDialog.created', { username: handle }));
       setUsername("");
       onOpenChange(false);
     } catch (error) {
-      const detail = error.response?.data?.detail || "Profil oluşturulamadı";
+      const detail = error.response?.data?.detail || t('styleLab.addDialog.createError');
       toast.error(detail);
     } finally {
       clearInterval(progressTimer);
@@ -608,11 +612,10 @@ function AddProfileDialog({ open, onOpenChange, onAdd }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FaXTwitter className="h-5 w-5" />
-            Stil Profili Ekle
+            {t('styleLab.addDialog.title')}
           </DialogTitle>
           <DialogDescription>
-            Stilini klonlamak istediğin Twitter hesabının kullanıcı adını gir.
-            Tweetleri analiz edilip stil profili oluşturulacak.
+            {t('styleLab.addDialog.desc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -623,7 +626,7 @@ function AddProfileDialog({ open, onOpenChange, onAdd }) {
                 @
               </span>
               <Input
-                placeholder="kullanici_adi"
+                placeholder={t('styleLab.addDialog.placeholder')}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="pl-8"
@@ -663,6 +666,7 @@ function AddProfileDialog({ open, onOpenChange, onAdd }) {
 
 // Main Page
 export default function StyleLabPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { setActiveProfile } = useProfile();
   const [profiles, setProfiles] = useState([]);
@@ -694,7 +698,7 @@ export default function StyleLabPage() {
   const handleDeleteProfile = async (profileId) => {
     await api.delete(`${API}/styles/${profileId}`);
     setProfiles(profiles.filter((p) => p.id !== profileId));
-    toast.success("Profil silindi");
+    toast.success(t('styleLab.deleted'));
   };
 
   const handleRefreshProfile = async (profileId) => {
@@ -716,7 +720,7 @@ export default function StyleLabPage() {
       });
       setAiAnalysisOpen(true);
     } catch (error) {
-      toast.error("Analiz yüklenemedi");
+      toast.error(t('styleLab.analysisError'));
     }
   };
 
@@ -749,14 +753,13 @@ export default function StyleLabPage() {
               <Dna className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="font-outfit text-4xl font-bold tracking-tight">Style Lab</h1>
-              <p className="text-muted-foreground">Twitter stillerini öğren, klonla, üret</p>
+              <h1 className="font-outfit text-4xl font-bold tracking-tight">{t('styleLab.title')}</h1>
+              <p className="text-muted-foreground">{t('styleLab.subtitle')}</p>
             </div>
           </div>
           
           <p className="text-lg text-muted-foreground max-w-2xl mb-6">
-            Beğendiğin Twitter hesaplarının yazım stilini AI ile analiz et. 
-            Onların tarzında viral içerikler üret.
+            {t('styleLab.heroDesc')}
           </p>
 
           <Button
@@ -765,7 +768,7 @@ export default function StyleLabPage() {
             className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
           >
             <Plus className="h-5 w-5 mr-2" />
-            Stil Profili Ekle
+            {t('styleLab.addProfile')}
           </Button>
         </div>
       </div>
@@ -776,11 +779,11 @@ export default function StyleLabPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-outfit text-2xl font-bold flex items-center gap-2">
               <Fingerprint className="h-6 w-6 text-purple-400" />
-              Stil Profilleri
+              {t('styleLab.profileProfiles')}
             </h2>
             <Button variant="outline" onClick={() => setAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Profil Ekle
+              {t('common.add')}
             </Button>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -801,17 +804,16 @@ export default function StyleLabPage() {
         <Card className="border-dashed border-2 border-border bg-card/50">
           <CardContent className="py-16 text-center">
             <Fingerprint className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-outfit text-xl font-semibold mb-2">Henüz stil profili yok</h3>
+            <h3 className="font-outfit text-xl font-semibold mb-2">{t('styleLab.noProfiles')}</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Beğendiğin bir Twitter hesabının yazım stilini analiz edip
-              kendi içeriklerinde kullanabilirsin.
+              {t('styleLab.noProfilesDesc')}
             </p>
             <Button
               onClick={() => setAddDialogOpen(true)}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
             >
               <Plus className="h-4 w-4 mr-2" />
-              İlk Stil Profilini Ekle
+              {t('styleLab.addFirstProfile')}
             </Button>
           </CardContent>
         </Card>

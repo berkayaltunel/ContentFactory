@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useTranslation } from 'react-i18next';
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun, Moon, Settings, Layers, LogOut, User, History, Heart,
@@ -31,8 +32,8 @@ const BI = ({ Icon, className = "" }) => (
 
 /* ── Navigation Config ───────────────────────────── */
 
-const navItems = [
-  { path: "/dashboard", label: "Home", icon: Home, exact: true },
+const NAV_ITEMS_CONFIG = [
+  { path: "/dashboard", labelKey: "nav.home", icon: Home, exact: true },
   { path: "/dashboard/create?platform=twitter", label: "X", icon: (p) => <BI Icon={FaXTwitter} {...p} /> },
   { path: "/dashboard/create?platform=youtube", label: "YouTube", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
   { path: "/dashboard/create?platform=instagram", label: "Instagram", icon: (p) => <BI Icon={FaInstagram} {...p} /> },
@@ -41,17 +42,17 @@ const navItems = [
   { path: "/dashboard/create?platform=blog", label: "Blog", icon: (p) => <BI Icon={HiDocumentText} {...p} /> },
 ];
 
-const moreItems = [
-  { path: "/dashboard/youtube-studio", label: "YouTube Studio", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
-  { path: "/dashboard/style-lab", label: "Style Lab", icon: Dna },
-  { path: "/dashboard/trends", label: "Trendler", icon: TrendingUp },
-  { path: "/dashboard/account-analysis", label: "Hesap Analizi", icon: BarChart3 },
-  { path: "/dashboard/coach", label: "AI Coach", icon: Compass },
+const MORE_ITEMS_CONFIG = [
+  { path: "/dashboard/youtube-studio", labelKey: "nav.youtubeStudio", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
+  { path: "/dashboard/style-lab", labelKey: "nav.styleLab", icon: Dna },
+  { path: "/dashboard/trends", labelKey: "nav.trends", icon: TrendingUp },
+  { path: "/dashboard/account-analysis", labelKey: "nav.accountAnalysis", icon: BarChart3 },
+  { path: "/dashboard/coach", labelKey: "nav.aiCoach", icon: Compass },
 ];
 
-const profileMenuItems = [
-  { path: "/dashboard/history", label: "Geçmiş", icon: History },
-  { path: "/dashboard/favorites", label: "Favoriler", icon: Heart },
+const PROFILE_MENU_CONFIG = [
+  { path: "/dashboard/history", labelKey: "nav.history", icon: History },
+  { path: "/dashboard/favorites", labelKey: "nav.favorite", icon: Heart },
 ];
 
 /* ── Pill Nav Item ───────────────────────────────── */
@@ -104,6 +105,7 @@ const PLATFORMS = [
 /* ── Connected Accounts Section ──────────────────── */
 
 function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) {
+  const { t } = useTranslation();
   const [editingPlatform, setEditingPlatform] = useState(null);
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef(null);
@@ -134,7 +136,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
 
   return (
     <div className="px-3 py-2">
-      <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">Hesaplarım</p>
+      <p className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-2">{t('nav.myAccounts')}</p>
       <div className="space-y-1">
         {PLATFORMS.map(({ id, label, Icon, avatarUrl }) => {
           const acct = accountMap[id];
@@ -173,7 +175,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
                       if (e.key === "Escape") setEditingPlatform(null);
                     }}
                     className="flex-1 bg-transparent border-none outline-none text-white text-xs min-w-0"
-                    placeholder="kullanıcı adı"
+                    placeholder={t('common.username')}
                   />
                   <button
                     onClick={() => handleSave(id)}
@@ -199,7 +201,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
                       {acct.is_primary && <Star className="w-3 h-3 text-yellow-400 shrink-0 fill-yellow-400" />}
                     </>
                   ) : (
-                    <span className="text-xs text-white/30">Ekle</span>
+                    <span className="text-xs text-white/30">{t('nav.addAccount')}</span>
                   )}
                 </div>
               )}
@@ -211,7 +213,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
                     <button
                       onClick={(e) => { e.stopPropagation(); onSetPrimary(id); }}
                       className="w-5 h-5 rounded-full hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-yellow-400 transition-colors"
-                      title="Ana hesap yap"
+                      title={t('nav.makePrimary')}
                     >
                       <Star className="w-3 h-3" />
                     </button>
@@ -219,7 +221,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
                   <button
                     onClick={(e) => { e.stopPropagation(); onDelete(id); }}
                     className="w-5 h-5 rounded-full hover:bg-red-500/10 flex items-center justify-center text-white/30 hover:text-red-400 transition-colors"
-                    title="Kaldır"
+                    title={t('nav.removeAccount')}
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -236,10 +238,26 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
 /* ── Main Layout ─────────────────────────────────── */
 
 export default function DashboardLayout() {
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { user, signOut, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const navItems = useMemo(() => NAV_ITEMS_CONFIG.map(item => ({
+    ...item,
+    label: item.labelKey ? t(item.labelKey) : item.label,
+  })), [t]);
+
+  const moreItems = useMemo(() => MORE_ITEMS_CONFIG.map(item => ({
+    ...item,
+    label: t(item.labelKey),
+  })), [t]);
+
+  const profileMenuItems = useMemo(() => PROFILE_MENU_CONFIG.map(item => ({
+    ...item,
+    label: t(item.labelKey),
+  })), [t]);
 
   // Scroll to top on route change (with small delay to beat other scroll triggers)
   useEffect(() => {
@@ -272,9 +290,9 @@ export default function DashboardLayout() {
     try {
       await api.put(`${API}/accounts/${platform}`, { username });
       await fetchAccounts();
-      toast.success("Hesap kaydedildi");
+      toast.success(t('nav.accountSaved'));
     } catch {
-      toast.error("Kaydedilemedi");
+      toast.error(t('nav.accountSaveError'));
     }
   };
 
@@ -282,9 +300,9 @@ export default function DashboardLayout() {
     try {
       await api.delete(`${API}/accounts/${platform}`);
       await fetchAccounts();
-      toast.success("Hesap kaldırıldı");
+      toast.success(t('nav.accountRemoved'));
     } catch {
-      toast.error("Silinemedi");
+      toast.error(t('nav.accountRemoveError'));
     }
   };
 
@@ -292,19 +310,19 @@ export default function DashboardLayout() {
     try {
       await api.patch(`${API}/accounts/${platform}/primary`);
       await fetchAccounts();
-      toast.success("Ana hesap değiştirildi");
+      toast.success(t('nav.primaryChanged'));
     } catch {
-      toast.error("Değiştirilemedi");
+      toast.error(t('nav.primaryChangeError'));
     }
   };
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast.success("Çıkış yapıldı");
+      toast.success(t('nav.signedOut'));
       navigate("/");
     } catch (error) {
-      toast.error("Çıkış yapılamadı");
+      toast.error(t('nav.signOutError'));
     }
   };
 
@@ -380,7 +398,7 @@ export default function DashboardLayout() {
                     moreIsActive ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0"
                   )}
                 >
-                  Araçlar
+                  {t('nav.tools')}
                 </span>
               </button>
             </DropdownMenuTrigger>
@@ -476,7 +494,20 @@ export default function DashboardLayout() {
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
                 >
                   <Settings className="h-4 w-4" />
-                  <span className="text-sm">Ayarlar</span>
+                  <span className="text-sm">{t('common.settings')}</span>
+                </DropdownMenuItem>
+
+                {/* Language Toggle */}
+                <DropdownMenuItem
+                  onClick={() => i18n.changeLanguage(i18n.language === 'tr' ? 'en' : 'tr')}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                >
+                  <span className="h-4 w-4 flex items-center justify-center text-xs font-bold">
+                    {i18n.language === 'tr' ? '🇬🇧' : '🇹🇷'}
+                  </span>
+                  <span className="text-sm">
+                    {i18n.language === 'tr' ? 'English' : 'Türkçe'}
+                  </span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator className="bg-white/10" />
@@ -486,7 +517,7 @@ export default function DashboardLayout() {
                   className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="text-sm">Çıkış Yap</span>
+                  <span className="text-sm">{t('nav.signOut')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -495,7 +526,7 @@ export default function DashboardLayout() {
               onClick={() => navigate("/login")}
               className="px-4 py-1.5 rounded-full bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-colors"
             >
-              Giriş Yap
+              {t('nav.login')}
             </button>
           )}
 
@@ -582,16 +613,16 @@ export default function DashboardLayout() {
                 })}
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-white/70 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
-                  <Settings className="h-4 w-4" /><span className="text-sm">Ayarlar</span>
+                  <Settings className="h-4 w-4" /><span className="text-sm">{t('common.settings')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300">
-                  <LogOut className="h-4 w-4" /><span className="text-sm">Çıkış Yap</span>
+                  <LogOut className="h-4 w-4" /><span className="text-sm">{t('nav.signOut')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <button onClick={() => navigate("/login")} className="px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-medium haptic-btn">Giriş Yap</button>
+            <button onClick={() => navigate("/login")} className="px-3 py-1 rounded-full bg-purple-500 text-white text-xs font-medium haptic-btn">{t('nav.login')}</button>
           )}
         </div>
       </header>
@@ -599,11 +630,11 @@ export default function DashboardLayout() {
       {/* ── Mobile Bottom Tab Bar ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around px-1 pt-1.5 pb-1 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.08] safe-area-bottom">
         {[
-          { path: "/dashboard", label: "Home", icon: Home, exact: true },
-          { path: "/dashboard/create?platform=twitter", label: "Üret", icon: (p) => <PenNib weight="duotone" {...p} /> },
-          { path: "/dashboard/trends", label: "Trend", icon: TrendingUp },
-          { path: "/dashboard/favorites", label: "Favori", icon: Heart },
-          { path: "/dashboard/history", label: "Geçmiş", icon: History },
+          { path: "/dashboard", label: t('nav.home'), icon: Home, exact: true },
+          { path: "/dashboard/create?platform=twitter", label: t('nav.create'), icon: (p) => <PenNib weight="duotone" {...p} /> },
+          { path: "/dashboard/trends", label: t('nav.trend'), icon: TrendingUp },
+          { path: "/dashboard/favorites", label: t('nav.favorite'), icon: Heart },
+          { path: "/dashboard/history", label: t('nav.history'), icon: History },
         ].map((item) => {
           const active = isActive(item);
           const Icon = item.icon;
@@ -641,26 +672,26 @@ export default function DashboardLayout() {
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-outfit">Ayarlar</DialogTitle>
-            <DialogDescription>Uygulama ayarlarını yapılandırın</DialogDescription>
+            <DialogTitle className="font-outfit">{t('settings.title')}</DialogTitle>
+            <DialogDescription>{t('settings.subtitle')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tema</label>
+              <label className="text-sm font-medium">{t('settings.theme')}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Moon className="h-4 w-4" /> Karanlık Mod (aktif)
+                <Moon className="h-4 w-4" /> {t('settings.darkMode')}
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">API Durumu</label>
+              <label className="text-sm font-medium">{t('settings.apiStatus')}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="h-2 w-2 rounded-full bg-green-500" />
-                OpenAI Bağlı
+                {t('settings.openaiConnected')}
               </div>
             </div>
             {user && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Hesap</label>
+                <label className="text-sm font-medium">{t('settings.account')}</label>
                 <div className="p-3 rounded-lg bg-secondary/50">
                   <p className="text-sm font-medium">{user.name}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>

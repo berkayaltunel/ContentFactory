@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -25,11 +26,11 @@ const scaleIn = {
 };
 const stagger = { show: { transition: { staggerChildren: 0.1 } } };
 
-/* ───── features ───── */
-const features = [
-  { icon: Zap, text: '6 platform, tek tık' },
-  { icon: Shield, text: 'Verileriniz güvende' },
-  { icon: Rocket, text: 'AI destekli içerik' },
+/* ───── features config ───── */
+const FEATURES_CONFIG = [
+  { icon: Zap, textKey: 'login.features.platforms' },
+  { icon: Shield, textKey: 'login.features.security' },
+  { icon: Rocket, textKey: 'login.features.ai' },
 ];
 
 export default function LoginPage() {
@@ -37,7 +38,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const { t, i18n } = useTranslation();
   const { signInWithGoogle } = useAuth();
+
+  const features = useMemo(() => FEATURES_CONFIG.map(f => ({
+    ...f,
+    text: t(f.textKey),
+  })), [t]);
 
   /* subtle parallax on left panel */
   useEffect(() => {
@@ -53,7 +60,7 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
     } catch (error) {
-      toast.error(error.message || 'Google ile giriş başarısız');
+      toast.error(error.message || t('login.googleSignInError'));
       setLoading(false);
     }
   };
@@ -152,12 +159,10 @@ export default function LoginPage() {
 
             <motion.p
               variants={fadeUp}
-              className="text-lg text-white/50 mt-3 max-w-xs mx-auto leading-relaxed"
+              className="text-lg text-white/50 mt-3 max-w-xs mx-auto leading-relaxed whitespace-pre-line"
               style={{ fontFamily: satoshiFont, fontWeight: 400 }}
             >
-              Sosyal medya içeriklerini
-              <br />
-              AI ile üret, farkını hisset.
+              {t('login.leftPanel.subtitle')}
             </motion.p>
 
             {/* feature pills */}
@@ -186,7 +191,7 @@ export default function LoginPage() {
             className="absolute bottom-8 left-0 right-0 text-center"
           >
             <p className="text-xs text-white/25" style={{ fontFamily: satoshiFont }}>
-              500+ içerik üreticisi Type Hype kullanıyor
+              {t('login.trustLine')}
             </p>
           </motion.div>
         </div>
@@ -217,10 +222,10 @@ export default function LoginPage() {
               className="text-3xl font-bold text-[#1a1a1a]"
               style={{ fontFamily: clashFont, fontWeight: 600 }}
             >
-              Hoş geldin 👋
+              {t('login.welcome')}
             </h2>
             <p className="text-[#888] mt-2 text-[15px]" style={{ fontFamily: satoshiFont }}>
-              Devam etmek için giriş yap
+              {t('login.continueToLogin')}
             </p>
           </motion.div>
 
@@ -242,7 +247,7 @@ export default function LoginPage() {
                 </svg>
               )}
               <span className="text-[15px] font-semibold text-[#333]" style={{ fontFamily: satoshiFont }}>
-                {loading ? 'Yönlendiriliyor...' : 'Google ile Giriş Yap'}
+                {loading ? t('login.redirecting') : t('login.googleSignIn')}
               </span>
             </button>
           </motion.div>
@@ -254,7 +259,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center">
               <span className="bg-white px-4 text-xs uppercase tracking-widest text-[#bbb]" style={{ fontFamily: satoshiFont }}>
-                veya
+                {t('common.or')}
               </span>
             </div>
           </motion.div>
@@ -265,7 +270,7 @@ export default function LoginPage() {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#ccc]" />
               <input
                 type="email"
-                placeholder="ornek@email.com"
+                placeholder={t('login.emailPlaceholder')}
                 disabled
                 className="w-full h-[48px] pl-11 pr-4 rounded-xl border-2 border-[#f0f0f0] bg-[#fafafa] text-sm text-[#999] placeholder:text-[#ccc] outline-none cursor-not-allowed"
                 style={{ fontFamily: satoshiFont }}
@@ -287,10 +292,10 @@ export default function LoginPage() {
               style={{ fontFamily: satoshiFont }}
             >
               <ArrowRight className="h-4 w-4" />
-              Email ile Giriş Yap
+              {t('login.emailSignIn')}
             </button>
             <p className="text-center text-xs text-[#bbb]" style={{ fontFamily: satoshiFont }}>
-              Yakında aktif olacak
+              {t('common.comingSoon')}
             </p>
           </motion.div>
 
@@ -300,12 +305,12 @@ export default function LoginPage() {
             className="text-center text-sm text-[#999] mt-8"
             style={{ fontFamily: satoshiFont }}
           >
-            Hesabın yok mu?{' '}
+            {t('login.noAccount')}{' '}
             <Link
               to="/signup"
               className="text-violet-600 hover:text-violet-700 font-semibold transition-colors"
             >
-              Kayıt ol
+              {t('login.signUp')}
             </Link>
           </motion.p>
 
@@ -318,16 +323,27 @@ export default function LoginPage() {
             className="text-center text-[11px] text-[#ccc] mt-6 leading-relaxed"
             style={{ fontFamily: satoshiFont }}
           >
-            Giriş yaparak{' '}
+            {t('login.termsAgreement')}{' '}
             <span className="text-[#aaa] hover:text-violet-500 cursor-pointer transition-colors">
-              Kullanım Koşulları
+              {t('login.termsOfService')}
             </span>
-            'nı ve{' '}
+            {t('login.and')}{' '}
             <span className="text-[#aaa] hover:text-violet-500 cursor-pointer transition-colors">
-              Gizlilik Politikası
+              {t('login.privacyPolicy')}
             </span>
-            'nı kabul etmiş olursunuz.
+            {t('login.accepted')}
           </motion.p>
+
+          {/* Language Toggle */}
+          <motion.div variants={fadeUp} className="flex justify-center mt-4">
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language === 'tr' ? 'en' : 'tr')}
+              className="px-4 py-1.5 rounded-full border border-[#eee] text-[13px] font-medium text-[#999] hover:text-[#666] hover:border-[#ccc] transition-all"
+              style={{ fontFamily: satoshiFont }}
+            >
+              {i18n.language === 'tr' ? '🇬🇧 English' : '🇹🇷 Türkçe'}
+            </button>
+          </motion.div>
         </motion.div>
       </div>
     </div>

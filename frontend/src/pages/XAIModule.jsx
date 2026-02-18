@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from 'react-i18next';
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
@@ -60,26 +61,26 @@ import { useProfile } from "@/contexts/ProfileContext";
 
 // v1 settings (diğer platformlar için korunuyor)
 const personas = [
-  { id: "saf", label: "Saf", desc: "Karakter yok, sadece sen" },
-  { id: "otorite", label: "Otorite", desc: "Insider perspective, kesin" },
-  { id: "insider", label: "Insider", desc: "Exclusive bilgi vibe" },
-  { id: "mentalist", label: "Mentalist", desc: "Teknik + motivasyon" },
-  { id: "haber", label: "Haber", desc: "Haber formatı" },
+  { id: "saf", labelKey: "create.personas.saf", descKey: "create.personas.safDesc" },
+  { id: "otorite", labelKey: "create.personas.otorite", descKey: "create.personas.otoriteDesc" },
+  { id: "insider", labelKey: "create.personas.insider", descKey: "create.personas.insiderDesc" },
+  { id: "mentalist", labelKey: "create.personas.mentalist", descKey: "create.personas.mentalistDesc" },
+  { id: "haber", labelKey: "create.personas.haber", descKey: "create.personas.haberDesc" },
 ];
 
 const tones = [
-  { id: "natural", label: "Natural", desc: "Sıfır yapı, doğal akış" },
-  { id: "raw", label: "Raw", desc: "Ham düşünce akışı" },
-  { id: "polished", label: "Polished", desc: "Thesis→Evidence→Insight" },
-  { id: "unhinged", label: "Unhinged", desc: "Shock→Escalate→Twist" },
+  { id: "natural", labelKey: "create.tones.natural", descKey: "create.tones.naturalDesc" },
+  { id: "raw", labelKey: "create.tones.raw", descKey: "create.tones.rawDesc" },
+  { id: "polished", labelKey: "create.tones.polished", descKey: "create.tones.polishedDesc" },
+  { id: "unhinged", labelKey: "create.tones.unhinged", descKey: "create.tones.unhingedDesc" },
 ];
 
 const knowledgeModes = [
-  { id: null, label: "Yok", desc: "Ekstra bilgi modu yok" },
-  { id: "insider", label: "insider", desc: "Perde arkası bilgi" },
-  { id: "contrarian", label: "contrarian", desc: "Herkesin tersini savun" },
-  { id: "hidden", label: "hidden", desc: "Gizli, az bilinen bilgi" },
-  { id: "expert", label: "expert", desc: "Derin uzmanlık bilgisi" },
+  { id: null, labelKey: "create.knowledgeModes.none", descKey: "create.knowledgeModes.noneDesc" },
+  { id: "insider", labelKey: "create.knowledgeModes.insider", descKey: "create.knowledgeModes.insiderDesc" },
+  { id: "contrarian", labelKey: "create.knowledgeModes.contrarian", descKey: "create.knowledgeModes.contrarianDesc" },
+  { id: "hidden", labelKey: "create.knowledgeModes.hidden", descKey: "create.knowledgeModes.hiddenDesc" },
+  { id: "expert", labelKey: "create.knowledgeModes.expert", descKey: "create.knowledgeModes.expertDesc" },
 ];
 
 // ══════════════════════════════════════════
@@ -87,46 +88,46 @@ const knowledgeModes = [
 // ══════════════════════════════════════════
 
 const v2Etkiler = [
-  { id: "patlassin", label: "Patlasın", desc: "Viral, maximum erişim" },
-  { id: "konustursun", label: "Konuştursun", desc: "Tartışma başlatsın, reply çeksin" },
-  { id: "ogretsin", label: "Öğretsin", desc: "Bilgi versin, kaydedilsin" },
-  { id: "iz_biraksin", label: "İz Bıraksın", desc: "Düşündürsün, aklından çıkmasın" },
-  { id: "shitpost", label: "Shitpost", desc: "Komik, ironik, absürt" },
+  { id: "patlassin", labelKey: "create.effects.patlassin", descKey: "create.effects.patlassinDesc" },
+  { id: "konustursun", labelKey: "create.effects.konustursun", descKey: "create.effects.konustursunDesc" },
+  { id: "ogretsin", labelKey: "create.effects.ogretsin", descKey: "create.effects.ogretsinDesc" },
+  { id: "iz_biraksin", labelKey: "create.effects.izBiraksin", descKey: "create.effects.izBiraksinDesc" },
+  { id: "shitpost", labelKey: "create.effects.shitpost", descKey: "create.effects.shitpostDesc" },
 ];
 
 const v2Karakterler = [
-  { id: "uzman", label: "Uzman", desc: "Bilen, deneyimli, güvenilir" },
-  { id: "otorite", label: "Otorite", desc: "Kesin, tartışmasız, kanıt odaklı" },
-  { id: "iceriden", label: "İçeriden", desc: "Perde arkası, insider bilgi" },
-  { id: "mentalist", label: "Mentalist", desc: "Psikolojik insight, davranış okuma" },
-  { id: "haberci", label: "Haberci", desc: "Haber formatı, faktüel, hızlı" },
+  { id: "uzman", labelKey: "create.characters.uzman", descKey: "create.characters.uzmanDesc" },
+  { id: "otorite", labelKey: "create.characters.otorite", descKey: "create.characters.otoriteDesc" },
+  { id: "iceriden", labelKey: "create.characters.iceriden", descKey: "create.characters.iceridenDesc" },
+  { id: "mentalist", labelKey: "create.characters.mentalist", descKey: "create.characters.mentalistDesc" },
+  { id: "haberci", labelKey: "create.characters.haberci", descKey: "create.characters.haberciDesc" },
 ];
 
 const v2Yapilar = [
-  { id: "dogal", label: "Doğal", desc: "Akıcı, samimi, konuşur gibi" },
-  { id: "kurgulu", label: "Kurgulu", desc: "Yapılandırılmış, planlı, profesyonel" },
-  { id: "cesur", label: "Cesur", desc: "Provokatif, sınır zorlayan, vurucu" },
+  { id: "dogal", labelKey: "create.structures.dogal", descKey: "create.structures.dogalDesc" },
+  { id: "kurgulu", labelKey: "create.structures.kurgulu", descKey: "create.structures.kurguluDesc" },
+  { id: "cesur", labelKey: "create.structures.cesur", descKey: "create.structures.cesurDesc" },
 ];
 
 const v2Acilislar = [
-  { id: "otomatik", label: "Otomatik", desc: "En uygun açılışı AI seçsin" },
-  { id: "zit_gorus", label: "Zıt Görüş", desc: "Beklentinin tersini söyle" },
-  { id: "merak", label: "Merak", desc: "Okuyucuyu meraklandır" },
-  { id: "hikaye", label: "Hikaye", desc: "Kısa bir anekdotla başla" },
-  { id: "tartisma", label: "Tartışma", desc: "Tartışma ateşle" },
+  { id: "otomatik", labelKey: "create.openings.otomatik", descKey: "create.openings.otomatikDesc" },
+  { id: "zit_gorus", labelKey: "create.openings.zitGorus", descKey: "create.openings.zitGorusDesc" },
+  { id: "merak", labelKey: "create.openings.merak", descKey: "create.openings.merakDesc" },
+  { id: "hikaye", labelKey: "create.openings.hikaye", descKey: "create.openings.hikayeDesc" },
+  { id: "tartisma", labelKey: "create.openings.tartisma", descKey: "create.openings.tartismaDesc" },
 ];
 
 const v2Bitisler = [
-  { id: "otomatik", label: "Otomatik", desc: "En uygun bitişi AI seçsin" },
-  { id: "soru", label: "Soru", desc: "Soru ile bitir, yorum çek" },
-  { id: "dogal", label: "Doğal", desc: "Doğal bir şekilde bitir" },
+  { id: "otomatik", labelKey: "create.endings.otomatik", descKey: "create.endings.otomatikDesc" },
+  { id: "soru", labelKey: "create.endings.soru", descKey: "create.endings.soruDesc" },
+  { id: "dogal", labelKey: "create.endings.dogal", descKey: "create.endings.dogalDesc" },
 ];
 
 const v2Derinlikler = [
-  { id: "standart", label: "Standart", desc: "Normal bilgi derinliği" },
-  { id: "karsi_gorus", label: "Karşıt Görüş", desc: "Mainstream'in tersini savun" },
-  { id: "perde_arkasi", label: "Perde Arkası", desc: "Herkesin bilmediği detaylar" },
-  { id: "uzmanlik", label: "Uzmanlık", desc: "Derin teknik bilgi" },
+  { id: "standart", labelKey: "create.depths.standart", descKey: "create.depths.standartDesc" },
+  { id: "karsi_gorus", labelKey: "create.depths.karsiGorus", descKey: "create.depths.karsiGorusDesc" },
+  { id: "perde_arkasi", labelKey: "create.depths.perdeArkasi", descKey: "create.depths.perdeArkasiDesc" },
+  { id: "uzmanlik", labelKey: "create.depths.uzmanlik", descKey: "create.depths.uzmanlikDesc" },
 ];
 
 const v2SmartDefaults = {
@@ -146,130 +147,133 @@ const v2KarakterYapiUyum = {
 };
 
 const tweetLengths = [
-  { id: "micro", label: "Micro", range: "50-100" },
-  { id: "punch", label: "Punch", range: "140-280" },
-  { id: "spark", label: "Spark", range: "400-600" },
-  { id: "storm", label: "Storm", range: "700-1K" },
-  { id: "thread", label: "Thread", range: "3-7 tweet" },
+  { id: "micro", labelKey: "create.lengths.micro", range: "50-100" },
+  { id: "punch", labelKey: "create.lengths.punch", range: "140-280" },
+  { id: "spark", labelKey: "create.lengths.spark", range: "400-600" },
+  { id: "storm", labelKey: "create.lengths.storm", range: "700-1K" },
+  { id: "thread", labelKey: "create.lengths.thread", range: "3-7 tweet" },
 ];
 
 const replyLengths = [
-  { id: "micro", label: "Micro", range: "50-100" },
-  { id: "punch", label: "Punch", range: "140-280" },
-  { id: "spark", label: "Spark", range: "400-600" },
+  { id: "micro", labelKey: "create.lengths.micro", range: "50-100" },
+  { id: "punch", labelKey: "create.lengths.punch", range: "140-280" },
+  { id: "spark", labelKey: "create.lengths.spark", range: "400-600" },
 ];
 
 const articleLengths = [
-  { id: "brief", label: "Brief", range: "1.5-2K" },
-  { id: "standard", label: "Standard", range: "3-3.5K" },
-  { id: "deep", label: "Deep", range: "5K+" },
+  { id: "brief", labelKey: "create.lengths.brief", range: "1.5-2K" },
+  { id: "standard", labelKey: "create.lengths.standard", range: "3-3.5K" },
+  { id: "deep", labelKey: "create.lengths.deep", range: "5K+" },
 ];
 
 const replyModes = [
-  { id: "support", label: "Support", desc: "Katılır ve değer ekler" },
-  { id: "challenge", label: "Challenge", desc: "Saygılıca karşı görüş sunar" },
-  { id: "question", label: "Question", desc: "Merak edilen bir soru sorar" },
-  { id: "expand", label: "Expand", desc: "Konuyu yeni bir boyuta taşır" },
-  { id: "joke", label: "Joke", desc: "Esprili ve eğlenceli yanıt verir" },
+  { id: "support", labelKey: "create.replyModes.support", descKey: "create.replyModes.supportDesc" },
+  { id: "challenge", labelKey: "create.replyModes.challenge", descKey: "create.replyModes.challengeDesc" },
+  { id: "question", labelKey: "create.replyModes.question", descKey: "create.replyModes.questionDesc" },
+  { id: "expand", labelKey: "create.replyModes.expand", descKey: "create.replyModes.expandDesc" },
+  { id: "joke", labelKey: "create.replyModes.joke", descKey: "create.replyModes.jokeDesc" },
 ];
 
 const articleStyles = [
-  { id: "raw", label: "Raw", desc: "Kişisel düşüncelerini özgürce paylaşır" },
-  { id: "authority", label: "Authority", desc: "Veri ve örneklerle desteklenmiş yazı" },
-  { id: "story", label: "Story", desc: "Bir hikaye gibi anlatan yazı" },
-  { id: "tutorial", label: "Tutorial", desc: "Adım adım öğreten rehber" },
-  { id: "opinion", label: "Opinion", desc: "Net bir fikri savunan yazı" },
+  { id: "raw", labelKey: "create.articleStyles.raw", descKey: "create.articleStyles.rawDesc" },
+  { id: "authority", labelKey: "create.articleStyles.authority", descKey: "create.articleStyles.authorityDesc" },
+  { id: "story", labelKey: "create.articleStyles.story", descKey: "create.articleStyles.storyDesc" },
+  { id: "tutorial", labelKey: "create.articleStyles.tutorial", descKey: "create.articleStyles.tutorialDesc" },
+  { id: "opinion", labelKey: "create.articleStyles.opinion", descKey: "create.articleStyles.opinionDesc" },
 ];
 
 const languages = [
-  { id: "auto", label: "Otomatik" },
-  { id: "tr", label: "Türkçe" },
-  { id: "en", label: "English" },
+  { id: "auto", labelKey: "create.languages.auto" },
+  { id: "tr", labelKey: "create.languages.tr" },
+  { id: "en", labelKey: "create.languages.en" },
 ];
 
-// Content type tabs for quick actions
+// Content type tabs for quick actions (legacy, unused — see PLATFORM_CONTENT_TYPES_DATA)
 const contentTypes = [
-  { id: "tweet", icon: MessageSquare, label: "Tweet" },
-  { id: "quote", icon: Repeat2, label: "Alıntı" },
-  { id: "reply", icon: MessageCircleReply, label: "Yanıt" },
-  { id: "thread", icon: FileText, label: "Thread" },
+  { id: "tweet", icon: MessageSquare, labelKey: "create.contentTypes.tweet" },
+  { id: "quote", icon: Repeat2, labelKey: "create.contentTypes.quote" },
+  { id: "reply", icon: MessageCircleReply, labelKey: "create.contentTypes.reply" },
+  { id: "thread", icon: FileText, labelKey: "create.contentTypes.thread" },
 ];
 
-const PLATFORM_CONTENT_TYPES = {
+// Content type label keys resolved via t() in component
+const PLATFORM_CONTENT_TYPES_DATA = {
   twitter: [
-    { id: "tweet", icon: MessageSquare, label: "Tweet" },
-    { id: "quote", icon: Repeat2, label: "Alıntı" },
-    { id: "reply", icon: MessageCircleReply, label: "Yanıt" },
-    { id: "thread", icon: FileText, label: "Thread" },
+    { id: "tweet", icon: MessageSquare, labelKey: "create.contentTypes.tweet" },
+    { id: "quote", icon: Repeat2, labelKey: "create.contentTypes.quote" },
+    { id: "reply", icon: MessageCircleReply, labelKey: "create.contentTypes.reply" },
+    { id: "thread", icon: FileText, labelKey: "create.contentTypes.thread" },
   ],
   youtube: [
-    { id: "video-script", icon: FileText, label: "Video Script" },
-    { id: "title-desc", icon: MessageSquare, label: "Başlık + Açıklama" },
-    { id: "shorts-script", icon: Repeat2, label: "Shorts Script" },
+    { id: "video-script", icon: FileText, labelKey: "create.contentTypes.videoScript" },
+    { id: "title-desc", icon: MessageSquare, labelKey: "create.contentTypes.titleDesc" },
+    { id: "shorts-script", icon: Repeat2, labelKey: "create.contentTypes.shortsScript" },
   ],
   instagram: [
-    { id: "caption", icon: MessageSquare, label: "Caption" },
-    { id: "reel-script", icon: FileText, label: "Reel Script" },
-    { id: "story", icon: Quote, label: "Story Metni" },
+    { id: "caption", icon: MessageSquare, labelKey: "create.contentTypes.caption" },
+    { id: "reel-script", icon: FileText, labelKey: "create.contentTypes.reelScript" },
+    { id: "story", icon: Quote, labelKey: "create.contentTypes.storyText" },
   ],
   tiktok: [
-    { id: "hook", icon: Repeat2, label: "Hook" },
-    { id: "script", icon: FileText, label: "Script" },
-    { id: "caption", icon: MessageSquare, label: "Caption" },
+    { id: "hook", icon: Repeat2, labelKey: "create.contentTypes.hook" },
+    { id: "script", icon: FileText, labelKey: "create.contentTypes.script" },
+    { id: "caption", icon: MessageSquare, labelKey: "create.contentTypes.caption" },
   ],
   linkedin: [
-    { id: "post", icon: MessageSquare, label: "Post Yaz" },
-    { id: "article", icon: FileText, label: "Makale" },
-    { id: "carousel", icon: Quote, label: "Carousel" },
+    { id: "post", icon: MessageSquare, labelKey: "create.contentTypes.postWrite" },
+    { id: "article", icon: FileText, labelKey: "create.contentTypes.article" },
+    { id: "carousel", icon: Quote, labelKey: "create.contentTypes.carousel" },
   ],
   blog: [
-    { id: "blog-article", icon: FileText, label: "Blog Yazısı" },
-    { id: "blog-listicle", icon: MessageSquare, label: "Listicle" },
-    { id: "blog-tutorial", icon: Quote, label: "Tutorial" },
+    { id: "blog-article", icon: FileText, labelKey: "create.contentTypes.blogArticle" },
+    { id: "blog-listicle", icon: MessageSquare, labelKey: "create.contentTypes.listicle" },
+    { id: "blog-tutorial", icon: Quote, labelKey: "create.contentTypes.tutorial" },
   ],
 };
 
-const PLATFORM_PLACEHOLDERS = {
+// Placeholder keys - resolved via t() in component
+const PLATFORM_PLACEHOLDER_KEYS = {
   twitter: {
-    tweet: "Tweet konusu yaz veya bir fikir paylaş...",
-    quote: "Alıntı yapacağın tweet linkini yapıştır...",
-    reply: "Reply atacağın tweet linkini yapıştır...",
-    thread: "Thread konusu yaz, detaylı bir fikir paylaş...",
+    tweet: "create.placeholders.tweetTopic",
+    quote: "create.placeholders.quoteTweet",
+    reply: "create.placeholders.replyTweet",
+    thread: "create.placeholders.threadTopic",
   },
   youtube: {
-    "video-script": "Video konusunu anlat...",
-    "title-desc": "Video içeriğini özetle...",
-    "shorts-script": "Shorts için kısa bir fikir yaz...",
+    "video-script": "create.placeholders.videoScript",
+    "title-desc": "create.placeholders.titleDesc",
+    "shorts-script": "create.placeholders.shortsScript",
   },
   instagram: {
-    caption: "Post konusunu yaz...",
-    "reel-script": "Reel fikri veya konusu...",
-    story: "Story metni için konu...",
+    caption: "create.placeholders.captionTopic",
+    "reel-script": "create.placeholders.reelIdea",
+    story: "create.placeholders.storyTopic",
   },
   tiktok: {
-    hook: "Dikkat çekici bir konu yaz...",
-    script: "TikTok videosu için konu...",
-    caption: "Video açıklaması için konu...",
+    hook: "create.placeholders.hookTopic",
+    script: "create.placeholders.tiktokScript",
+    caption: "create.placeholders.tiktokCaption",
   },
   linkedin: {
-    post: "LinkedIn post konusu yaz...",
-    article: "Makale konusu yaz...",
-    carousel: "Carousel konusu yaz...",
+    post: "create.placeholders.linkedinPost",
+    article: "create.placeholders.linkedinArticle",
+    carousel: "create.placeholders.linkedinCarousel",
   },
   blog: {
-    article: "Blog yazısı konusu...",
-    listicle: "Liste yazısı konusu...",
-    tutorial: "Tutorial konusu...",
+    article: "create.placeholders.blogArticle",
+    listicle: "create.placeholders.blogListicle",
+    tutorial: "create.placeholders.blogTutorial",
   },
 };
 
-const PLATFORM_HEADINGS = {
-  twitter: "Timeline seni hatırlasın, sadece scroll'lamasın.",
-  youtube: "İzleyici \"abone ol\"a kendi uzanacak.",
-  instagram: "Scroll'u durduran sen ol.",
-  tiktok: "1 saniye. Ya hook'larsın ya kaybolursun.",
-  linkedin: "Bağlantıların seni okusun, sadece kabul etmesin.",
-  blog: "Okuyanın hayatında bir şey değişsin.",
+// Platform headings resolved via t() inside component
+const PLATFORM_HEADING_KEYS = {
+  twitter: "create.platformHeadings.twitter",
+  youtube: "create.platformHeadings.youtube",
+  instagram: "create.platformHeadings.instagram",
+  tiktok: "create.platformHeadings.tiktok",
+  linkedin: "create.platformHeadings.linkedin",
+  blog: "create.platformHeadings.blog",
 };
 
 // ══════════════════════════════════════════
@@ -288,43 +292,44 @@ const TypeHypeLogo = () => (
 
 // LinkedIn ayarları
 const linkedinPersonas = [
-  { id: "thought_leader", label: "Vizyon Lideri", desc: "Sektörün geleceğini gören, trendleri yorumlayan" },
-  { id: "storyteller", label: "Hikayeci", desc: "İş deneyimlerini hikayeye dönüştüren" },
-  { id: "data_driven", label: "Veri Odaklı", desc: "Rakamlarla konuşan, analitik düşünen" },
-  { id: "motivator", label: "Motivatör", desc: "Kariyer ve iş hayatında motive eden mentor" },
+  { id: "thought_leader", labelKey: "create.linkedinPersonas.thoughtLeader", descKey: "create.linkedinPersonas.thoughtLeaderDesc" },
+  { id: "storyteller", labelKey: "create.linkedinPersonas.storyteller", descKey: "create.linkedinPersonas.storytellerDesc" },
+  { id: "data_driven", labelKey: "create.linkedinPersonas.dataDriven", descKey: "create.linkedinPersonas.dataDrivenDesc" },
+  { id: "motivator", labelKey: "create.linkedinPersonas.motivator", descKey: "create.linkedinPersonas.motivatorDesc" },
 ];
 const linkedinFormats = [
-  { id: "standard", label: "Standart", desc: "Klasik LinkedIn post formatı" },
-  { id: "listicle", label: "Liste", desc: "Numaralı/madde işaretli format" },
-  { id: "story", label: "Hikaye", desc: "Kişisel deneyim anlatısı" },
-  { id: "carousel_text", label: "Carousel", desc: "Slide bazlı metin formatı" },
-  { id: "poll", label: "Anket", desc: "Tartışma başlatıcı soru formatı" },
-  { id: "micro", label: "Kısa", desc: "2-3 cümlelik kısa post" },
+  { id: "standard", labelKey: "create.linkedinFormats.standard", descKey: "create.linkedinFormats.standardDesc" },
+  { id: "listicle", labelKey: "create.linkedinFormats.listicle", descKey: "create.linkedinFormats.listicleDesc" },
+  { id: "story", labelKey: "create.linkedinFormats.story", descKey: "create.linkedinFormats.storyDesc" },
+  { id: "carousel_text", labelKey: "create.linkedinFormats.carouselText", descKey: "create.linkedinFormats.carouselTextDesc" },
+  { id: "poll", labelKey: "create.linkedinFormats.poll", descKey: "create.linkedinFormats.pollDesc" },
+  { id: "micro", labelKey: "create.linkedinFormats.micro", descKey: "create.linkedinFormats.microDesc" },
 ];
 
 // Blog ayarları
 const blogStyles = [
-  { id: "informative", label: "Bilgilendirici", desc: "Eğitici, net, araştırmaya dayalı" },
-  { id: "personal", label: "Kişisel", desc: "Kişisel deneyim ve bakış açısı" },
-  { id: "technical", label: "Teknik", desc: "How-to, adım adım rehber" },
-  { id: "opinion", label: "Fikir Yazısı", desc: "Güçlü görüş ve argüman" },
-  { id: "listicle", label: "Listicle", desc: "N tane madde formatı" },
-  { id: "case_study", label: "Case Study", desc: "Gerçek örnek analizi" },
+  { id: "informative", labelKey: "create.blogStyles.informative", descKey: "create.blogStyles.informativeDesc" },
+  { id: "personal", labelKey: "create.blogStyles.personal", descKey: "create.blogStyles.personalDesc" },
+  { id: "technical", labelKey: "create.blogStyles.technical", descKey: "create.blogStyles.technicalDesc" },
+  { id: "opinion", labelKey: "create.blogStyles.opinion", descKey: "create.blogStyles.opinionDesc" },
+  { id: "listicle", labelKey: "create.blogStyles.listicle", descKey: "create.blogStyles.listicleDesc" },
+  { id: "case_study", labelKey: "create.blogStyles.caseStudy", descKey: "create.blogStyles.caseStudyDesc" },
 ];
 const blogFrameworks = [
-  { id: "answer_first", label: "Answer-First", desc: "Sonuçla başla, detay sonra" },
-  { id: "pas", label: "PAS", desc: "Problem → Ajite → Çözüm" },
-  { id: "aida", label: "AIDA", desc: "Dikkat → İlgi → İstek → Aksiyon" },
-  { id: "storytelling", label: "Storytelling", desc: "Hikaye anlatım yapısı" },
+  { id: "answer_first", labelKey: "create.blogFrameworks.answerFirst", descKey: "create.blogFrameworks.answerFirstDesc" },
+  { id: "pas", labelKey: "create.blogFrameworks.pas", descKey: "create.blogFrameworks.pasDesc" },
+  { id: "aida", labelKey: "create.blogFrameworks.aida", descKey: "create.blogFrameworks.aidaDesc" },
+  { id: "storytelling", labelKey: "create.blogFrameworks.storytelling", descKey: "create.blogFrameworks.storytellingDesc" },
 ];
 const blogLevels = [
-  { id: "quick", label: "Quick Take", desc: "500-800 kelime" },
-  { id: "standard", label: "Standard", desc: "1000-1500 kelime" },
-  { id: "deep_dive", label: "Deep Dive", desc: "2000-3000 kelime" },
-  { id: "ultimate", label: "Ultimate", desc: "3000+ kelime rehber" },
+  { id: "quick", labelKey: "create.blogLevels.quickTake", descKey: "create.blogLevels.quickTakeDesc" },
+  { id: "standard", labelKey: "create.blogLevels.standard", descKey: "create.blogLevels.standardDesc" },
+  { id: "deep_dive", labelKey: "create.blogLevels.deepDive", descKey: "create.blogLevels.deepDiveDesc" },
+  { id: "ultimate", labelKey: "create.blogLevels.ultimate", descKey: "create.blogLevels.ultimateDesc" },
 ];
 
 function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, activePlatform, onGenerate }) {
+  const { t } = useTranslation();
   const [advOpen, setAdvOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -384,7 +389,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               alignItems: "center",
             }}
           >
-            {item.label}{item.range ? <span style={{ opacity: 0.5, marginLeft: "4px" }}>{item.range}</span> : null}
+            {t(item.labelKey)}{item.range ? <span style={{ opacity: 0.5, marginLeft: "4px" }}>{item.range}</span> : null}
           </button>
         );
       })}
@@ -393,8 +398,8 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
 
   const renderDesc = (items, activeId) => {
     const found = items.find((i) => i.id === activeId);
-    return found?.desc ? (
-      <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>{found.desc}</p>
+    return found?.descKey ? (
+      <p style={{ fontSize: "11px", color: "var(--m-text-faint)", marginTop: "4px" }}>{t(found.descKey)}</p>
     ) : null;
   };
 
@@ -406,7 +411,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
           <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.2)", position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)" }} />
         )}
         <span style={{ fontSize: isMobile ? "15px" : "13px", fontWeight: "600", color: "var(--m-text)" }}>
-          Üretim Ayarları
+          {t('create.generationSettings')}
         </span>
         <button onClick={onClose} className="haptic-btn" style={{ background: "transparent", border: "none", color: "var(--m-text-muted)", cursor: "pointer", padding: "4px" }}>
           <X size={18} />
@@ -418,7 +423,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
             <>
               {/* Etki (smart defaults tetikleyen özel pills) */}
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Etki</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.effect')}</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {v2Etkiler.map((e) => (
                     <button
@@ -435,7 +440,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                         transition: "all 0.2s ease",
                       }}
                     >
-                      {e.label}
+                      {t(e.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -444,19 +449,19 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
 
               {/* Karakter */}
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Karakter</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.character')}</label>
                 {renderPills(v2Karakterler, settings.karakter, "karakter")}
                 {renderDesc(v2Karakterler, settings.karakter)}
               </div>
 
               {/* Yapı */}
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Yapı</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.structure')}</label>
                 {renderPills(v2Yapilar, settings.yapi, "yapi", { checkCompat: true })}
                 {renderDesc(v2Yapilar, settings.yapi)}
                 {isIncompat && (
                   <p style={{ fontSize: "11px", color: "rgba(239,68,68,0.8)", marginTop: "4px" }}>
-                    Bu karakter ve yapı uyumsuz. Çelişkili sonuçlar üretebilir.
+                    {t('create.incompatibleWarning')}
                   </p>
                 )}
               </div>
@@ -464,7 +469,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {/* Uzunluk — shitpost'ta gizle */}
               {settings.etki !== "shitpost" && (
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Uzunluk</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.length')}</label>
                 {renderPills(
                   activeTab === "reply" ? replyLengths : tweetLengths,
                   settings.uzunluk,
@@ -490,35 +495,35 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                 }}
               >
                 {advOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                Gelişmiş Ayarlar
+                {t('create.advancedSettings')}
               </button>
 
               {advOpen && (
                 <>
                   {/* Açılış */}
                   <div className="mb-2">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Açılış</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.opening')}</label>
                     {renderPills(v2Acilislar, settings.acilis, "acilis")}
                     {renderDesc(v2Acilislar, settings.acilis)}
                   </div>
 
                   {/* Bitiş */}
                   <div className="mb-2">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Bitiş</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.ending')}</label>
                     {renderPills(v2Bitisler, settings.bitis, "bitis")}
                     {renderDesc(v2Bitisler, settings.bitis)}
                   </div>
 
                   {/* Derinlik */}
                   <div className="mb-2">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Derinlik</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.depth')}</label>
                     {renderPills(v2Derinlikler, settings.derinlik, "derinlik")}
                     {renderDesc(v2Derinlikler, settings.derinlik)}
                   </div>
 
                   {/* Dil */}
                   <div className="mb-2">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Dil</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.language')}</label>
                     {renderPills(languages, settings.language, "language")}
                   </div>
                 </>
@@ -527,7 +532,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {/* Reply Mode (reply tab'da) */}
               {activeTab === "reply" && (
                 <div className="mb-2 mt-1">
-                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Reply Modu</label>
+                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.replyMode')}</label>
                   {renderPills(replyModes, settings.replyMode, "replyMode")}
                 </div>
               )}
@@ -537,14 +542,14 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
             <>
               {/* Persona */}
               <div className="mb-2.5">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Karakter</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.persona')}</label>
                 {renderPills(personas, settings.persona, "persona")}
                 {renderDesc(personas, settings.persona)}
               </div>
 
               {/* Tone */}
               <div className="mb-2">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Ton</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.tone')}</label>
                 {renderPills(tones, settings.tone, "tone")}
                 {renderDesc(tones, settings.tone)}
               </div>
@@ -552,21 +557,21 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {/* Length — shitpost'ta gizle */}
               {settings.etki !== "shitpost" && (
               <div className="mb-2">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Uzunluk</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.length')}</label>
                 {renderPills(currentLengths, settings.length, "length")}
               </div>
               )}
 
               {/* Knowledge */}
               <div className="mb-2">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Knowledge Mode</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.knowledgeMode')}</label>
                 {renderPills(knowledgeModes, settings.knowledge, "knowledge")}
                 {renderDesc(knowledgeModes, settings.knowledge)}
               </div>
 
               {/* Language */}
               <div className="mb-2">
-                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Dil</label>
+                <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.language')}</label>
                 {renderPills(languages, settings.language, "language")}
               </div>
 
@@ -574,12 +579,12 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {activePlatform === "linkedin" && (
                 <>
                   <div className="mb-2.5">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>LinkedIn Persona</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.linkedinPersona')}</label>
                     {renderPills(linkedinPersonas, settings.linkedinPersona, "linkedinPersona")}
                     {renderDesc(linkedinPersonas, settings.linkedinPersona)}
                   </div>
                   <div className="mb-2.5">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Format</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.linkedinFormat')}</label>
                     {renderPills(linkedinFormats, settings.linkedinFormat, "linkedinFormat")}
                     {renderDesc(linkedinFormats, settings.linkedinFormat)}
                   </div>
@@ -590,17 +595,17 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {activePlatform === "blog" && (
                 <>
                   <div className="mb-2.5">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Yazı Stili</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.blogStyle')}</label>
                     {renderPills(blogStyles, settings.blogStyle, "blogStyle")}
                     {renderDesc(blogStyles, settings.blogStyle)}
                   </div>
                   <div className="mb-2.5">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Framework</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.blogFramework')}</label>
                     {renderPills(blogFrameworks, settings.blogFramework, "blogFramework")}
                     {renderDesc(blogFrameworks, settings.blogFramework)}
                   </div>
                   <div className="mb-2.5">
-                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Seviye</label>
+                    <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.blogLevel')}</label>
                     {renderPills(blogLevels, settings.blogLevel, "blogLevel")}
                     {renderDesc(blogLevels, settings.blogLevel)}
                   </div>
@@ -610,7 +615,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {/* Reply Mode */}
               {activeTab === "reply" && (
                 <div className="mb-2 mt-2">
-                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Reply Modu</label>
+                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.replyMode')}</label>
                   {renderPills(replyModes, settings.replyMode, "replyMode")}
                 </div>
               )}
@@ -618,7 +623,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               {/* Article Style */}
               {activeTab === "article" && (
                 <div className="mb-2 mt-2">
-                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Makale Stili</label>
+                  <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.articleStyle')}</label>
                   {renderPills(articleStyles, settings.articleStyle, "articleStyle")}
                 </div>
               )}
@@ -627,12 +632,12 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
 
           {/* Variant Count (her platformda) */}
           <div className="mb-2">
-            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>Varyant Sayısı</label>
+            <label style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "4px", display: "block" }}>{t('create.variantCount')}</label>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <button
                 onClick={() => onSettingsChange({ ...settings, variants: Math.max(1, settings.variants - 1) })}
                 style={{
-                  width: "32px", height: "32px", borderRadius: "50%",
+                  width: "36px", height: "36px", borderRadius: "50%",
                   border: "1px solid var(--m-border)", background: "transparent",
                   color: "var(--m-text-soft)", display: "flex", alignItems: "center",
                   justifyContent: "center", cursor: "pointer",
@@ -646,7 +651,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
               <button
                 onClick={() => onSettingsChange({ ...settings, variants: Math.min(5, settings.variants + 1) })}
                 style={{
-                  width: "32px", height: "32px", borderRadius: "50%",
+                  width: "36px", height: "36px", borderRadius: "50%",
                   border: "1px solid var(--m-border)", background: "transparent",
                   color: "var(--m-text-soft)", display: "flex", alignItems: "center",
                   justifyContent: "center", cursor: "pointer",
@@ -688,7 +693,7 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
                 letterSpacing: "0.01em",
               }}
             >
-              ⚡ Üret
+              ⚡ {t('common.generate')}
             </button>
           )}
         </div>
@@ -730,87 +735,147 @@ function SettingsPopup({ open, onClose, settings, onSettingsChange, activeTab, a
 // ONBOARDING TIP (Accordion)
 // ══════════════════════════════════════════
 
-function OnboardingTip({ isLoaded }) {
-  const [open, setOpen] = useState(false);
+function OnboardingTip({ isLoaded, hasStyleProfile }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(true);
+  const [dismissed, setDismissed] = useState(() => localStorage.getItem("typehype-onboard-dismissed") === "true");
+  const navigate = useNavigate();
+
   const genCount = parseInt(localStorage.getItem("typehype-gen-count") || "0", 10);
-  if (genCount >= 50) return null;
+  const hasTweeted = localStorage.getItem("typehype-onboard-tweet") === "true";
 
   const steps = [
-    { emoji: "🔍", text: "Beğendiğin bir hesap bul (alanında ses getiren biri)" },
-    { emoji: "🧬", text: "Style Lab'a ekle, Hype yazım stilini analiz etsin" },
-    { emoji: "✍️", text: "O stilde, senin konularında içerik üret" },
-    { emoji: "🚀", text: "Paylaş, büyü, takipçi kazan" },
-    { emoji: "📊", text: "20-30 paylaşımdan sonra kendi hesabını ekle" },
-    { emoji: "🎯", text: "Artık Hype SENİN stilini biliyor" },
+    { label: t('create.onboarding.createAccount'), done: true, action: null },
+    { label: t('create.onboarding.firstGeneration'), done: genCount >= 1, action: null },
+    { label: t('create.onboarding.cloneStyle'), done: !!hasStyleProfile, action: () => navigate("/dashboard/style-lab") },
+    { label: t('create.onboarding.firstTweet'), done: hasTweeted, action: null },
   ];
 
-  return (
-    <div
-      style={{
-        maxWidth: "680px",
-        width: "100%",
-        marginBottom: "16px",
-      }}
-    >
-      {/* Toggle Button */}
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "8px 14px",
-          borderRadius: open ? "10px 10px 0 0" : "10px",
-          transition: "border-radius 0.2s ease",
-          background: "rgba(234, 179, 8, 0.05)",
-          border: "1px solid rgba(234, 179, 8, 0.12)",
-          borderBottom: open ? "none" : "1px solid rgba(234, 179, 8, 0.12)",
-          cursor: "pointer",
-          textAlign: "left",
-          fontFamily: "inherit",
-        }}
-      >
-        <Lightbulb size={14} style={{ color: "rgba(234, 179, 8, 0.5)", flexShrink: 0 }} />
-        <span style={{ fontSize: "12px", color: "var(--m-text-muted)", flex: 1 }}>
-          Henüz stilin yok mu? Birinin stilini çal, içerik üretmeye başla.
-        </span>
-        {open ? <ChevronUp size={14} style={{ color: "var(--m-text-faint)", flexShrink: 0 }} /> : <ChevronDown size={14} style={{ color: "var(--m-text-faint)", flexShrink: 0 }} />}
-      </button>
+  const completedCount = steps.filter((s) => s.done).length;
+  const allDone = completedCount === steps.length;
+  const progress = Math.round((completedCount / steps.length) * 100);
 
-      {/* Expanded Content */}
+  if (dismissed) return null;
+  if (allDone) {
+    // Show success briefly then auto-dismiss
+    if (!localStorage.getItem("typehype-onboard-complete-shown")) {
+      localStorage.setItem("typehype-onboard-complete-shown", "true");
+      setTimeout(() => {
+        localStorage.setItem("typehype-onboard-dismissed", "true");
+        setDismissed(true);
+      }, 3000);
+    } else {
+      return null;
+    }
+  }
+
+  const handleDismiss = () => {
+    localStorage.setItem("typehype-onboard-dismissed", "true");
+    setDismissed(true);
+  };
+
+  return (
+    <div style={{ maxWidth: "680px", width: "100%", marginBottom: "16px" }}>
       <div
         style={{
-          maxHeight: open ? "400px" : "0",
+          background: "rgba(168, 85, 247, 0.04)",
+          border: "1px solid rgba(168, 85, 247, 0.12)",
+          borderRadius: "12px",
           overflow: "hidden",
-          transition: "max-height 0.3s ease",
         }}
       >
-        <div
+        {/* Header - always visible */}
+        <button
+          onClick={() => setOpen(!open)}
           style={{
-            padding: "14px 16px",
-            borderRadius: "0 0 10px 10px",
-            background: "rgba(234, 179, 8, 0.03)",
-            border: "1px solid rgba(234, 179, 8, 0.12)",
-            borderTop: "none",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "10px 14px",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
         >
-          <p style={{ fontSize: "12px", color: "var(--m-text-muted)", marginBottom: "12px", lineHeight: "1.5" }}>
-            Hype, beğendiğin hesapların yazım DNA'sını çözüyor. Yeni hesapta yeterli veri yok ama çözüm basit:
-          </p>
+          <span style={{ fontSize: "14px" }}>{allDone ? "🎉" : "🚀"}</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text)", flex: 1, textAlign: "left" }}>
+            {allDone ? t('create.onboarding.congrats') : `${t('create.onboarding.quickStart')} (${completedCount}/${steps.length})`}
+          </span>
+          <span style={{ fontSize: "11px", color: "var(--m-text-muted)", marginRight: "4px" }}>%{progress}</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
+            style={{ background: "transparent", border: "none", color: "var(--m-text-faint)", cursor: "pointer", padding: "2px" }}
+          >
+            <X size={14} />
+          </button>
+        </button>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+        {/* Progress bar */}
+        <div style={{ height: "3px", background: "rgba(255,255,255,0.05)", margin: "0 14px" }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${progress}%`,
+              background: "linear-gradient(90deg, #a855f7, #ec4899)",
+              borderRadius: "2px",
+              transition: "width 0.5s ease",
+            }}
+          />
+        </div>
+
+        {/* Steps - collapsible */}
+        <div
+          style={{
+            maxHeight: open ? "200px" : "0",
+            overflow: "hidden",
+            transition: "max-height 0.3s ease",
+          }}
+        >
+          <div style={{ padding: "10px 14px 12px", display: "flex", flexDirection: "column", gap: "6px" }}>
             {steps.map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                <span style={{ fontSize: "12px", flexShrink: 0, width: "20px" }}>{step.emoji}</span>
-                <span style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>{step.text}</span>
+              <div
+                key={i}
+                onClick={() => step.action && step.action()}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  padding: "6px 8px",
+                  borderRadius: "8px",
+                  cursor: step.action ? "pointer" : "default",
+                  transition: "background 0.15s ease",
+                  background: step.action ? "transparent" : "transparent",
+                }}
+                onMouseEnter={(e) => { if (step.action) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{
+                  width: "20px", height: "20px", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "11px", flexShrink: 0,
+                  background: step.done ? "rgba(34, 197, 94, 0.15)" : "rgba(255,255,255,0.05)",
+                  color: step.done ? "#22c55e" : "var(--m-text-faint)",
+                  border: step.done ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid var(--m-border)",
+                }}>
+                  {step.done ? "✓" : i + 1}
+                </span>
+                <span style={{
+                  fontSize: "12px",
+                  color: step.done ? "var(--m-text-muted)" : "var(--m-text-soft)",
+                  textDecoration: step.done ? "line-through" : "none",
+                  opacity: step.done ? 0.6 : 1,
+                  flex: 1,
+                }}>
+                  {step.label}
+                </span>
+                {step.action && !step.done && (
+                  <span style={{ fontSize: "10px", color: "var(--m-purple)", opacity: 0.7 }}>→</span>
+                )}
               </div>
             ))}
           </div>
-
-          <p style={{ fontSize: "11px", color: "var(--m-text-faint)", fontStyle: "italic" }}>
-            Kısaca: önce başkasının silahıyla savaş, sonra kendininkini yap.
-          </p>
         </div>
       </div>
     </div>
@@ -822,6 +887,7 @@ function OnboardingTip({ isLoaded }) {
 // ══════════════════════════════════════════
 
 function StyleProfileBadge() {
+  const { t } = useTranslation();
   const { profiles, activeProfile, activeProfileId, setActiveProfile, refreshProfiles } = useProfile();
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
@@ -914,7 +980,7 @@ function StyleProfileBadge() {
         ) : (
           <Dna size={14} />
         )}
-        {activeProfile ? activeProfile.name.split(" ")[0] : "Stil"}
+        {activeProfile ? activeProfile.name.split(" ")[0] : t('create.style')}
         <ChevronDown size={12} style={{ opacity: 0.5 }} />
       </button>
 
@@ -959,7 +1025,7 @@ function StyleProfileBadge() {
                 }}
               >
                 <X size={14} />
-                <span>Stil kapalı</span>
+                <span>{t('create.styleOff')}</span>
               </button>
               <button
                 onClick={() => { navigate("/dashboard/style-lab"); setShowDropdown(false); }}
@@ -971,7 +1037,7 @@ function StyleProfileBadge() {
                 }}
               >
                 <Dna size={14} />
-                <span>Style Lab</span>
+                <span>{t('create.styleLab')}</span>
               </button>
             </div>
           </div>
@@ -987,6 +1053,7 @@ function StyleProfileBadge() {
 // ══════════════════════════════════════════
 
 function AIAnalysisDialog({ open, onOpenChange, profileData }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   if (!profileData) return null;
   const fp = profileData.style_fingerprint || {};
@@ -996,7 +1063,7 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(stylePrompt);
     setCopied(true);
-    toast.success("Stil prompt kopyalandı!");
+    toast.success(t('styleLab.analysis.promptCopied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -1023,19 +1090,19 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-400" />
-            AI Stil Analizi: {profileData.name}
+            {t('create.aiAnalysis.title', { name: profileData.name })}
           </DialogTitle>
           <DialogDescription>
-            {fp.tweet_count || 0} tweet analiz edildi
+            {t('create.aiAnalysis.tweetsAnalyzed', { count: fp.tweet_count || 0 })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="grid grid-cols-4 gap-3">
             {[
               { val: fp.tweet_count || 0, label: "Tweet", color: "sky" },
-              { val: fp.avg_length || 0, label: "Ort. Karakter", color: "pink" },
-              { val: fp.avg_engagement?.likes?.toFixed(0) || 0, label: "Ort. Beğeni", color: "green" },
-              { val: fp.emoji_usage?.toFixed(1) || 0, label: "Emoji/Tweet", color: "purple" },
+              { val: fp.avg_length || 0, label: t('create.aiAnalysis.avgCharacter'), color: "pink" },
+              { val: fp.avg_engagement?.likes?.toFixed(0) || 0, label: t('create.aiAnalysis.avgLike'), color: "green" },
+              { val: fp.emoji_usage?.toFixed(1) || 0, label: t('create.aiAnalysis.emojiPerTweet'), color: "purple" },
             ].map(({ val, label, color }) => (
               <div key={label} className={`p-3 rounded-xl bg-gradient-to-br from-${color}-500/10 to-${color}-500/10 border border-${color}-500/20 text-center`}>
                 <p className={`text-2xl font-bold text-${color}-400`}>{val}</p>
@@ -1057,11 +1124,11 @@ function AIAnalysisDialog({ open, onOpenChange, profileData }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium flex items-center gap-2">
-                  <Wand2 className="h-4 w-4 text-pink-400" /> Stil Prompt
+                  <Wand2 className="h-4 w-4 text-pink-400" /> {t('create.aiAnalysis.stylePrompt')}
                 </h4>
                 <Button variant="ghost" size="sm" onClick={handleCopyPrompt} className="h-8 text-xs">
                   {copied ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                  {copied ? "Kopyalandı" : "Kopyala"}
+                  {copied ? t('common.copied') : t('common.copy')}
                 </Button>
               </div>
               <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 font-mono text-xs whitespace-pre-wrap max-h-48 overflow-y-auto">
@@ -1124,21 +1191,9 @@ function TweetPreviewCard({ tweet }) {
 // ══════════════════════════════════════════
 
 const promoCards = [
-  {
-    title: "Stil Klonlama",
-    desc: "Beğendiğin hesabın yazım stilini klonla ve o tarzda içerik üret.",
-    type: "style",
-  },
-  {
-    title: "Ultra Mode",
-    desc: "Viral potansiyeli en yüksek içerikler için ⚡ Ultra modunu dene.",
-    type: "ultra",
-  },
-  {
-    title: "Thread Gücü",
-    desc: "Tek tweet yetmiyorsa, 3-7 tweet'lik thread'ler oluştur.",
-    type: "thread",
-  },
+  { titleKey: "create.promoCards.styleCloning", descKey: "create.promoCards.styleCloningDesc", type: "style" },
+  { titleKey: "create.promoCards.ultraMode", descKey: "create.promoCards.ultraModeDesc", type: "ultra" },
+  { titleKey: "create.promoCards.threadPower", descKey: "create.promoCards.threadPowerDesc", type: "thread" },
 ];
 
 // ══════════════════════════════════════════
@@ -1148,6 +1203,7 @@ const promoCards = [
 let jobIdCounter = 0;
 
 export default function XAIModule() {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState("tweet");
   const [activePlatform, setActivePlatform] = useState("twitter");
@@ -1173,7 +1229,7 @@ export default function XAIModule() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeProfileId, activeProfile, setActiveProfile } = useProfile();
+  const { profiles, activeProfileId, activeProfile, setActiveProfile } = useProfile();
 
   const [settings, setSettings] = useState({
     mode: "classic",
@@ -1267,7 +1323,7 @@ export default function XAIModule() {
   const handleFetchTweet = async () => {
     const url = inputValue.trim();
     if (!url.match(/x\.com|twitter\.com/)) {
-      toast.error("Tweet linki girin");
+      toast.error(t('create.enterTweetLink'));
       return;
     }
     setFetching(true);
@@ -1279,12 +1335,12 @@ export default function XAIModule() {
         setFetched(true);
         setFetchPhase("prompt");
         setInputValue("");
-        toast.success("Tweet çekildi! Şimdi yorumunu yaz veya direkt gönder.");
+        toast.success(t('create.tweetFetched'));
       } else {
-        toast.error("Tweet çekilemedi");
+        toast.error(t('create.tweetFetchFailed'));
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Tweet çekilemedi");
+      toast.error(error.response?.data?.detail || t('create.tweetFetchFailed'));
     } finally {
       setFetching(false);
     }
@@ -1294,7 +1350,7 @@ export default function XAIModule() {
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+      if (file.size > 5 * 1024 * 1024) { toast.error(t('create.maxFileSize')); return; }
       setImageUrl(URL.createObjectURL(file));
       const reader = new FileReader();
       reader.onloadend = () => setImageBase64(reader.result);
@@ -1314,7 +1370,7 @@ export default function XAIModule() {
   const handleGenerate = useCallback(async () => {
     const input = inputValue.trim();
     if (!input && activeTab !== "quote" && activeTab !== "reply") {
-      toast.error("Bir şeyler yaz");
+      toast.error(t('create.writeSomething'));
       return;
     }
 
@@ -1325,7 +1381,7 @@ export default function XAIModule() {
         await handleFetchTweet();
         return; // Input will clear, user writes direction then sends
       }
-      toast.error("Önce tweet linkini yapıştır");
+      toast.error(t('create.pasteTweetFirst'));
       return;
     }
 
@@ -1339,16 +1395,16 @@ export default function XAIModule() {
       topic: input.slice(0, 60) + (input.length > 60 ? "..." : ""),
       persona: activePlatform === "twitter" ? settings.karakter : settings.persona,
       personaLabel: activePlatform === "twitter"
-        ? v2Karakterler.find((k) => k.id === settings.karakter)?.label
-        : personas.find((p) => p.id === settings.persona)?.label,
+        ? tl(v2Karakterler, settings.karakter)
+        : tl(personas, settings.persona),
       toneLabel: activePlatform === "twitter"
-        ? v2Yapilar.find((y) => y.id === settings.yapi)?.label
-        : tones.find((t) => t.id === settings.tone)?.label,
-      lengthLabel: (activeTab === "reply" ? replyLengths : activeTab === "article" ? articleLengths : tweetLengths)
-        .find((l) => l.id === (activePlatform === "twitter" ? settings.uzunluk : settings.length))?.label,
+        ? tl(v2Yapilar, settings.yapi)
+        : tl(tones, settings.tone),
+      lengthLabel: tl(activeTab === "reply" ? replyLengths : activeTab === "article" ? articleLengths : tweetLengths,
+        activePlatform === "twitter" ? settings.uzunluk : settings.length),
       knowledgeLabel: activePlatform === "twitter"
-        ? (settings.etki ? v2Etkiler.find((e) => e.id === settings.etki)?.label : null)
-        : (settings.knowledge ? knowledgeModes.find((k) => k.id === settings.knowledge)?.label : null),
+        ? (settings.etki ? tl(v2Etkiler, settings.etki) : null)
+        : (settings.knowledge ? tl(knowledgeModes, settings.knowledge) : null),
       variantCount: settings.variants,
       variants: null,
     };
@@ -1444,6 +1500,9 @@ export default function XAIModule() {
           is_ultra: settings.isUltra,
           variants: settings.variants,
           additional_context: null,
+          style_profile_id: activeProfileId || null,
+          trend_context: trendContext || null,
+          image_base64: imageBase64 || null,
         };
       } else if (type === "reply") {
         // X platformu: v2 endpoint
@@ -1464,6 +1523,9 @@ export default function XAIModule() {
           is_ultra: settings.isUltra,
           variants: settings.variants,
           additional_context: null,
+          style_profile_id: activeProfileId || null,
+          trend_context: trendContext || null,
+          image_base64: imageBase64 || null,
         };
       } else if (type === "article") {
         endpoint = `${API}/generate/article`;
@@ -1488,42 +1550,46 @@ export default function XAIModule() {
           variants: response.data.variants,
           generationId: response.data.generation_id,
         });
-        toast.success("İçerik üretildi!");
+        toast.success(t('create.contentGenerated'));
         // Increment generation counter for onboarding tip
         const gc = parseInt(localStorage.getItem("typehype-gen-count") || "0", 10);
         localStorage.setItem("typehype-gen-count", String(gc + 1));
       } else {
         updateJob(jobId, { status: "error" });
-        toast.error(response.data.error || "Üretim başarısız");
+        toast.error(response.data.error || t('create.generationFailed'));
       }
     } catch (error) {
       updateJob(jobId, { status: "error" });
-      toast.error(error.response?.data?.detail || "Bir hata oluştu");
+      toast.error(error.response?.data?.detail || t('create.errorOccurred'));
     } finally {
       setGenerating(false);
     }
   }, [inputValue, activeTab, settings, fetched, fetchPhase, tweetUrl, tweetData, activeProfileId, imageUrl, imageBase64, trendContext, updateJob]);
 
   // Placeholder based on active tab
-  const basePlaceholders = PLATFORM_PLACEHOLDERS[activePlatform] || PLATFORM_PLACEHOLDERS.twitter;
+  const basePlaceholderKeys = PLATFORM_PLACEHOLDER_KEYS[activePlatform] || PLATFORM_PLACEHOLDER_KEYS.twitter;
+  const resolvedPlaceholders = {};
+  for (const [key, val] of Object.entries(basePlaceholderKeys)) {
+    resolvedPlaceholders[key] = t(val);
+  }
   const placeholders = {
-    ...basePlaceholders,
-    // Override quote/reply placeholders when tweet is fetched
+    ...resolvedPlaceholders,
     ...(fetchPhase === "prompt" && {
-      quote: "Bu tweet hakkında ne söylemek istersin? (boş bırakabilirsin)",
-      reply: "Nasıl bir yanıt vermek istersin? (boş bırakabilirsin)",
+      quote: t('create.placeholders.quoteTweet'),
+      reply: t('create.placeholders.replyTweet'),
     }),
   };
 
   const needsUrl = activeTab === "quote" || activeTab === "reply";
   const isUrlInput = needsUrl && inputValue.match(/x\.com|twitter\.com/);
+  const tl = (items, id) => { const f = items.find((i) => i.id === id); return f?.labelKey ? t(f.labelKey) : ""; };
   const settingsSummary = activePlatform === "linkedin"
-    ? `${linkedinPersonas.find((p) => p.id === settings.linkedinPersona)?.label} · ${linkedinFormats.find((f) => f.id === settings.linkedinFormat)?.label} · ${settings.variants}x`
+    ? `${tl(linkedinPersonas, settings.linkedinPersona)} · ${tl(linkedinFormats, settings.linkedinFormat)} · ${settings.variants}x`
     : activePlatform === "blog"
-    ? `${blogStyles.find((s) => s.id === settings.blogStyle)?.label} · ${blogFrameworks.find((f) => f.id === settings.blogFramework)?.label} · ${blogLevels.find((l) => l.id === settings.blogLevel)?.label}`
+    ? `${tl(blogStyles, settings.blogStyle)} · ${tl(blogFrameworks, settings.blogFramework)} · ${tl(blogLevels, settings.blogLevel)}`
     : activePlatform === "twitter"
-    ? `${v2Etkiler.find((e) => e.id === settings.etki)?.label || "Patlasın"} · ${v2Karakterler.find((k) => k.id === settings.karakter)?.label || "Uzman"} · ${v2Yapilar.find((y) => y.id === settings.yapi)?.label || "Doğal"} · ${settings.variants}x${settings.isUltra ? " · Ultra" : ""}`
-    : `${personas.find((p) => p.id === settings.persona)?.label} · ${tones.find((t) => t.id === settings.tone)?.label} · ${settings.variants}x`;
+    ? `${tl(v2Etkiler, settings.etki)} · ${tl(v2Karakterler, settings.karakter)} · ${tl(v2Yapilar, settings.yapi)} · ${settings.variants}x${settings.isUltra ? " · Ultra" : ""}`
+    : `${tl(personas, settings.persona)} · ${tl(tones, settings.tone)} · ${settings.variants}x`;
 
   return (
     <div
@@ -1590,6 +1656,9 @@ export default function XAIModule() {
           {settingsSummary}
         </span>
       </div>
+      {/* Onboarding */}
+      <OnboardingTip isLoaded={isLoaded} hasStyleProfile={profiles?.length > 0} />
+
       {/* Main Heading */}
       <h1
         style={{
@@ -1606,7 +1675,7 @@ export default function XAIModule() {
           transition: "all 0.6s ease 0.2s",
         }}
       >
-        {PLATFORM_HEADINGS[activePlatform] || "Ne yazmak istersin?"}
+        {t(PLATFORM_HEADING_KEYS[activePlatform] || 'create.platformHeadings.twitter')}
       </h1>
 
       {/* Fetched Tweet Preview */}
@@ -1633,16 +1702,16 @@ export default function XAIModule() {
               transition: "all 0.2s ease",
             }}
           >
-            ← Farklı tweet seç
+            ← {t('create.differentTweet')}
           </button>
 
           {/* Direction Pills */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap" style={{ gap: "6px", marginTop: "10px" }}>
             {[
-              { id: "support", label: "👍 Destekle", color: "#22c55e" },
-              { id: "oppose", label: "⚔️ Karşı Çık", color: "#ef4444" },
-              { id: "add", label: "💡 Bilgi Ekle", color: "#3b82f6" },
-              { id: "roast", label: "🔥 Dalga Geç", color: "#f59e0b" },
+              { id: "support", label: `👍 ${t('create.directions.support')}`, color: "#22c55e" },
+              { id: "oppose", label: `⚔️ ${t('create.directions.oppose')}`, color: "#ef4444" },
+              { id: "add", label: `💡 ${t('create.directions.add')}`, color: "#3b82f6" },
+              { id: "roast", label: `🔥 ${t('create.directions.roast')}`, color: "#f59e0b" },
             ].map(d => (
               <button
                 key={d.id}
@@ -1667,7 +1736,7 @@ export default function XAIModule() {
               </button>
             ))}
             <span style={{ fontSize: "10px", color: "var(--m-text-muted)", alignSelf: "center", marginLeft: "2px" }}>
-              veya yaz ↓
+              {t('create.orTypeBelow')}
             </span>
           </div>
         </div>
@@ -1791,7 +1860,7 @@ export default function XAIModule() {
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                   }}
-                  title="Tweet çek"
+                  title={t('create.fetchTweet')}
                 >
                   {fetching ? <Loader2 size={18} className="animate-spin" /> : <Link size={18} />}
                 </button>
@@ -1814,7 +1883,7 @@ export default function XAIModule() {
                   transition: "all 0.3s ease",
                   boxShadow: settings.isUltra ? "0 0 12px rgba(168,85,247,0.2)" : "none",
                 }}
-                title={settings.isUltra ? "Ultra mod aktif" : "Ultra moda geç"}
+                title={settings.isUltra ? t('create.ultraActive') : t('create.ultraSwitch')}
               >
                 <Zap size={18} style={{ fill: settings.isUltra ? "rgba(168,85,247,1)" : "none" }} />
               </button>
@@ -1835,7 +1904,7 @@ export default function XAIModule() {
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                 }}
-                title="Ayarlar"
+                title={t('common.settings')}
               >
                 <Settings2 size={18} />
               </button>
@@ -1903,7 +1972,7 @@ export default function XAIModule() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--m-text-faint)" }}>
                 <path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3" /><line x1="8" y1="12" x2="16" y2="12" />
               </svg>
-              <span style={{ fontSize: "12px", color: "var(--m-text-faint)", whiteSpace: "nowrap" }}>Platformunu seç</span>
+              <span style={{ fontSize: "12px", color: "var(--m-text-faint)", whiteSpace: "nowrap" }}>{t('create.selectPlatform')}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               {[
@@ -1918,7 +1987,7 @@ export default function XAIModule() {
                   key={p.id}
                   onClick={() => {
                     setActivePlatform(p.id);
-                    setActiveTab(PLATFORM_CONTENT_TYPES[p.id][0].id);
+                    setActiveTab(PLATFORM_CONTENT_TYPES_DATA[p.id][0].id);
                     setFetched(false);
                     setFetchPhase("link");
                     setTweetData(null);
@@ -1986,7 +2055,7 @@ export default function XAIModule() {
           transition: "all 0.6s ease 0.45s",
         }}
       >
-        {(PLATFORM_CONTENT_TYPES[activePlatform] || PLATFORM_CONTENT_TYPES.twitter).map((ct) => {
+        {(PLATFORM_CONTENT_TYPES_DATA[activePlatform] || PLATFORM_CONTENT_TYPES_DATA.twitter).map((ct) => {
           const Icon = ct.icon;
           const isActive = activeTab === ct.id;
           return (
@@ -2031,7 +2100,7 @@ export default function XAIModule() {
               }}
             >
               <Icon size={16} style={{ opacity: isActive ? 0.9 : 0.65 }} />
-              {ct.label}
+              {t(ct.labelKey)}
             </button>
           );
         })}
@@ -2082,7 +2151,7 @@ export default function XAIModule() {
           }}
         >
           {historyOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          Geçmiş
+          {t('common.history')}
           {history.length > 0 && (
             <span style={{ fontSize: "12px", color: "var(--m-text-muted)", fontWeight: "400" }}>
               ({history.length})
@@ -2094,12 +2163,12 @@ export default function XAIModule() {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {historyLoading && history.length === 0 && (
               <div style={{ textAlign: "center", padding: "20px", color: "var(--m-text-muted)", fontSize: "13px" }}>
-                Yükleniyor...
+                {t('common.loading')}
               </div>
             )}
             {!historyLoading && history.length === 0 && (
               <div style={{ textAlign: "center", padding: "20px", color: "var(--m-text-muted)", fontSize: "13px" }}>
-                Henüz üretim geçmişi yok
+                {t('create.noHistory')}
               </div>
             )}
             {history.map((gen) => {
@@ -2140,7 +2209,7 @@ export default function XAIModule() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
                         <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--m-text)" }}>
-                          {gen.topic || gen.type || "İçerik"}
+                          {gen.topic || gen.type || t('create.content')}
                         </span>
                         <span style={{
                           fontSize: "11px",
@@ -2149,7 +2218,7 @@ export default function XAIModule() {
                           background: "var(--m-border-light)",
                           color: "var(--m-text-muted)",
                         }}>
-                          {variants.length} varyant
+                          {variants.length} {t('common.variant').toLowerCase()}
                         </span>
                       </div>
                       <div style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>
@@ -2181,16 +2250,16 @@ export default function XAIModule() {
                           </p>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--m-border-light)", paddingTop: "8px" }}>
                             <span style={{ fontSize: "11px", color: "var(--m-text-muted)" }}>
-                              {variant.character_count || variant.content?.length || 0} karakter
-                              {variants.length > 1 && ` · Varyant ${idx + 1}`}
+                              {t('common.nCharacters', { count: variant.character_count || variant.content?.length || 0 })}
+                              {variants.length > 1 && ` · ${t('common.variant')} ${idx + 1}`}
                             </span>
                             <div style={{ display: "flex", gap: "4px" }}>
                               {[
-                                { icon: "📋", label: "Kopyala", action: () => { navigator.clipboard.writeText(variant.content); toast.success("Kopyalandı!"); } },
-                                { icon: "♡", label: "Favori", action: () => { api.post(`${API}/favorites/toggle`, { content: variant.content, type: gen.type || "tweet", generation_id: gen.id, variant_index: idx }).then(() => toast.success("Favori güncellendi")).catch(() => toast.error("Hata")); } },
-                                { icon: "📹", label: "Video Script", action: () => setRepurposeModal({ open: true, content: variant.content, mode: "video" }) },
-                                { icon: "🖼️", label: "Görsel Prompt", action: () => setRepurposeModal({ open: true, content: variant.content, mode: "image" }) },
-                                { icon: "🐦", label: "Tweetle", action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(variant.content)}`, "_blank") },
+                                { icon: "📋", label: t('common.copy'), action: () => { navigator.clipboard.writeText(variant.content); toast.success(t('common.copied')); } },
+                                { icon: "♡", label: t('common.favorites'), action: () => { api.post(`${API}/favorites/toggle`, { content: variant.content, type: gen.type || "tweet", generation_id: gen.id, variant_index: idx }).then(() => toast.success(t('create.favoriteUpdated'))).catch(() => toast.error(t('common.error'))); } },
+                                { icon: "📹", label: t('generation.videoScriptConvert'), action: () => setRepurposeModal({ open: true, content: variant.content, mode: "video" }) },
+                                { icon: "🖼️", label: t('generation.imagePromptCreate'), action: () => setRepurposeModal({ open: true, content: variant.content, mode: "image" }) },
+                                { icon: "🐦", label: t('common.tweetle'), action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(variant.content)}`, "_blank") },
                               ].map((btn) => (
                                 <button
                                   key={btn.label}
@@ -2265,7 +2334,7 @@ export default function XAIModule() {
                   color: "var(--m-text)",
                 }}
               >
-                {promoCards[activeCard].title}
+                {t(promoCards[activeCard].titleKey)}
               </div>
               <div
                 style={{
@@ -2274,7 +2343,7 @@ export default function XAIModule() {
                   lineHeight: "1.45",
                 }}
               >
-                {promoCards[activeCard].desc}
+                {t(promoCards[activeCard].descKey)}
               </div>
             </div>
             {/* Mini Preview */}

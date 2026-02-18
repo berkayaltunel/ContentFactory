@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ShieldX } from 'lucide-react';
@@ -6,6 +7,7 @@ import api, { API } from '@/lib/api';
 
 
 export function ProtectedRoute() {
+  const { t } = useTranslation();
   const { isAuthenticated, loading, signOut } = useAuth();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
@@ -51,16 +53,15 @@ export function ProtectedRoute() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4 p-6">
         <ShieldX className="h-16 w-16 text-red-500" />
-        <h1 className="text-2xl font-bold">Erişim Engellendi</h1>
+        <h1 className="text-2xl font-bold">{t('auth.accessDenied')}</h1>
         <p className="text-muted-foreground text-center max-w-md">
-          Bu hesap TypeHype'a erişim iznine sahip değil. 
-          Farklı bir hesapla giriş yapmayı deneyin veya yönetici ile iletişime geçin.
+          {t('auth.accessDeniedDesc')}
         </p>
         <button
           onClick={() => signOut()}
           className="mt-4 px-6 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
         >
-          Çıkış Yap
+          {t('auth.signOut')}
         </button>
       </div>
     );

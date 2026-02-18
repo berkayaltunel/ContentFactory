@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const TYPE_LABELS = {
-  tweet: "Tweet Üretimi",
-  quote: "Quote Tweet Üretimi",
-  reply: "Reply Üretimi",
-  article: "Makale Üretimi",
+const TYPE_LABEL_KEYS = {
+  tweet: "generation.queue.tweetGeneration",
+  quote: "generation.queue.quoteGeneration",
+  reply: "generation.queue.replyGeneration",
+  article: "generation.queue.articleGeneration",
 };
 
 function formatElapsed(seconds) {
@@ -17,6 +18,7 @@ function formatElapsed(seconds) {
 }
 
 function QueueItem({ job, onDismiss }) {
+  const { t } = useTranslation();
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ function QueueItem({ job, onDismiss }) {
     return () => clearInterval(id);
   }, [job.status, job.startedAt]);
 
-  const typeLabel = TYPE_LABELS[job.type] || "İçerik Üretimi";
+  const typeLabel = TYPE_LABEL_KEYS[job.type] ? t(TYPE_LABEL_KEYS[job.type]) : t("generation.queue.contentGeneration");
 
   return (
     <div
@@ -44,7 +46,7 @@ function QueueItem({ job, onDismiss }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-orange-400">Üretiliyor</p>
+        <p className="text-sm font-semibold text-orange-400">{t('generation.queue.generating')}</p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">
           {typeLabel} · {job.topic}
         </p>

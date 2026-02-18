@@ -1,4 +1,5 @@
 // AI Coach - Kişiselleştirilmiş içerik koçu
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -64,7 +65,7 @@ function StatBar({ label, data, colorMap }) {
   );
 }
 
-const SHORT_DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+// SHORT_DAYS moved inside components that need translation
 
 function getHeatmapColor(score) {
   if (score >= 0.85) return "bg-emerald-400";
@@ -75,6 +76,8 @@ function getHeatmapColor(score) {
 }
 
 function PostingHeatmap({ postingData, bestNow, postingLoading }) {
+  const { t } = useTranslation();
+  const SHORT_DAYS = t('coach.shortDays', { returnObjects: true });
   if (postingLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -97,15 +100,15 @@ function PostingHeatmap({ postingData, bestNow, postingLoading }) {
               <div>
                 <p className="font-medium text-sm flex items-center gap-2">
                   <Clock className="h-4 w-4 text-emerald-400" />
-                  Şimdi Paylaşsam?
+                  {t('coach.postNow')}
                 </p>
                 <p className="text-lg font-bold mt-1">{bestNow.verdict}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Skor: {Math.round((bestNow.current_score || 0) * 100)}%</p>
+                <p className="text-sm text-muted-foreground">{t('coach.score', { score: Math.round((bestNow.current_score || 0) * 100) })}</p>
                 {bestNow.next_best && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Sonraki en iyi: {bestNow.next_best.day} {bestNow.next_best.time} ({bestNow.next_best.hours_away}s sonra)
+                    {t('coach.nextBest', { day: bestNow.next_best.day, time: bestNow.next_best.time, hours: bestNow.next_best.hours_away })}
                   </p>
                 )}
               </div>
@@ -145,7 +148,7 @@ function PostingHeatmap({ postingData, bestNow, postingLoading }) {
       {/* Best 5 Slots */}
       {best_slots && best_slots.length > 0 && (
         <div>
-          <p className="text-sm font-medium mb-2">🏆 En İyi 5 Slot</p>
+          <p className="text-sm font-medium mb-2">{t('coach.top5Slots')}</p>
           <div className="flex flex-wrap gap-2">
             {best_slots.slice(0, 5).map((slot, i) => (
               <Badge key={i} variant="secondary" className="text-xs">
@@ -160,6 +163,7 @@ function PostingHeatmap({ postingData, bestNow, postingLoading }) {
 }
 
 export default function CoachPage() {
+  const { t } = useTranslation();
   const [insights, setInsights] = useState(null);
   const [weeklyPlan, setWeeklyPlan] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -180,7 +184,7 @@ export default function CoachPage() {
       const res = await api.get(`${API}/coach/insights`);
       setInsights(res.data);
     } catch (e) {
-      toast.error("Coach verileri yüklenemedi");
+      toast.error(t('coach.coachDataError'));
     } finally {
       setLoading(false);
     }
@@ -208,7 +212,7 @@ export default function CoachPage() {
       const res = await api.get(`${API}/coach/weekly-plan?niche=tech`);
       setWeeklyPlan(res.data);
     } catch (e) {
-      toast.error("Haftalık plan oluşturulamadı");
+      toast.error(t('coach.weeklyPlanError'));
     } finally {
       setPlanLoading(false);
     }
@@ -234,8 +238,8 @@ export default function CoachPage() {
             <Brain className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="font-outfit text-3xl font-bold tracking-tight">AI Coach</h1>
-            <p className="text-muted-foreground">Kişiselleştirilmiş içerik önerileri</p>
+            <h1 className="font-outfit text-3xl font-bold tracking-tight">{t('coach.title')}</h1>
+            <p className="text-muted-foreground">{t('coach.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -245,19 +249,19 @@ export default function CoachPage() {
         <Card className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 border-sky-500/20">
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-sky-400">{stats.total || 0}</p>
-            <p className="text-sm text-muted-foreground">Toplam Üretim</p>
+            <p className="text-sm text-muted-foreground">{t('coach.totalGeneration')}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-pink-500/10 to-red-500/10 border-pink-500/20">
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-pink-400">{stats.favorites || 0}</p>
-            <p className="text-sm text-muted-foreground">Favori</p>
+            <p className="text-sm text-muted-foreground">{t('coach.favorite')}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
           <CardContent className="p-4 text-center">
             <p className="text-3xl font-bold text-green-400">{stats.favorite_ratio || 0}%</p>
-            <p className="text-sm text-muted-foreground">Favori Oranı</p>
+            <p className="text-sm text-muted-foreground">{t('coach.favoriteRatio')}</p>
           </CardContent>
         </Card>
       </div>
@@ -266,22 +270,22 @@ export default function CoachPage() {
       <div className="grid grid-cols-2 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
-            <StatBar label="Persona Dağılımı" data={stats.personas} />
+            <StatBar label={t('coach.personaDistribution')} data={stats.personas} />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <StatBar label="Ton Dağılımı" data={stats.tones} />
+            <StatBar label={t('coach.toneDistribution')} data={stats.tones} />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <StatBar label="Uzunluk Dağılımı" data={stats.lengths} />
+            <StatBar label={t('coach.lengthDistribution')} data={stats.lengths} />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <StatBar label="İçerik Türü" data={stats.types} />
+            <StatBar label={t('coach.contentType')} data={stats.types} />
           </CardContent>
         </Card>
       </div>
@@ -291,7 +295,7 @@ export default function CoachPage() {
         <div className="mb-8">
           <h2 className="font-outfit text-xl font-bold mb-4 flex items-center gap-2">
             <Zap className="h-5 w-5 text-yellow-400" />
-            AI Önerileri
+            {t('coach.aiSuggestions')}
           </h2>
           <div className="space-y-3">
             {insightsList.map((insight, i) => {
@@ -332,7 +336,7 @@ export default function CoachPage() {
             <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">{insights.message}</p>
             <Button className="mt-4" onClick={() => navigate("/dashboard/create?platform=twitter")}>
-              İçerik Üretmeye Başla
+              {t('coach.startGenerating')}
             </Button>
           </CardContent>
         </Card>
@@ -343,11 +347,11 @@ export default function CoachPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-outfit text-xl font-bold flex items-center gap-2">
             <Calendar className="h-5 w-5 text-cyan-400" />
-            Haftalık İçerik Planı
+            {t('coach.weeklyPlan')}
           </h2>
           <Button variant="outline" size="sm" onClick={fetchWeeklyPlan} disabled={planLoading}>
             {planLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-            {weeklyPlan ? "Yeniden Oluştur" : "Plan Oluştur"}
+            {weeklyPlan ? t('coach.recreatePlan') : t('coach.createPlan')}
           </Button>
         </div>
 
@@ -355,7 +359,7 @@ export default function CoachPage() {
           <div className="space-y-2">
             {weeklyPlan.weekly_goal && (
               <p className="text-sm text-muted-foreground mb-3">
-                Hedef: {weeklyPlan.weekly_goal}
+                {t('coach.weeklyGoal', { goal: weeklyPlan.weekly_goal })}
               </p>
             )}
             {(weeklyPlan.plan || []).map((day, i) => (
@@ -379,7 +383,7 @@ export default function CoachPage() {
                     onClick={() => navigate(`/dashboard/create?platform=twitter?topic=${encodeURIComponent(day.topic_suggestion)}${day.persona ? `&persona=${encodeURIComponent(day.persona)}` : ""}${day.tone ? `&tone=${encodeURIComponent(day.tone)}` : ""}`)}
                     className="shrink-0"
                   >
-                    Yaz
+                    {t('coach.write')}
                   </Button>
                 </CardContent>
               </Card>
@@ -389,9 +393,9 @@ export default function CoachPage() {
           <Card className="border-dashed">
             <CardContent className="p-8 text-center">
               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Henüz haftalık plan oluşturulmadı</p>
+              <p className="text-muted-foreground">{t('coach.noPlan')}</p>
               <Button variant="outline" className="mt-4" onClick={fetchWeeklyPlan} disabled={planLoading}>
-                Plan Oluştur
+                {t('coach.createPlan')}
               </Button>
             </CardContent>
           </Card>
@@ -402,7 +406,7 @@ export default function CoachPage() {
       <div className="mb-8">
         <h2 className="font-outfit text-xl font-bold mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5 text-emerald-400" />
-          Optimal Paylaşım Saatleri
+          {t('coach.optimalPostingTimes')}
         </h2>
         <Card>
           <CardContent className="p-4">

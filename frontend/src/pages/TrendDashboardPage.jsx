@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
 import {
   TrendingUp, RefreshCw, ExternalLink, ChevronDown, ChevronUp,
@@ -39,23 +40,18 @@ function hoursAgo(dateString) {
   return (now - date) / (1000 * 60 * 60);
 }
 
-function scoreBadge(score) {
-  if (score >= 80) return { emoji: "🔥", label: "Sıcak", cls: "bg-gradient-to-r from-red-500 to-orange-500 text-white" };
-  if (score >= 60) return { emoji: "⚡", label: "Yükselen", cls: "bg-orange-500/20 text-orange-400 border border-orange-500/30" };
-  if (score >= 40) return { emoji: "📈", label: "İlginç", cls: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" };
-  return { emoji: "📊", label: "Normal", cls: "bg-secondary text-muted-foreground" };
+function scoreBadge(score, t) {
+  if (score >= 80) return { emoji: "🔥", label: t ? t('trends.hot') : "Sıcak", cls: "bg-gradient-to-r from-red-500 to-orange-500 text-white" };
+  if (score >= 60) return { emoji: "⚡", label: t ? t('trends.rising') : "Yükselen", cls: "bg-orange-500/20 text-orange-400 border border-orange-500/30" };
+  if (score >= 40) return { emoji: "📈", label: t ? t('trends.interesting') : "İlginç", cls: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" };
+  return { emoji: "📊", label: t ? t('trends.normal') : "Normal", cls: "bg-secondary text-muted-foreground" };
 }
 
 const SOURCE_ICONS = { rss: Rss, twitter: Twitter, ai: Zap };
 
 /* ── constants ── */
 
-const CATEGORIES = ["Tümü", "AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"];
-const TIME_FILTERS = [
-  { label: "Son 24 Saat", value: "24h" },
-  { label: "Son 1 Hafta", value: "7d" },
-  { label: "Tümü", value: "all" },
-];
+// Categories and time filters moved inside components to use t()
 
 const categoryColors = {
   AI: "bg-purple-500/20 text-purple-400 border-purple-500/30",
@@ -79,6 +75,7 @@ const PLATFORMS = [
 /* ── ScoreBar ── */
 
 function ScoreBar({ score }) {
+  const { t } = useTranslation();
   const getColor = (s) => {
     if (s >= 80) return "from-red-500 to-orange-400";
     if (s >= 60) return "from-orange-500 to-yellow-400";
@@ -88,7 +85,7 @@ function ScoreBar({ score }) {
   return (
     <div className="w-full">
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-muted-foreground">Trend Skoru</span>
+        <span className="text-muted-foreground">{t('trends.trendScore')}</span>
         <span className="font-bold">{score}/100</span>
       </div>
       <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -105,8 +102,9 @@ function ScoreBar({ score }) {
 /* ── TrendCard ── */
 
 function TrendCard({ trend, onGenerate }) {
+  const { t } = useTranslation();
   const catColor = categoryColors[trend.category] || "bg-gray-500/20 text-gray-400";
-  const badge = scoreBadge(trend.score || 0);
+  const badge = scoreBadge(trend.score || 0, t);
 
   return (
     <div className="rounded-xl border border-border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col"
@@ -135,8 +133,8 @@ function TrendCard({ trend, onGenerate }) {
           {trend.published_at && (
             <>
               <span className="flex-shrink-0">• {timeAgo(trend.published_at)}</span>
-              {hoursAgo(trend.published_at) <= 6 && <span className="flex-shrink-0 text-green-400 font-medium">🟢 Taze</span>}
-              {hoursAgo(trend.published_at) > 48 && <span className="flex-shrink-0 text-amber-400 font-medium">⚠️ Eski</span>}
+              {hoursAgo(trend.published_at) <= 6 && <span className="flex-shrink-0 text-green-400 font-medium">{t('trends.fresh')}</span>}
+              {hoursAgo(trend.published_at) > 48 && <span className="flex-shrink-0 text-amber-400 font-medium">{t('trends.old')}</span>}
             </>
           )}
         </div>
@@ -160,7 +158,7 @@ function TrendCard({ trend, onGenerate }) {
         {trend.url && (
           <a href={trend.url} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mb-3 transition-colors">
-            Haberi Oku <ExternalLink className="h-3 w-3" /> →
+            {t('trends.readNews')} <ExternalLink className="h-3 w-3" /> →
           </a>
         )}
         <Button
@@ -169,7 +167,7 @@ function TrendCard({ trend, onGenerate }) {
           className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
         >
           <Zap className="h-4 w-4 mr-2" />
-          İçerik Üret
+          {t('trends.generateContent')}
         </Button>
       </div>
     </div>
@@ -180,6 +178,7 @@ function TrendCard({ trend, onGenerate }) {
 /* ── GeneratePanel (Sheet) ── */
 
 function GeneratePanel({ open, onOpenChange, trend }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [platform, setPlatform] = useState("twitter");
   const [additionalContext, setAdditionalContext] = useState("");
@@ -239,12 +238,12 @@ function GeneratePanel({ open, onOpenChange, trend }) {
       });
       const data = res.data;
       if (data.success === false) {
-        toast.error(data.error || "İçerik üretme başarısız");
+        toast.error(data.error || t('trends.generatePanel.generateError'));
       } else {
         setResult(data);
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || err.response?.data?.error || "İçerik üretme hatası");
+      toast.error(err.response?.data?.detail || err.response?.data?.error || t('trends.generatePanel.generateError'));
     } finally {
       setLoading(false);
     }
@@ -254,7 +253,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     const text = result?.content || result?.generated_content || "";
     if (!text) return;
     navigator.clipboard.writeText(text);
-    toast.success("Kopyalandı!");
+    toast.success(t('common.copied'));
   };
 
   const handleFavorite = async () => {
@@ -267,9 +266,9 @@ function GeneratePanel({ open, onOpenChange, trend }) {
         generation_id: result?.generation_id || result?.id || null,
       });
       setIsFavorited(res.data.action === "added");
-      toast.success(res.data.action === "added" ? "Favorilere eklendi!" : "Favorilerden kaldırıldı");
+      toast.success(res.data.action === "added" ? t('generation.favoriteAdded') : t('generation.favoriteRemoved'));
     } catch {
-      toast.error("Favori işlemi başarısız");
+      toast.error(t('generation.favoriteError'));
     }
   };
 
@@ -283,7 +282,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-orange-500" />
-            İçerik Üret
+            {t('trends.generateContent')}
           </SheetTitle>
         </SheetHeader>
 
@@ -297,7 +296,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
             {/* Platform selector */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Platform</label>
+              <label className="text-sm font-medium">{t('trends.generatePanel.platform')}</label>
               <div className="flex flex-wrap gap-2">
                 {PLATFORMS.map((p) => (
                   <button
@@ -318,11 +317,11 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
             {/* Additional context */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Ek Bağlam <span className="text-muted-foreground font-normal">(opsiyonel)</span></label>
+              <label className="text-sm font-medium">{t('trends.generatePanel.additionalContext')} <span className="text-muted-foreground font-normal">{t('trends.generatePanel.additionalContextOptional')}</span></label>
               <textarea
                 value={additionalContext}
                 onChange={(e) => setAdditionalContext(e.target.value)}
-                placeholder="Bu konuda eklemek istediğin bir şey var mı?"
+                placeholder={t('trends.generatePanel.additionalContextPlaceholder')}
                 rows={3}
                 className="w-full rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500/50 resize-none"
               />
@@ -336,7 +335,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
                 className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                {loading ? "Üretiliyor..." : "Hızlı Üret"}
+                {loading ? t('trends.generatePanel.generating') : t('trends.generatePanel.quickGenerate')}
               </Button>
               <Button
                 onClick={handleGoToModule}
@@ -345,7 +344,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
                 title="Modülde karakter, ton, uzunluk, stil profili seçerek detaylı üret"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Sayfada Yaz →
+                {t('trends.generatePanel.goToModule')}
               </Button>
             </div>
 
@@ -366,13 +365,13 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
                 {result?.character_count && (
                   <Badge variant="secondary" className="text-xs">
-                    {result.character_count} karakter
+                    {t('common.nCharacters', { count: result.character_count })}
                   </Badge>
                 )}
 
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <Button variant="ghost" size="sm" onClick={handleCopy} className="gap-1.5">
-                    <Copy className="h-4 w-4" /> Kopyala
+                    <Copy className="h-4 w-4" /> {t('common.copy')}
                   </Button>
                   <Button
                     variant="ghost" size="sm"
@@ -382,7 +381,7 @@ function GeneratePanel({ open, onOpenChange, trend }) {
                     <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} />
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleGenerate} className="gap-1.5">
-                    <RotateCcw className="h-4 w-4" /> Yeniden
+                    <RotateCcw className="h-4 w-4" /> {t('trends.generatePanel.regenerate')}
                   </Button>
                 </div>
               </div>
@@ -397,16 +396,26 @@ function GeneratePanel({ open, onOpenChange, trend }) {
 
 /* ── Main Page ── */
 
-const SORT_OPTIONS = [
-  { value: "score", label: "Puana Göre" },
-  { value: "date", label: "Tarihe Göre" },
-];
-
 export default function TrendDashboardPage() {
+  const { t } = useTranslation();
+
+  const CATEGORY_LABELS = t('trends.categories', { returnObjects: true }) || [];
+  const CATEGORY_VALUES = ["all", "AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"];
+  const CATEGORIES = CATEGORY_VALUES.map((v, i) => ({ value: v, label: CATEGORY_LABELS[i] || v }));
+  const TIME_FILTERS = [
+    { label: t('trends.timeFilters.24h'), value: "24h" },
+    { label: t('trends.timeFilters.7d'), value: "7d" },
+    { label: t('trends.timeFilters.all'), value: "all" },
+  ];
+  const SORT_OPTIONS = [
+    { value: "score", label: t('trends.sortOptions.score') },
+    { value: "date", label: t('trends.sortOptions.date') },
+  ];
+
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("Tümü");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTime, setSelectedTime] = useState("all");
   const [selectedSort, setSelectedSort] = useState("score");
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -419,7 +428,7 @@ export default function TrendDashboardPage() {
   const fetchTrends = async (category, since, sort) => {
     try {
       const params = { limit: 30 };
-      if (category && category !== "Tümü") params.category = category;
+      if (category && category !== "all") params.category = category;
       if (since && since !== "all") params.since = since;
       if (sort) params.sort = sort;
       if (activeTab === "arsiv") params.archived = true;
@@ -445,13 +454,13 @@ export default function TrendDashboardPage() {
     try {
       const res = await api.post(`${API}/trends/refresh`);
       if (res.data.success) {
-        toast.success(`🔥 ${res.data.trends_analyzed || 0} trend analiz edildi!`);
+        toast.success(t('trends.refreshSuccess', { count: res.data.trends_analyzed || 0 }));
         await fetchTrends(selectedCategory, selectedTime, selectedSort);
       } else {
-        toast.error(res.data.error || "Yenileme başarısız");
+        toast.error(res.data.error || t('trends.refreshError'));
       }
     } catch {
-      toast.error("Trend yenileme hatası");
+      toast.error(t('trends.refreshError'));
     } finally {
       setRefreshing(false);
     }
@@ -472,10 +481,10 @@ export default function TrendDashboardPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-              🔥 Trend Keşfet
+              {t('trends.title')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              AI ve teknoloji dünyasından güncel trendler
+              {t('trends.subtitle')}
             </p>
           </div>
         </div>
@@ -485,17 +494,17 @@ export default function TrendDashboardPage() {
           className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
         >
           <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
-          {refreshing ? "Taranıyor..." : "🔄 Yenile"}
+          {refreshing ? t('trends.scanning') : t('trends.refresh')}
         </Button>
       </div>
 
       {/* Tabs: Gündem / Arşiv */}
       <div className="flex gap-2 mb-4">
         <button onClick={() => setActiveTab("gundem")} className={cn("px-4 py-2 rounded-full text-sm font-medium transition-all", activeTab === "gundem" ? "bg-orange-500 text-white" : "bg-white/5 text-gray-400 hover:text-white")}>
-          🔥 Gündem
+          {t('trends.tabs.agenda')}
         </button>
         <button onClick={() => setActiveTab("arsiv")} className={cn("px-4 py-2 rounded-full text-sm font-medium transition-all", activeTab === "arsiv" ? "bg-violet-500 text-white" : "bg-white/5 text-gray-400 hover:text-white")}>
-          📚 Arşiv
+          {t('trends.tabs.archive')}
         </button>
       </div>
 
@@ -503,16 +512,16 @@ export default function TrendDashboardPage() {
       <div className="flex flex-wrap items-center gap-2 mb-6">
         {CATEGORIES.map((cat) => (
           <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
+            key={cat.value}
+            onClick={() => setSelectedCategory(cat.value)}
             className={cn(
               "px-4 py-2 rounded-full text-sm font-medium transition-all border",
-              selectedCategory === cat
+              selectedCategory === cat.value
                 ? "bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent"
                 : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-orange-500/30"
             )}
           >
-            {cat}
+            {cat.label}
           </button>
         ))}
 
@@ -556,19 +565,19 @@ export default function TrendDashboardPage() {
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <RefreshCw className="h-8 w-8 animate-spin text-orange-500 mx-auto mb-3" />
-            <p className="text-muted-foreground">Trendler yükleniyor...</p>
+            <p className="text-muted-foreground">{t('trends.loading')}</p>
           </div>
         </div>
       ) : trends.length === 0 ? (
         <div className="text-center py-20">
           <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Henüz trend yok</h3>
+          <h3 className="text-lg font-medium mb-2">{t('trends.noTrends')}</h3>
           <p className="text-muted-foreground mb-4">
-            "Yenile" butonuna tıklayarak RSS ve Twitter'dan trend keşfedebilirsiniz.
+            {t('trends.noTrendsDesc')}
           </p>
           <Button onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={cn("h-4 w-4 mr-2", refreshing && "animate-spin")} />
-            İlk Taramayı Başlat
+            {t('trends.startFirstScan')}
           </Button>
         </div>
       ) : (
@@ -582,15 +591,15 @@ export default function TrendDashboardPage() {
                 {verifiedTrends.length > 0 && (
                   <div className="mb-8">
                     <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                      🔥 Doğrulanmış Gündem
-                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">çoklu kaynak</span>
+                      {t('trends.verified.title')}
+                      <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">{t('trends.verified.multiSource')}</span>
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {verifiedTrends.map(trend => (
                         <div key={trend.id} className="relative border-l-4 border-red-500 bg-gradient-to-r from-red-950/30 to-transparent rounded-xl p-5 cursor-pointer hover:from-red-950/50 transition-all" onClick={() => handleGenerate(trend)}>
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">
-                              🔴 {(trend.source_count || (trend.sample_sources?.length || 0) + 1)} kaynaktan doğrulandı
+                              {t('trends.verified.verifiedFrom', { count: (trend.source_count || (trend.sample_sources?.length || 0) + 1) })}
                             </span>
                             <span className="text-xs bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
                               {trend.score}/100
@@ -608,7 +617,7 @@ export default function TrendDashboardPage() {
                           <div className="flex gap-2">
                             {trend.url && (
                               <a href={trend.url} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-400 hover:text-orange-300" onClick={e => e.stopPropagation()}>
-                                Haberi Oku ↗
+                                {t('trends.readNews')} ↗
                               </a>
                             )}
                           </div>
@@ -649,7 +658,7 @@ export default function TrendDashboardPage() {
           {/* Auto-refresh indicator */}
           {lastUpdated && (
             <div className="text-center mt-8 text-xs text-muted-foreground">
-              Son güncelleme: {timeAgo(lastUpdated)} • Otomatik güncelleme: günde 3x
+              {t('trends.lastUpdate', { time: timeAgo(lastUpdated) })}
             </div>
           )}
         </>

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from "react-router-dom";
 import {
   Heart, Copy, ArrowRight, Twitter, FileText, PenLine,
@@ -21,11 +22,11 @@ import ContentCalendar from "@/components/dashboard/ContentCalendar";
    HELPERS
    ═══════════════════════════════════════════════════ */
 
-const typeConfig = {
-  tweet:   { label: "Tweet",  color: "bg-sky-500/15 text-sky-500",     icon: Twitter },
-  quote:   { label: "Alıntı", color: "bg-purple-500/15 text-purple-500", icon: Quote },
-  reply:   { label: "Yanıt",  color: "bg-emerald-500/15 text-emerald-500", icon: MessageSquare },
-  article: { label: "Makale", color: "bg-orange-500/15 text-orange-500", icon: FileText },
+const typeConfigBase = {
+  tweet:   { labelKey: "create.contentTypes.tweet",  color: "bg-sky-500/15 text-sky-500",     icon: Twitter },
+  quote:   { labelKey: "create.contentTypes.quote", color: "bg-purple-500/15 text-purple-500", icon: Quote },
+  reply:   { labelKey: "create.contentTypes.reply",  color: "bg-emerald-500/15 text-emerald-500", icon: MessageSquare },
+  article: { labelKey: "create.contentTypes.article", color: "bg-orange-500/15 text-orange-500", icon: FileText },
 };
 
 function getGreetingEmoji() {
@@ -36,32 +37,16 @@ function getGreetingEmoji() {
   return "🌆";
 }
 
-function getGreeting() {
+function getGreetingKey() {
   const h = new Date().getHours();
-  if (h < 6) return "İyi geceler";
-  if (h < 12) return "Günaydın";
-  if (h < 18) return "İyi günler";
-  return "İyi akşamlar";
+  if (h < 6) return "dashboard.greeting.night";
+  if (h < 12) return "dashboard.greeting.morning";
+  if (h < 18) return "dashboard.greeting.afternoon";
+  return "dashboard.greeting.evening";
 }
 
-const dailyPrompts = [
-  "Bugün takipçilerinle kişisel bir hikaye paylaşmaya ne dersin?",
-  "Sektörünüzdeki en büyük yanılgıyı çürütün",
-  "Bir yıl önce bilmeyi istediğiniz 3 şeyi paylaşın",
-  "Bugünkü trend konulara bakıp viral bir bakış açısı yakalayın",
-  "En son okuduğunuz kitaptan bir ders paylaşın",
-  "Kariyerinizde aldığınız en iyi tavsiyeyi tweetleyin",
-  "Takipçilerinize cesaret verici bir mesaj yazın",
-  "Sektörünüzde herkesin bilmesi gereken 5 araç paylaşın",
-  "Başarısızlıklarınızdan öğrendiğiniz en değerli dersi anlatın",
-  "Bu hafta sizi heyecanlandıran bir gelişmeyi paylaşın",
-  "Unpopular opinion: Sektörünüzde farklı düşündüğünüz bir konu",
-  "Takipçilerinize bir soru sorun — etkileşim patlaması yaratın",
-];
-
-function getDailyPrompt() {
-  const dayIndex = Math.floor(Date.now() / 86400000) % dailyPrompts.length;
-  return dailyPrompts[dayIndex];
+function getDailyPromptIndex() {
+  return Math.floor(Date.now() / 86400000) % 12;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -101,9 +86,8 @@ function AnimatedCounter({ value, duration = 900 }) {
    WEEKLY BARS
    ═══════════════════════════════════════════════════ */
 
-function WeeklyBars({ data = [] }) {
+function WeeklyBars({ data = [], days }) {
   const max = Math.max(...data, 1);
-  const days = ["P", "S", "Ç", "P", "C", "C", "P"];
 
   return (
     <div className="flex items-end gap-1.5 h-14">
@@ -142,7 +126,7 @@ function WeeklyBars({ data = [] }) {
    TOOL CARD (big, prominent)
    ═══════════════════════════════════════════════════ */
 
-function ToolCardBig({ icon: Icon, label, desc, path, gradient, accentColor, delay }) {
+function ToolCardBig({ icon: Icon, label, desc, path, gradient, accentColor, delay, exploreLabel }) {
   const navigate = useNavigate();
   return (
     <button
@@ -167,7 +151,7 @@ function ToolCardBig({ icon: Icon, label, desc, path, gradient, accentColor, del
         <p className="text-[11px] md:text-[12px] text-muted-foreground leading-relaxed line-clamp-2">{desc}</p>
       </div>
       <div className="flex items-center gap-1 mt-2 md:mt-3 text-[10px] md:text-[11px] font-medium text-muted-foreground/50 group-hover:text-purple-500/70 transition-colors">
-        <span>Keşfet</span>
+        <span>{exploreLabel}</span>
         <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
       </div>
     </button>
@@ -202,6 +186,7 @@ function PlatformCard({ icon: Icon, label, path, gradient, delay }) {
    ═══════════════════════════════════════════════════ */
 
 export default function DashboardHome() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ generations: 0, tweets: 0, favorites: 0 });
@@ -247,7 +232,7 @@ export default function DashboardHome() {
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    toast.success("Kopyalandı!");
+    toast.success(t('common.copied'));
   };
 
   const handleTopicSubmit = () => {
@@ -256,8 +241,18 @@ export default function DashboardHome() {
     }
   };
 
-  const firstName = user?.name?.split(" ")[0] || "Kullanıcı";
-  const dailyPrompt = getDailyPrompt();
+  const firstName = user?.name?.split(" ")[0] || "User";
+  const dailyPrompts = t('dashboard.dailyPrompts', { returnObjects: true });
+  const dailyPrompt = dailyPrompts[getDailyPromptIndex()];
+  const weekDays = t('dashboard.weekDays', { returnObjects: true });
+
+  const typeConfig = useMemo(() => {
+    const result = {};
+    for (const [key, val] of Object.entries(typeConfigBase)) {
+      result[key] = { ...val, label: t(val.labelKey) };
+    }
+    return result;
+  }, [t]);
   const streak = weeklyData.reduceRight((acc, v) => (v > 0 && acc.active ? { count: acc.count + 1, active: true } : { ...acc, active: false }), { count: 0, active: true }).count;
   const weekTotal = weeklyData.reduce((a, b) => a + b, 0);
   const activeProfile = styleProfiles[0];
@@ -269,10 +264,10 @@ export default function DashboardHome() {
 
   /* Tool definitions */
   const tools = [
-    { icon: Dna,         label: "Style Lab",      desc: "Yazım stilini analiz et, DNA'nı keşfet",   path: "/dashboard/style-lab",        gradient: "from-purple-500 to-indigo-600" },
-    { icon: TrendingUp,  label: "Trendler",       desc: "Güncel trendleri yakala, viral ol",         path: "/dashboard/trends",           gradient: "from-emerald-500 to-teal-600" },
-    { icon: BarChart3,   label: "Hesap Analizi",  desc: "X hesabını derinlemesine analiz et",        path: "/dashboard/account-analysis", gradient: "from-sky-500 to-blue-600" },
-    { icon: Brain,       label: "AI Coach",       desc: "Kişisel AI koçunla strateji belirle",       path: "/dashboard/coach",            gradient: "from-amber-500 to-orange-600" },
+    { icon: Dna,         label: t('dashboard.tools.styleLab'),      desc: t('dashboard.tools.styleLabDesc'),   path: "/dashboard/style-lab",        gradient: "from-purple-500 to-indigo-600" },
+    { icon: TrendingUp,  label: t('dashboard.tools.trends'),       desc: t('dashboard.tools.trendsDesc'),         path: "/dashboard/trends",           gradient: "from-emerald-500 to-teal-600" },
+    { icon: BarChart3,   label: t('dashboard.tools.accountAnalysis'),  desc: t('dashboard.tools.accountAnalysisDesc'),        path: "/dashboard/account-analysis", gradient: "from-sky-500 to-blue-600" },
+    { icon: Brain,       label: t('dashboard.tools.aiCoach'),       desc: t('dashboard.tools.aiCoachDesc'),       path: "/dashboard/coach",            gradient: "from-amber-500 to-orange-600" },
   ];
 
   const platforms = [
@@ -304,11 +299,11 @@ export default function DashboardHome() {
             <div className="flex items-center gap-2 mb-1">
               <span className="text-2xl">{getGreetingEmoji()}</span>
               <h1 className="font-outfit text-xl md:text-3xl font-bold tracking-tight">
-                {getGreeting()}, {firstName}
+                {t(getGreetingKey())}, {firstName}
               </h1>
             </div>
             <p className="text-muted-foreground text-sm mb-5">
-              Bugün ne üretmek istersin?
+              {t('dashboard.whatToCreate')}
             </p>
 
             <div className="flex gap-2.5">
@@ -319,7 +314,7 @@ export default function DashboardHome() {
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleTopicSubmit()}
-                  placeholder="Konu yaz, AI üretsin..."
+                  placeholder={t('dashboard.topicPlaceholder')}
                   className="w-full h-11 pl-10 pr-4 rounded-xl bg-background/80 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all placeholder:text-muted-foreground/50"
                 />
               </div>
@@ -327,7 +322,7 @@ export default function DashboardHome() {
                 onClick={handleTopicSubmit}
                 className="h-11 px-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium shimmer-btn"
               >
-                <PenLine className="h-4 w-4 mr-1.5" /> Üret
+                <PenLine className="h-4 w-4 mr-1.5" /> {t('dashboard.generate')}
               </Button>
             </div>
           </div>
@@ -344,12 +339,12 @@ export default function DashboardHome() {
               <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-purple-500/15 to-indigo-500/15 flex items-center justify-center">
                 <Zap className="h-4 w-4 md:h-5 md:w-5 text-purple-500" />
               </div>
-              <Badge className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-500 border-0 rounded-lg">Bu ay</Badge>
+              <Badge className="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-500 border-0 rounded-lg">{t('common.thisMonth')}</Badge>
             </div>
             <p className="font-outfit text-2xl md:text-3xl font-bold tracking-tight mb-0.5">
               <AnimatedCounter value={stats.generations || 0} />
             </p>
-            <p className="text-[11px] md:text-xs text-muted-foreground">Toplam Üretim</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground">{t('common.totalGeneration')}</p>
           </div>
         </div>
 
@@ -364,12 +359,12 @@ export default function DashboardHome() {
               <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-rose-500/15 to-pink-500/15 flex items-center justify-center">
                 <Heart className="h-4 w-4 md:h-5 md:w-5 text-rose-500" />
               </div>
-              <Badge className="text-[9px] md:text-[10px] bg-rose-500/10 text-rose-500 border-0 rounded-lg">Koleksiyon</Badge>
+              <Badge className="text-[9px] md:text-[10px] bg-rose-500/10 text-rose-500 border-0 rounded-lg">{t('common.collection')}</Badge>
             </div>
             <p className="font-outfit text-2xl md:text-3xl font-bold tracking-tight mb-0.5">
               <AnimatedCounter value={stats.favorites || 0} />
             </p>
-            <p className="text-[11px] md:text-xs text-muted-foreground">Favori İçerik</p>
+            <p className="text-[11px] md:text-xs text-muted-foreground">{t('common.favoriteContent')}</p>
           </div>
         </div>
 
@@ -391,23 +386,23 @@ export default function DashboardHome() {
                   <Compass className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold">Araçlar & Platformlar</h2>
-                  <p className="text-[12px] text-muted-foreground">Tüm güçlü araçların tek bakışta</p>
+                  <h2 className="text-base font-bold">{t('dashboard.toolsAndPlatforms')}</h2>
+                  <p className="text-[12px] text-muted-foreground">{t('dashboard.toolsSubtitle')}</p>
                 </div>
               </div>
             </div>
 
             {/* Tool cards - 4 column grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-              {tools.map((t, i) => (
-                <ToolCardBig key={t.label} {...t} delay={4 + i} />
+              {tools.map((tool, i) => (
+                <ToolCardBig key={tool.label} {...tool} exploreLabel={t('common.explore')} delay={4 + i} />
               ))}
             </div>
 
             {/* Divider */}
             <div className="flex items-center gap-3 mb-4">
               <div className="h-px flex-1 bg-border/40" />
-              <span className="text-[11px] text-muted-foreground/60 font-medium">İçerik Platformları</span>
+              <span className="text-[11px] text-muted-foreground/60 font-medium">{t('dashboard.contentPlatforms')}</span>
               <div className="h-px flex-1 bg-border/40" />
             </div>
 
@@ -446,7 +441,7 @@ export default function DashboardHome() {
                   "h-5 w-5",
                   streak > 0 ? "text-orange-500 animate-streak-fire" : "text-muted-foreground/40"
                 )} />
-                <span className="text-sm font-semibold">Streak</span>
+                <span className="text-sm font-semibold">{t('dashboard.streak')}</span>
               </div>
               <span className="font-outfit text-2xl font-bold">
                 {streak > 0 ? (
@@ -459,10 +454,10 @@ export default function DashboardHome() {
 
             <div className="mt-1 mb-1">
               <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
-                <span>Bu hafta</span>
-                <span className="font-medium">{weekTotal} üretim</span>
+                <span>{t('dashboard.thisWeek')}</span>
+                <span className="font-medium">{t('dashboard.nGenerations', { count: weekTotal })}</span>
               </div>
-              <WeeklyBars data={weeklyData} />
+              <WeeklyBars data={weeklyData} days={weekDays} />
             </div>
           </div>
         </div>
@@ -485,7 +480,7 @@ export default function DashboardHome() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{activeProfile.name || activeProfile.screen_name}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      {activeProfile.style_summary?.tweet_count || activeProfile.tweet_count || 0} tweet analiz edildi
+                      {activeProfile.style_summary?.tweet_count || activeProfile.tweet_count || 0} {t('dashboard.tweetAnalyzed')}
                     </p>
                   </div>
                 </div>
@@ -494,7 +489,7 @@ export default function DashboardHome() {
                   onClick={() => navigate(`/dashboard/create?platform=twitter&style=${activeProfile.id}`)}
                   className="w-full h-9 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-medium"
                 >
-                  Bu Stille Üret <ArrowRight className="h-3 w-3 ml-1" />
+                  {t('dashboard.generateWithStyle')} <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </>
             ) : (
@@ -502,7 +497,7 @@ export default function DashboardHome() {
                 <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-purple-500/15 to-indigo-500/15 flex items-center justify-center mb-2">
                   <Dna className="h-5 w-5 text-purple-500/50 animate-float" />
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">Henüz stil profili yok</p>
+                <p className="text-xs text-muted-foreground mb-3">{t('dashboard.noStyleProfile')}</p>
                 <Button
                   size="sm"
                   variant="outline"
@@ -523,9 +518,9 @@ export default function DashboardHome() {
         >
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold">Son Üretimler</span>
+              <span className="text-sm font-semibold">{t('dashboard.recentGenerations')}</span>
               <Link to="/dashboard/history" className="text-[10px] text-purple-500 hover:text-purple-400 flex items-center gap-0.5 transition-colors">
-                Tümü <ArrowRight className="h-3 w-3" />
+                {t('dashboard.viewAll')} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
 
@@ -557,7 +552,7 @@ export default function DashboardHome() {
             ) : (
               <div className="text-center py-4">
                 <PenLine className="h-6 w-6 text-muted-foreground/20 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground/60">Henüz üretim yok</p>
+                <p className="text-xs text-muted-foreground/60">{t('dashboard.noGenerationsYet')}</p>
               </div>
             )}
           </div>
@@ -574,7 +569,7 @@ export default function DashboardHome() {
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
                 <Lightbulb className="h-[18px] w-[18px] text-amber-500" />
               </div>
-              <span className="text-sm font-semibold">Bugünün İlhamı</span>
+              <span className="text-sm font-semibold">{t('dashboard.todaysInspiration')}</span>
             </div>
             <p className="text-xs text-foreground/70 leading-relaxed mb-4 line-clamp-3">
               {dailyPrompt}
@@ -584,7 +579,7 @@ export default function DashboardHome() {
               onClick={() => navigate(`/dashboard/create?platform=twitter?topic=${encodeURIComponent(dailyPrompt)}`)}
               className="w-full h-9 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-medium"
             >
-              <PenLine className="h-3.5 w-3.5 mr-1" /> Bu Konuda Üret
+              <PenLine className="h-3.5 w-3.5 mr-1" /> {t('dashboard.generateOnTopic')}
             </Button>
           </div>
         </div>

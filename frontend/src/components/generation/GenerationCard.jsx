@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ const PERSONA_COLORS = {
 };
 
 function VideoScriptDialog({ open, onOpenChange, content }) {
+  const { t } = useTranslation();
   const [duration, setDuration] = useState("30");
   const [platform, setPlatform] = useState("reels");
   const [loading, setLoading] = useState(false);
@@ -52,10 +54,10 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
       if (res.data.success) {
         setScript(res.data);
       } else {
-        toast.error(res.data.error || "Script oluşturulamadı");
+        toast.error(res.data.error || t('generation.videoScript.generateError'));
       }
     } catch (e) {
-      toast.error("Script oluşturma hatası");
+      toast.error(t('generation.videoScript.generateError'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,7 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
       .join("\n\n");
     const full = `${text}\n\nMüzik: ${script.music_mood}\nCaption: ${script.caption}\nHashtag: ${script.hashtags.join(" ")}`;
     navigator.clipboard.writeText(full);
-    toast.success("Script kopyalandı!");
+    toast.success(t('generation.videoScript.copied'));
   };
 
   return (
@@ -77,14 +79,14 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5 text-pink-400" />
-            Video Script'e Çevir
+            {t('generation.videoScript.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* Duration */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Süre</label>
+            <label className="text-sm font-medium">{t('generation.videoScript.duration')}</label>
             <div className="flex gap-2">
               {durations.map((d) => (
                 <button
@@ -105,7 +107,7 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
 
           {/* Platform */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Platform</label>
+            <label className="text-sm font-medium">{t('generation.videoScript.platform')}</label>
             <div className="flex gap-2">
               {platforms.map((p) => (
                 <button
@@ -130,7 +132,7 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
             className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Video className="h-4 w-4 mr-2" />}
-            {loading ? "Oluşturuluyor..." : "Script Oluştur"}
+            {loading ? t('generation.videoScript.generating') : t('generation.videoScript.generate')}
           </Button>
 
           {/* Result */}
@@ -147,8 +149,8 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
                   </div>
                   <div className="space-y-1 flex-1">
                     <p className="text-sm">{seg.spoken_text}</p>
-                    <p className="text-xs text-pink-400">Overlay: {seg.text_overlay}</p>
-                    <p className="text-xs text-muted-foreground">Görsel: {seg.visual_note}</p>
+                    <p className="text-xs text-pink-400">{t('generation.videoScript.overlay')}: {seg.text_overlay}</p>
+                    <p className="text-xs text-muted-foreground">{t('generation.videoScript.visual')}: {seg.visual_note}</p>
                   </div>
                 </div>
               ))}
@@ -173,7 +175,7 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
 
               <Button variant="outline" onClick={handleCopyScript} className="w-full gap-2">
                 <Copy className="h-4 w-4" />
-                Script'i Kopyala
+                {t('generation.videoScript.copyScript')}
               </Button>
             </div>
           )}
@@ -184,15 +186,16 @@ function VideoScriptDialog({ open, onOpenChange, content }) {
 }
 
 function ImagePromptDialog({ open, onOpenChange, content }) {
+  const { t } = useTranslation();
   const [style, setStyle] = useState("realistic");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
   const styles = [
-    { id: "realistic", label: "📷 Gerçekçi" },
-    { id: "illustration", label: "🎨 İllüstrasyon" },
-    { id: "3d", label: "🧊 3D" },
-    { id: "abstract", label: "✨ Soyut" },
+    { id: "realistic", labelKey: "generation.imagePrompt.realistic" },
+    { id: "illustration", labelKey: "generation.imagePrompt.illustration" },
+    { id: "3d", labelKey: "generation.imagePrompt.threeD" },
+    { id: "abstract", labelKey: "generation.imagePrompt.abstract" },
   ];
 
   const handleGenerate = async () => {
@@ -206,10 +209,10 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
       if (res.data.success) {
         setResult(res.data);
       } else {
-        toast.error(res.data.error || "Prompt oluşturulamadı");
+        toast.error(res.data.error || t('generation.imagePrompt.generateError'));
       }
     } catch (e) {
-      toast.error("Prompt oluşturma hatası");
+      toast.error(t('generation.imagePrompt.generateError'));
     } finally {
       setLoading(false);
     }
@@ -217,7 +220,7 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    toast.success("Prompt kopyalandı!");
+    toast.success(t('generation.imagePrompt.copied'));
   };
 
   return (
@@ -226,13 +229,13 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5 text-emerald-400" />
-            Görsel Promptu Oluştur
+            {t('generation.imagePrompt.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Stil</label>
+            <label className="text-sm font-medium">{t('generation.imagePrompt.style')}</label>
             <div className="flex gap-2 flex-wrap">
               {styles.map((s) => (
                 <button
@@ -245,7 +248,7 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
                       : "bg-secondary text-muted-foreground border-transparent hover:bg-secondary/80"
                   )}
                 >
-                  {s.label}
+                  {t(s.labelKey)}
                 </button>
               ))}
             </div>
@@ -257,19 +260,19 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
             className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ImageIcon className="h-4 w-4 mr-2" />}
-            {loading ? "Oluşturuluyor..." : "Prompt Oluştur"}
+            {loading ? t('generation.imagePrompt.generating') : t('generation.imagePrompt.generate')}
           </Button>
 
           {result && (
             <div className="space-y-3 pt-2 border-t border-border">
               <div className="rounded-lg bg-secondary/30 border border-border/50 p-3 space-y-2">
-                <label className="text-xs font-medium text-emerald-400">Prompt</label>
+                <label className="text-xs font-medium text-emerald-400">{t('generation.imagePrompt.prompt')}</label>
                 <p className="text-sm">{result.prompt}</p>
               </div>
 
               {result.nano_banana_json?.negative_prompt && (
                 <div className="rounded-lg bg-secondary/30 border border-border/50 p-3 space-y-2">
-                  <label className="text-xs font-medium text-red-400">Negative Prompt</label>
+                  <label className="text-xs font-medium text-red-400">{t('generation.imagePrompt.negativePrompt')}</label>
                   <p className="text-sm text-muted-foreground">{result.nano_banana_json.negative_prompt}</p>
                 </div>
               )}
@@ -286,7 +289,7 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => handleCopy(result.prompt)} className="flex-1 gap-2">
                   <Copy className="h-4 w-4" />
-                  Prompt Kopyala
+                  {t('generation.imagePrompt.copyPrompt')}
                 </Button>
                 {result.nano_banana_json && (
                   <Button
@@ -295,7 +298,7 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
                     className="flex-1 gap-2"
                   >
                     <Copy className="h-4 w-4" />
-                    JSON Kopyala
+                    {t('generation.imagePrompt.copyJson')}
                   </Button>
                 )}
               </div>
@@ -309,17 +312,18 @@ function ImagePromptDialog({ open, onOpenChange, content }) {
 
 // Style Score Mini Card
 function StyleScoreCard({ scores, isBest }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   if (!scores) return null;
 
   const scoreMap = {
-    constraint: "Stil Uyumu",
-    length: "Uzunluk",
-    punctuation: "Noktalama",
-    vocabulary: "Kelime Benzerliği",
-    algorithm: "Algoritma",
-    hook: "Hook Gücü",
-    reply_potential: "Etkileşim",
+    constraint: t('generation.scores.styleMatch'),
+    length: t('generation.scores.length'),
+    punctuation: t('generation.scores.punctuation'),
+    vocabulary: t('generation.scores.vocabulary'),
+    algorithm: t('generation.scores.algorithm'),
+    hook: t('generation.scores.hook'),
+    reply_potential: t('generation.scores.engagement'),
   };
 
   const overallScore = scores.constraint != null ? Math.round(scores.constraint * 100) : null;
@@ -332,12 +336,12 @@ function StyleScoreCard({ scores, isBest }) {
         className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         {overallScore != null && (
-          <span className="text-xs font-medium">🎯 Stile %{overallScore} uyumlu</span>
+          <span className="text-xs font-medium">{t('generation.styleMatch', { score: overallScore })}</span>
         )}
         {isBest && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-medium">⭐ En İyi</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-medium">{t('generation.best')}</span>
         )}
-        <span className="text-[10px] opacity-60">{expanded ? "▲" : "▼"} Skor detayları</span>
+        <span className="text-[10px] opacity-60">{expanded ? "▲" : "▼"} {t('generation.scoreDetails')}</span>
       </button>
       {expanded && (
         <div className="mt-2 p-3 rounded-lg bg-secondary/30 border border-border/50 space-y-1.5">
@@ -362,6 +366,7 @@ function StyleScoreCard({ scores, isBest }) {
 }
 
 export default function GenerationCard({ job }) {
+  const { t } = useTranslation();
   const [favorites, setFavorites] = useState(new Map());
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [videoContent, setVideoContent] = useState("");
@@ -379,13 +384,14 @@ export default function GenerationCard({ job }) {
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content);
-    toast.success("Kopyalandı!");
+    toast.success(t('generation.copySuccess'));
   };
 
   const handleTweet = (content) => {
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
     window.open(tweetUrl, "_blank");
-    toast.success("Twitter açılıyor...");
+    localStorage.setItem("typehype-onboard-tweet", "true");
+    toast.success(t('generation.twitterOpening'));
   };
 
   const handleFavorite = async (index, variant) => {
@@ -399,13 +405,13 @@ export default function GenerationCard({ job }) {
       });
       if (res.data.action === "added") {
         next.set(index, res.data.favorite_id);
-        toast.success("Favorilere eklendi!");
+        toast.success(t('generation.favoriteAdded'));
       } else {
         next.delete(index);
-        toast.success("Favorilerden kaldırıldı");
+        toast.success(t('generation.favoriteRemoved'));
       }
     } catch {
-      toast.error("Favori işlemi başarısız");
+      toast.error(t('generation.favoriteError'));
     }
     setFavorites(next);
   };
@@ -445,7 +451,7 @@ export default function GenerationCard({ job }) {
           {/* Status */}
           {isGenerating && (
             <span className="text-xs text-orange-400 whitespace-nowrap shrink-0">
-              {job.variantCount} tweet üretiliyor...
+              {t('generation.nTweetsGenerating', { count: job.variantCount })}
             </span>
           )}
         </div>
@@ -472,10 +478,10 @@ export default function GenerationCard({ job }) {
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">
-                      {variant.character_count} karakter
+                      {t('common.nCharacters', { count: variant.character_count })}
                     </Badge>
                     {job.variants.length > 1 && (
-                      <Badge variant="outline">Varyant {index + 1}</Badge>
+                      <Badge variant="outline">{t('common.variant')} {index + 1}</Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-0.5 sm:gap-1">
@@ -486,7 +492,7 @@ export default function GenerationCard({ job }) {
                       className="gap-1 min-h-[36px] min-w-[36px] sm:min-w-0"
                     >
                       <Copy className="h-4 w-4" />
-                      <span className="hidden sm:inline">Kopyala</span>
+                      <span className="hidden sm:inline">{t('common.copy')}</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -512,7 +518,7 @@ export default function GenerationCard({ job }) {
                         setVideoDialogOpen(true);
                       }}
                       className="gap-1.5 text-pink-400 hover:text-pink-300"
-                      title="Video Script'e Çevir"
+                      title={t('generation.videoScriptConvert')}
                     >
                       <Video className="h-4 w-4" />
                     </Button>
@@ -524,7 +530,7 @@ export default function GenerationCard({ job }) {
                         setImagePromptOpen(true);
                       }}
                       className="gap-1.5 text-emerald-400 hover:text-emerald-300"
-                      title="Görsel Promptu Oluştur"
+                      title={t('generation.imagePromptCreate')}
                     >
                       <ImageIcon className="h-4 w-4" />
                     </Button>
@@ -535,7 +541,7 @@ export default function GenerationCard({ job }) {
                       className="gap-1 bg-sky-500 hover:bg-sky-600 text-white min-h-[36px] min-w-[36px] sm:min-w-0"
                     >
                       <Send className="h-4 w-4" />
-                      <span className="hidden sm:inline">Tweetle</span>
+                      <span className="hidden sm:inline">{t('common.tweetle')}</span>
                     </Button>
                   </div>
                 </div>

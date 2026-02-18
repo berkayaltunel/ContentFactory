@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from 'react-i18next';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -104,24 +105,27 @@ const SectionHeading = ({ title, subtitle }) => (
 
 /* ── TABS CONFIG ── */
 
-const TABS = [
-  { id: "channel", label: "Kanal Analizi", icon: BarChart3 },
-  { id: "video", label: "Video Analizi", icon: FaYoutube },
-  { id: "comments", label: "Yorum Analizi", icon: MessageSquare },
-  { id: "competitor", label: "Rakip Analizi", icon: Users },
-  { id: "thumbnail", label: "Kapak AI", icon: Image },
-  { id: "ideas", label: "Fikir Üretici", icon: Lightbulb },
-  { id: "niche", label: "Niş Analizi", icon: Compass },
-  { id: "trends", label: "Trend Keşfi", icon: TrendingUp },
-  { id: "keywords", label: "Keyword Trendleri", icon: Search },
-  { id: "transflow", label: "TransFlow", icon: Languages },
-  { id: "school", label: "Üretici Okulu", icon: GraduationCap },
-];
+// Tab icons mapping (labels are resolved inside component via t())
+const TAB_ICONS = {
+  channel: BarChart3,
+  video: FaYoutube,
+  comments: MessageSquare,
+  competitor: Users,
+  thumbnail: Image,
+  ideas: Lightbulb,
+  niche: Compass,
+  trends: TrendingUp,
+  keywords: Search,
+  transflow: Languages,
+  school: GraduationCap,
+};
+const TAB_IDS = ["channel", "video", "comments", "competitor", "thumbnail", "ideas", "niche", "trends", "keywords", "transflow", "school"];
 
 /* ══════════════════════════════════════════════════════
    TAB 1: Kanal Analizi
    ══════════════════════════════════════════════════════ */
 function ChannelTab() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -147,11 +151,11 @@ function ChannelTab() {
 
   return (
     <div>
-      <SectionHeading title="Kanalının gerçek potansiyelini gör." subtitle="YouTube kanal URL'sini gir, AI detaylı analiz yapsın." />
+      <SectionHeading title={t('youtube.channel.title')} subtitle={t('youtube.channel.subtitle')} />
       <div className="flex gap-3 mb-6">
-        <Input placeholder="https://youtube.com/@kanal" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && analyze()} className="bg-[#141414] border-white/10 text-white flex-1" />
+        <Input placeholder={t('youtube.channel.placeholder')} value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && analyze()} className="bg-[#141414] border-white/10 text-white flex-1" />
         <Button onClick={analyze} disabled={loading} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Analiz Et"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('youtube.channel.analyze')}
         </Button>
       </div>
       {loading && <LoadingSpinner />}
@@ -170,7 +174,7 @@ function ChannelTab() {
                 {ch.description && <p className="text-white/60 text-sm mt-1 line-clamp-2">{ch.description}</p>}
               </div>
               {data.videos_analyzed && (
-                <span className="text-xs text-white/40 bg-white/5 border border-white/10 rounded-full px-3 py-1 shrink-0">{data.videos_analyzed} video analiz edildi</span>
+                <span className="text-xs text-white/40 bg-white/5 border border-white/10 rounded-full px-3 py-1 shrink-0">{t('youtube.channel.videosAnalyzed', { count: data.videos_analyzed })}</span>
               )}
             </div>
           )}
@@ -179,29 +183,29 @@ function ChannelTab() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-red-500">{fmtNum(data.subscriber_count || ch?.subscriberCount)}</p>
-              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Abone</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">{t('youtube.channel.subscriber')}</p>
             </div>
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{fmtNum(data.total_views || ch?.viewCount)}</p>
-              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Toplam İzlenme</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">{t('youtube.channel.totalViews')}</p>
             </div>
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{fmtNum(data.video_count || ch?.videoCount)}</p>
-              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Video Sayısı</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">{t('youtube.channel.videoCount')}</p>
             </div>
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-green-500">{data.engagement_rate ? `%${data.engagement_rate}` : "—"}</p>
-              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">Etkileşim</p>
+              <p className="text-xs text-white/40 mt-1 uppercase tracking-wider">{t('youtube.channel.engagement')}</p>
             </div>
           </div>
 
           {/* ── Ek Metrikler (küçük) ── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Ort. Görüntülenme", value: fmtNum(data.avg_views) },
-              { label: "Ort. Beğeni", value: fmtNum(data.avg_likes) },
-              { label: "Ort. Yorum", value: fmtNum(data.avg_comments) },
-              { label: "Performans Skoru", value: data.performance_score != null ? `${data.performance_score}/100` : "—" },
+              { label: t('youtube.channel.avgViews'), value: fmtNum(data.avg_views) },
+              { label: t('youtube.channel.avgLikes'), value: fmtNum(data.avg_likes) },
+              { label: t('youtube.channel.avgComments'), value: fmtNum(data.avg_comments) },
+              { label: t('youtube.channel.performanceScore'), value: data.performance_score != null ? `${data.performance_score}/100` : "—" },
             ].map((m, i) => (
               <div key={i} className="bg-[#141414] border border-white/10 rounded-xl p-3 text-center">
                 <p className="text-lg font-semibold text-white">{m.value}</p>
@@ -213,7 +217,7 @@ function ChannelTab() {
           {/* ── En İyi Videolar ── */}
           {videos.length > 0 && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-              <h2 className="text-lg font-bold text-white mb-3">🎬 En İyi Videolar</h2>
+              <h2 className="text-lg font-bold text-white mb-3">{t('youtube.channel.bestVideos')}</h2>
               <div className="space-y-3">
                 {videos.slice(0, 10).map((v, i) => (
                   <div key={i} className="flex gap-3 items-start">
@@ -236,7 +240,7 @@ function ChannelTab() {
           {/* ── AI Analizi ── */}
           {a && typeof a === "object" && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5 space-y-5">
-              <h2 className="text-xl font-bold text-white">🔴 AI Analizi</h2>
+              <h2 className="text-xl font-bold text-white">{t('youtube.channel.aiAnalysis')}</h2>
 
               {a.overall_assessment && (
                 <p className="text-white/70 leading-relaxed">{a.overall_assessment}</p>
@@ -244,35 +248,35 @@ function ChannelTab() {
 
               {a.strengths?.length > 0 && (
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-2">💪 Güçlü Yönler</h3>
+                  <h3 className="text-base font-semibold text-white mb-2">{t('youtube.channel.strengths')}</h3>
                   <ul className="space-y-1.5">{a.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-green-400/80"><CheckCircle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
                 </div>
               )}
 
               {a.weaknesses?.length > 0 && (
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-2">⚠️ Zayıf Yönler</h3>
+                  <h3 className="text-base font-semibold text-white mb-2">{t('youtube.channel.weaknesses')}</h3>
                   <ul className="space-y-1.5">{a.weaknesses.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-yellow-400/80"><AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
                 </div>
               )}
 
               {a.growth_opportunities?.length > 0 && (
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-2">🚀 Büyüme Fırsatları</h3>
+                  <h3 className="text-base font-semibold text-white mb-2">{t('youtube.channel.growthOpportunities')}</h3>
                   <ul className="space-y-1.5">{a.growth_opportunities.map((s, i) => <li key={i} className="flex items-start gap-2 text-sm text-blue-400/80"><Zap className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
                 </div>
               )}
 
               {a.content_strategy && (
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-2">📋 İçerik Stratejisi</h3>
+                  <h3 className="text-base font-semibold text-white mb-2">{t('youtube.channel.contentStrategy')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {[
-                      ["En İyi Konular", a.content_strategy.best_performing_topics],
-                      ["Önerilen Sıklık", a.content_strategy.recommended_frequency],
-                      ["Optimal Video Süresi", a.content_strategy.optimal_video_length],
-                      ["Başlık İpuçları", a.content_strategy.title_tips],
-                      ["Thumbnail İpuçları", a.content_strategy.thumbnail_tips],
+                      [t('youtube.common.bestTopics'), a.content_strategy.best_performing_topics],
+                      [t('youtube.common.recommendedFrequency'), a.content_strategy.recommended_frequency],
+                      [t('youtube.common.optimalVideoLength'), a.content_strategy.optimal_video_length],
+                      [t('youtube.common.titleTips'), a.content_strategy.title_tips],
+                      [t('youtube.common.thumbnailTips'), a.content_strategy.thumbnail_tips],
                     ].filter(([, v]) => v).map(([label, value], i) => (
                       <div key={i} className="bg-white/5 rounded-lg p-3">
                         <p className="text-xs text-white/40 mb-1">{label}</p>
@@ -285,11 +289,11 @@ function ChannelTab() {
 
               {a.audience_insights && (
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-2">👥 Hedef Kitle</h3>
+                  <h3 className="text-base font-semibold text-white mb-2">{t('youtube.channel.audience')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {[
-                      ["Tahmini Demografi", a.audience_insights.estimated_demographics],
-                      ["Etkileşim Kalitesi", a.audience_insights.engagement_quality],
+                      [t('youtube.common.estimatedDemographics'), a.audience_insights.estimated_demographics],
+                      [t('youtube.common.engagementQuality'), a.audience_insights.engagement_quality],
                     ].filter(([, v]) => v).map(([label, value], i) => (
                       <div key={i} className="bg-white/5 rounded-lg p-3">
                         <p className="text-xs text-white/40 mb-1">{label}</p>
@@ -302,7 +306,7 @@ function ChannelTab() {
 
               {a.action_plan?.length > 0 && (
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-2">📌 Aksiyon Planı</h3>
+                  <h3 className="text-base font-semibold text-white mb-2">{t('youtube.channel.actionPlan')}</h3>
                   <div className="space-y-2">
                     {a.action_plan.map((item, i) => (
                       <div key={i} className="bg-white/5 rounded-lg p-3 flex items-start gap-3">
@@ -348,6 +352,7 @@ const ScoreBadge = ({ score, suffix = "/10" }) => {
    TAB 2: Video Analizi
    ══════════════════════════════════════════════════════ */
 function VideoTab() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -370,11 +375,11 @@ function VideoTab() {
 
   return (
     <div>
-      <SectionHeading title="Bu video neden tuttu? Ya da neden tutmadı?" subtitle="Video URL'sini gir, performans analizi al." />
+      <SectionHeading title={t('youtube.video.title')} subtitle={t('youtube.video.subtitle')} />
       <div className="flex gap-3 mb-6">
-        <Input placeholder="https://youtube.com/watch?v=..." value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && analyze()} className="bg-[#141414] border-white/10 text-white flex-1" />
+        <Input placeholder={t('youtube.video.placeholder')} value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && analyze()} className="bg-[#141414] border-white/10 text-white flex-1" />
         <Button onClick={analyze} disabled={loading} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Analiz Et"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('youtube.video.analyze')}
         </Button>
       </div>
       {loading && <LoadingSpinner />}
@@ -400,10 +405,10 @@ function VideoTab() {
           {/* ── Metric Cards ── */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Etkileşim Oranı", value: data.engagement_rate ? `%${data.engagement_rate}` : "—", icon: TrendingUp, gradient: "from-green-500 to-emerald-600" },
-              { label: "Beğeni Oranı", value: data.like_rate ? `%${data.like_rate}` : "—", icon: ThumbsUp, gradient: "from-blue-500 to-cyan-600" },
-              { label: "Süre", value: parseDuration(v?.duration), icon: Clock, gradient: "from-red-500 to-rose-600" },
-              { label: "Performans Skoru", value: data.performance_score != null ? `${data.performance_score}/100` : "—", icon: Star, gradient: "from-yellow-500 to-amber-600" },
+              { label: t('youtube.video.engagementRate'), value: data.engagement_rate ? `%${data.engagement_rate}` : "—", icon: TrendingUp, gradient: "from-green-500 to-emerald-600" },
+              { label: t('youtube.video.likeRate'), value: data.like_rate ? `%${data.like_rate}` : "—", icon: ThumbsUp, gradient: "from-blue-500 to-cyan-600" },
+              { label: t('youtube.video.duration'), value: parseDuration(v?.duration), icon: Clock, gradient: "from-red-500 to-rose-600" },
+              { label: t('youtube.video.performanceScore'), value: data.performance_score != null ? `${data.performance_score}/100` : "—", icon: Star, gradient: "from-yellow-500 to-amber-600" },
             ].map((m, i) => (
               <div key={i} className="bg-[#141414] border border-white/10 rounded-xl p-4 flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${m.gradient} flex items-center justify-center shrink-0`}>
@@ -422,7 +427,7 @@ function VideoTab() {
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-5 w-5 text-fuchsia-400" />
-                <h2 className="text-xl font-bold text-white">AI Analizi</h2>
+                <h2 className="text-xl font-bold text-white">{t('youtube.video.aiAnalysis')}</h2>
               </div>
 
               {/* Overall */}
@@ -434,24 +439,24 @@ function VideoTab() {
               {a.title_analysis && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-white">Başlık Analizi</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('youtube.video.titleAnalysis')}</h3>
                     {a.title_analysis.score != null && <ScoreBadge score={a.title_analysis.score} />}
                   </div>
                   {a.title_analysis.strengths?.length > 0 && (
                     <div>
-                      <p className="text-xs text-white/40 mb-1 uppercase">Güçlü Yönler</p>
+                      <p className="text-xs text-white/40 mb-1 uppercase">{t('youtube.video.strengths')}</p>
                       <ul className="space-y-1">{a.title_analysis.strengths.map((s, i) => <li key={i} className="flex items-start gap-2 text-green-400/80 text-sm"><CheckCircle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
                     </div>
                   )}
                   {a.title_analysis.improvements?.length > 0 && (
                     <div>
-                      <p className="text-xs text-white/40 mb-1 uppercase">Geliştirilebilir</p>
+                      <p className="text-xs text-white/40 mb-1 uppercase">{t('youtube.video.improvements')}</p>
                       <ul className="space-y-1">{a.title_analysis.improvements.map((s, i) => <li key={i} className="flex items-start gap-2 text-yellow-400/80 text-sm"><AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /><span>{s}</span></li>)}</ul>
                     </div>
                   )}
                   {a.title_analysis.alternative_titles?.length > 0 && (
                     <div>
-                      <p className="text-xs text-white/40 mb-1 uppercase">Alternatif Başlıklar</p>
+                      <p className="text-xs text-white/40 mb-1 uppercase">{t('youtube.video.alternativeTitles')}</p>
                       <div className="space-y-1">{a.title_analysis.alternative_titles.map((t, i) => <div key={i} className="flex items-center gap-2 text-sm text-purple-300 bg-purple-500/10 rounded-lg px-3 py-2"><ArrowRight className="h-3 w-3 shrink-0" />{t}</div>)}</div>
                     </div>
                   )}
@@ -462,10 +467,10 @@ function VideoTab() {
               {a.seo_analysis && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-white">SEO Analizi</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('youtube.video.seoAnalysis')}</h3>
                     {a.seo_analysis.score != null && <ScoreBadge score={a.seo_analysis.score} />}
                   </div>
-                  {a.seo_analysis.tag_quality && <p className="text-white/60 text-sm">Etiket Kalitesi: <span className="text-white">{a.seo_analysis.tag_quality}</span></p>}
+                  {a.seo_analysis.tag_quality && <p className="text-white/60 text-sm">{t('youtube.video.tagQuality')}: <span className="text-white">{a.seo_analysis.tag_quality}</span></p>}
                   {a.seo_analysis.missing_keywords?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">{a.seo_analysis.missing_keywords.map((k, i) => <span key={i} className="text-xs bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-2.5 py-1">+ {k}</span>)}</div>
                   )}
@@ -478,7 +483,7 @@ function VideoTab() {
               {/* Engagement Analysis */}
               {a.engagement_analysis && (
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-white">Etkileşim Analizi</h3>
+                  <h3 className="text-lg font-semibold text-white">{t('youtube.video.engagementAnalysis')}</h3>
                   {a.engagement_analysis.quality && <p className="text-white/60 text-sm">Kalite: <span className="text-white font-medium">{a.engagement_analysis.quality}</span></p>}
                   {a.engagement_analysis.like_to_view_assessment && <p className="text-white/60 text-sm">{a.engagement_analysis.like_to_view_assessment}</p>}
                   {a.engagement_analysis.comment_engagement && <p className="text-white/60 text-sm">{a.engagement_analysis.comment_engagement}</p>}
@@ -488,7 +493,7 @@ function VideoTab() {
               {/* Content Tips */}
               {a.content_tips?.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-white">İçerik Önerileri</h3>
+                  <h3 className="text-lg font-semibold text-white">{t('youtube.video.contentTips')}</h3>
                   <ol className="space-y-2">{a.content_tips.map((t, i) => <li key={i} className="flex items-start gap-3 text-white/70 text-sm"><span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white text-xs font-bold shrink-0">{i + 1}</span><span>{t}</span></li>)}</ol>
                 </div>
               )}
@@ -497,18 +502,18 @@ function VideoTab() {
               {a.viral_potential && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-white">Viral Potansiyel</h3>
+                    <h3 className="text-lg font-semibold text-white">{t('youtube.video.viralPotential')}</h3>
                     {a.viral_potential.score != null && <ScoreBadge score={a.viral_potential.score} />}
                   </div>
                   {a.viral_potential.factors?.length > 0 && (
                     <div>
-                      <p className="text-xs text-white/40 mb-1 uppercase">Faktörler</p>
+                      <p className="text-xs text-white/40 mb-1 uppercase">{t('youtube.video.factors')}</p>
                       <ul className="space-y-1">{a.viral_potential.factors.map((f, i) => <li key={i} className="flex items-start gap-2 text-green-400/80 text-sm"><Zap className="h-4 w-4 mt-0.5 shrink-0" /><span>{f}</span></li>)}</ul>
                     </div>
                   )}
                   {a.viral_potential.missing_elements?.length > 0 && (
                     <div>
-                      <p className="text-xs text-white/40 mb-1 uppercase">Eksik Unsurlar</p>
+                      <p className="text-xs text-white/40 mb-1 uppercase">{t('youtube.video.missingElements')}</p>
                       <ul className="space-y-1">{a.viral_potential.missing_elements.map((f, i) => <li key={i} className="flex items-start gap-2 text-red-400/80 text-sm"><Target className="h-4 w-4 mt-0.5 shrink-0" /><span>{f}</span></li>)}</ul>
                     </div>
                   )}
@@ -518,7 +523,7 @@ function VideoTab() {
               {/* Similar Video Ideas */}
               {a.similar_video_ideas?.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-white">Benzer Video Fikirleri</h3>
+                  <h3 className="text-lg font-semibold text-white">{t('youtube.video.similarVideoIdeas')}</h3>
                   <div className="grid gap-2 md:grid-cols-2">{a.similar_video_ideas.map((idea, i) => (
                     <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-3">
                       <p className="text-white font-medium text-sm">{idea.title}</p>
@@ -542,6 +547,7 @@ function VideoTab() {
    TAB 3: Yorum Analizi
    ══════════════════════════════════════════════════════ */
 function CommentsTab() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState("");
   const [limit, setLimit] = useState("50");
   const [loading, setLoading] = useState(false);
@@ -561,14 +567,14 @@ function CommentsTab() {
 
   const sentimentEmoji = { positive: "😊", neutral: "😐", negative: "😠" };
   const sentimentColor = { positive: "green-500", neutral: "gray-400", negative: "red-500" };
-  const sentimentLabel = { positive: "Pozitif", neutral: "Nötr", negative: "Negatif" };
+  const sentimentLabel = { positive: t('youtube.comments.positive'), neutral: t('youtube.comments.neutral'), negative: t('youtube.comments.negative') };
   const sentimentBg = { positive: "bg-green-500", neutral: "bg-gray-400", negative: "bg-red-500" };
 
   return (
     <div>
-      <SectionHeading title="İzleyicilerin aslında ne düşünüyor?" subtitle="Yorumları analiz et, duygu dağılımını gör." />
+      <SectionHeading title={t('youtube.comments.title')} subtitle={t('youtube.comments.subtitle')} />
       <div className="flex gap-3 mb-6 flex-wrap">
-        <Input placeholder="https://youtube.com/watch?v=..." value={url} onChange={(e) => setUrl(e.target.value)} className="bg-[#141414] border-white/10 text-white flex-1 min-w-[200px]" />
+        <Input placeholder={t('youtube.comments.placeholder')} value={url} onChange={(e) => setUrl(e.target.value)} className="bg-[#141414] border-white/10 text-white flex-1 min-w-[200px]" />
         <Select value={limit} onValueChange={setLimit}>
           <SelectTrigger className="w-[120px] bg-[#141414] border-white/10 text-white">
             <SelectValue />
@@ -581,7 +587,7 @@ function CommentsTab() {
           </SelectContent>
         </Select>
         <Button onClick={analyze} disabled={loading} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Analiz Et"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('youtube.comments.analyze')}
         </Button>
       </div>
       {loading && <LoadingSpinner />}
@@ -595,7 +601,7 @@ function CommentsTab() {
             const pct = (v) => total > 0 ? Math.round((v || 0) / total * 100) : 0;
             return (
               <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-purple-400" />Duygu Dağılımı</h3>
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-purple-400" />{t('youtube.comments.sentimentDistribution')}</h3>
                 <div className="flex justify-between mb-2 text-xs">
                   <span className="text-green-500">😊 %{pct(sd.positive)}</span>
                   <span className="text-gray-400">😐 %{pct(sd.neutral)}</span>
@@ -615,7 +621,7 @@ function CommentsTab() {
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <MessageSquare className="h-5 w-5 text-purple-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">{data.total_comments || 0}</p>
-              <p className="text-xs text-white/50 mt-1">Toplam Yorum</p>
+              <p className="text-xs text-white/50 mt-1">{t('youtube.comments.totalComments')}</p>
             </div>
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <ThumbsUp className="h-5 w-5 text-purple-400 mx-auto mb-2" />
@@ -628,19 +634,19 @@ function CommentsTab() {
                   {sentimentEmoji[data.overall_sentiment]} {sentimentLabel[data.overall_sentiment] || data.overall_sentiment}
                 </span>
               )}
-              <p className="text-xs text-white/50 mt-1">Genel Duygu</p>
+              <p className="text-xs text-white/50 mt-1">{t('youtube.comments.overallSentiment')}</p>
             </div>
             <div className="bg-[#141414] border border-white/10 rounded-xl p-4 text-center">
               <Target className="h-5 w-5 text-purple-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">{(data.top_categories || []).length}</p>
-              <p className="text-xs text-white/50 mt-1">Kategori</p>
+              <p className="text-xs text-white/50 mt-1">{t('youtube.comments.category')}</p>
             </div>
           </div>
 
           {/* 3. Öne Çıkan Temalar */}
           {data.key_themes && data.key_themes.length > 0 && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Compass className="h-4 w-4 text-purple-400" />Öne Çıkan Temalar</h3>
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Compass className="h-4 w-4 text-purple-400" />{t('youtube.comments.themes')}</h3>
               <div className="flex flex-wrap gap-2">
                 {data.key_themes.map((t, i) => (
                   <span key={i} className="px-3 py-1.5 rounded-full text-xs font-medium bg-violet-500/15 text-violet-300 border border-violet-500/20">{t}</span>
@@ -659,7 +665,7 @@ function CommentsTab() {
             const maxCount = Math.max(...Object.values(catCounts), 1);
             return (
               <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-purple-400" />Kategori Dağılımı</h3>
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4 text-purple-400" />{t('youtube.comments.categoryDistribution')}</h3>
                 <div className="space-y-2">
                   {cats.map((cat, i) => {
                     const count = catCounts[cat] || 0;
@@ -682,7 +688,7 @@ function CommentsTab() {
           {/* 5. Dikkat Çeken Yorumlar */}
           {data.notable_comments && data.notable_comments.length > 0 && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Star className="h-4 w-4 text-yellow-400" />Dikkat Çeken Yorumlar</h3>
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Star className="h-4 w-4 text-yellow-400" />{t('youtube.comments.notableComments')}</h3>
               <div className="space-y-3">
                 {data.notable_comments.map((nc, i) => (
                   <div key={i} className="border-l-2 border-purple-500/50 pl-4 py-2">
@@ -697,7 +703,7 @@ function CommentsTab() {
           {/* 6. AI Önerileri */}
           {data.recommendations && data.recommendations.length > 0 && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-400" />AI Önerileri</h3>
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-400" />{t('youtube.comments.aiSuggestions')}</h3>
               <div className="space-y-2">
                 {data.recommendations.map((rec, i) => (
                   <div key={i} className="flex items-start gap-3">
@@ -712,7 +718,7 @@ function CommentsTab() {
           {/* 7. AI Genel Değerlendirme */}
           {data.analysis && (
             <div className="bg-[#141414] border border-white/10 rounded-xl p-5">
-              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-purple-400" />AI Genel Değerlendirme</h3>
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-purple-400" />{t('youtube.comments.aiOverview')}</h3>
               <div className="text-white/70 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: simpleMarkdown(flattenAnalysis(data.analysis)) }} />
             </div>
           )}
@@ -751,13 +757,13 @@ function CompetitorTab() {
 
   return (
     <div>
-      <SectionHeading title="Rakibinin sırrını çöz." subtitle="Kanalını rakiplerle karşılaştır." />
+      <SectionHeading title={t('youtube.competitor.title')} subtitle={t('youtube.competitor.subtitle')} />
       <div className="space-y-3 mb-6">
-        <Input placeholder="Senin kanal URL'n" value={myChannel} onChange={(e) => setMyChannel(e.target.value)} className="bg-[#141414] border-white/10 text-white" />
-        <p className="text-xs text-white/40">Rakip kanallar (max 5)</p>
+        <Input placeholder={t('youtube.competitor.myChannel')} value={myChannel} onChange={(e) => setMyChannel(e.target.value)} className="bg-[#141414] border-white/10 text-white" />
+        <p className="text-xs text-white/40">{t('youtube.competitor.competitorChannels')}</p>
         {competitors.map((c, i) => (
           <div key={i} className="flex gap-2">
-            <Input placeholder={`Rakip ${i + 1} URL`} value={c} onChange={(e) => updateCompetitor(i, e.target.value)} className="bg-[#141414] border-white/10 text-white flex-1" />
+            <Input placeholder={t('youtube.competitor.competitorPlaceholder', { index: i + 1 })} value={c} onChange={(e) => updateCompetitor(i, e.target.value)} className="bg-[#141414] border-white/10 text-white flex-1" />
             {competitors.length > 1 && (
               <Button variant="ghost" size="icon" onClick={() => removeCompetitor(i)} className="text-white/40 hover:text-red-400"><X className="h-4 w-4" /></Button>
             )}
@@ -765,10 +771,10 @@ function CompetitorTab() {
         ))}
         <div className="flex gap-3">
           {competitors.length < 5 && (
-            <Button variant="outline" size="sm" onClick={addCompetitor} className="border-white/10 text-white/60 hover:text-white"><Plus className="h-4 w-4 mr-1" />Rakip Ekle</Button>
+            <Button variant="outline" size="sm" onClick={addCompetitor} className="border-white/10 text-white/60 hover:text-white"><Plus className="h-4 w-4 mr-1" />{t('youtube.competitor.addCompetitor')}</Button>
           )}
           <Button onClick={analyze} disabled={loading} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Karşılaştır"}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('youtube.competitor.compare')}
           </Button>
         </div>
       </div>
@@ -807,27 +813,27 @@ function ThumbnailTab() {
 
   return (
     <div>
-      <SectionHeading title="Thumbnail'in tıklanıyor mu?" subtitle="Kapak görselini AI ile analiz et." />
+      <SectionHeading title={t('youtube.thumbnail.title')} subtitle={t('youtube.thumbnail.subtitle')} />
       <div className="flex gap-2 mb-4">
         {["url", "file"].map((m) => (
           <button key={m} onClick={() => setMode(m)} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${mode === m ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white" : "bg-[#141414] text-white/50 hover:text-white border border-white/10"}`}>
-            {m === "url" ? "YouTube URL" : "Dosya Yükle"}
+            {m === "url" ? t('youtube.thumbnail.youtubeUrl') : t('youtube.thumbnail.fileUpload')}
           </button>
         ))}
       </div>
       {mode === "url" ? (
-        <Input placeholder="https://youtube.com/watch?v=..." value={ytUrl} onChange={(e) => setYtUrl(e.target.value)} className="bg-[#141414] border-white/10 text-white mb-4" />
+        <Input placeholder={t('youtube.thumbnail.placeholder')} value={ytUrl} onChange={(e) => setYtUrl(e.target.value)} className="bg-[#141414] border-white/10 text-white mb-4" />
       ) : (
         <div className="mb-4">
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
           <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-white/20 hover:border-purple-500/50 text-white/50 hover:text-white transition-all w-full justify-center">
             <Upload className="h-5 w-5" />
-            {file ? file.name : "Görsel seç veya sürükle"}
+            {file ? file.name : t('youtube.thumbnail.selectOrDrag')}
           </button>
         </div>
       )}
       <Button onClick={analyze} disabled={loading} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white mb-6">
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Analiz Et"}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('youtube.thumbnail.analyze')}
       </Button>
       {loading && <LoadingSpinner />}
       {error && <ErrorCard message={error} />}
@@ -871,14 +877,14 @@ function IdeasTab() {
 
   return (
     <div>
-      <SectionHeading title="Bir sonraki viral videon burada." subtitle="AI ile video fikri üret." />
+      <SectionHeading title={t('youtube.ideas.title')} subtitle={t('youtube.ideas.subtitle')} />
       <div className="flex gap-2 mb-4">
-        {[["topic", "Konu"], ["channel", "Kanal"], ["trending", "Trending"]].map(([m, l]) => (
+        {[["topic", t('youtube.ideas.topicMode')], ["channel", t('youtube.ideas.channelMode')], ["trending", t('youtube.ideas.trendingMode')]].map(([m, l]) => (
           <button key={m} onClick={() => setMode(m)} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${mode === m ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white" : "bg-[#141414] text-white/50 hover:text-white border border-white/10"}`}>{l}</button>
         ))}
       </div>
       <div className="flex gap-3 mb-6">
-        <Input placeholder={mode === "channel" ? "Kanal URL'si" : "Konu veya anahtar kelime"} value={topic} onChange={(e) => setTopic(e.target.value)} className="bg-[#141414] border-white/10 text-white flex-1" />
+        <Input placeholder={mode === "channel" ? t('youtube.ideas.channelPlaceholder') : t('youtube.ideas.topicPlaceholder')} value={topic} onChange={(e) => setTopic(e.target.value)} className="bg-[#141414] border-white/10 text-white flex-1" />
         <Select value={count} onValueChange={setCount}>
           <SelectTrigger className="w-[100px] bg-[#141414] border-white/10 text-white"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -886,7 +892,7 @@ function IdeasTab() {
           </SelectContent>
         </Select>
         <Button onClick={generate} disabled={loading} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Üret"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('youtube.ideas.generate')}
         </Button>
       </div>
       {loading && <LoadingSpinner />}
@@ -1261,8 +1267,14 @@ const TAB_COMPONENTS = {
 };
 
 export default function YouTubeStudioPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("channel");
-  const ActiveComponent = TAB_COMPONENTS[activeTab];
+
+  const TABS = TAB_IDS.map(id => ({
+    id,
+    label: t(`youtube.tabs.${id}`),
+    icon: TAB_ICONS[id],
+  }));
 
   return (
     <div className="min-h-screen">
@@ -1274,7 +1286,7 @@ export default function YouTubeStudioPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white font-outfit">YouTube Studio</h1>
-            <p className="text-white/40 text-sm">Kanalını büyüt, içeriğini optimize et.</p>
+            <p className="text-white/40 text-sm">{t('nav.youtubeStudio')}</p>
           </div>
         </div>
       </div>

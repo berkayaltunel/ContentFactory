@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -31,6 +32,7 @@ const pillStyle = (active) => ({
 });
 
 export default function RepurposeModal({ open, onClose, content, mode, api, API }) {
+  const { t } = useTranslation();
   const [platform, setPlatform] = useState("reels");
   const [duration, setDuration] = useState("30");
   const [loading, setLoading] = useState(false);
@@ -60,7 +62,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
         setStep("config");
       }
     } catch {
-      toast.error("Video script üretilemedi");
+      toast.error(t('repurpose.videoScriptError'));
       setStep("config");
     } finally {
       setLoading(false);
@@ -79,7 +81,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
         onClose();
       }
     } catch {
-      toast.error("Görsel prompt üretilemedi");
+      toast.error(t('repurpose.imagePromptError'));
       onClose();
     } finally {
       setLoading(false);
@@ -102,12 +104,12 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
     const pl = platforms.find(p => p.id === platform)?.label || platform;
     const fullText = `🎬 Video Script (${duration}s ${pl})\n\n${scriptText}\n\n🎵 Müzik: ${d.music_mood}\n${d.caption ? `💬 ${d.caption}\n` : ""}#️⃣ ${d.hashtags?.join(" ") || ""}`;
     navigator.clipboard.writeText(fullText);
-    toast.success("Script kopyalandı!");
+    toast.success(t('repurpose.scriptCopied'));
   };
 
   const copyImagePrompt = () => {
     navigator.clipboard.writeText(JSON.stringify(result.data.prompt_json, null, 2));
-    toast.success("Prompt kopyalandı!");
+    toast.success(t('repurpose.promptCopied'));
   };
 
   const sectionStyle = {
@@ -127,7 +129,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
       <DialogContent style={{ maxWidth: "480px", background: "var(--m-surface)", border: "1px solid var(--m-border-light)", color: "var(--m-text)" }}>
         <DialogHeader>
           <DialogTitle style={{ color: "var(--m-text)", fontSize: "16px" }}>
-            {mode === "video" ? "📹 Video Script Oluştur" : "🖼️ Görsel Prompt Oluştur"}
+            {mode === "video" ? t('repurpose.videoScriptTitle') : t('repurpose.imagePromptTitle')}
           </DialogTitle>
         </DialogHeader>
 
@@ -135,7 +137,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
         {mode === "video" && step === "config" && (
           <div style={{ animation: "fadeIn 0.2s ease" }}>
             <div style={sectionStyle}>
-              <span style={labelStyle}>Platform</span>
+              <span style={labelStyle}>{t('repurpose.platform')}</span>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {platforms.map(p => (
                   <button key={p.id} style={pillStyle(platform === p.id)} onClick={() => setPlatform(p.id)}>
@@ -145,7 +147,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
               </div>
             </div>
             <div style={sectionStyle}>
-              <span style={labelStyle}>Süre</span>
+              <span style={labelStyle}>{t('repurpose.duration')}</span>
               <div style={{ display: "flex", gap: "8px" }}>
                 {durations.map(d => (
                   <button key={d.id} style={pillStyle(duration === d.id)} onClick={() => setDuration(d.id)}>
@@ -170,7 +172,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
                 marginTop: "8px",
               }}
             >
-              Video Script Oluştur
+              {t('repurpose.createVideoScript')}
             </button>
           </div>
         )}
@@ -180,10 +182,10 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
           <div style={{ animation: "fadeIn 0.2s ease", textAlign: "center", padding: "20px 0" }}>
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎨</div>
             <p style={{ color: "var(--m-text-soft)", fontSize: "14px", marginBottom: "8px", lineHeight: "1.5" }}>
-              Tweet içeriğine uygun bir görsel prompt oluşturulacak.
+              {t('repurpose.imagePromptDesc')}
             </p>
             <p style={{ color: "var(--m-text-muted)", fontSize: "12px", marginBottom: "24px", lineHeight: "1.5", maxWidth: "320px", margin: "0 auto 24px" }}>
-              Midjourney, DALL·E veya diğer AI görsel araçlarında kullanabilirsin.
+              {t('repurpose.imagePromptUsage')}
             </p>
             <button
               onClick={() => { setStep("loading"); generateImage(); }}
@@ -200,7 +202,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
                 fontFamily: "inherit",
               }}
             >
-              🖼️ Görsel Prompt Oluştur
+              {t('repurpose.createImagePrompt')}
             </button>
           </div>
         )}
@@ -210,7 +212,7 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
           <div style={{ padding: "40px 0", textAlign: "center", animation: "fadeIn 0.2s ease" }}>
             <div style={{ fontSize: "32px", marginBottom: "12px", animation: "spin 1s linear infinite" }}>⏳</div>
             <p style={{ color: "var(--m-text-soft)", fontSize: "14px" }}>
-              {mode === "video" ? "Video script hazırlanıyor..." : "Görsel prompt üretiliyor..."}
+              {mode === "video" ? t('repurpose.preparingVideoScript') : t('repurpose.preparingImagePrompt')}
             </p>
           </div>
         )}
@@ -237,10 +239,10 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
             )}
             <div style={{ display: "flex", gap: "8px" }}>
               <button onClick={copyVideoScript} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #8b5cf6, #a855f7)", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                📋 Kopyala
+                {t('repurpose.copy')}
               </button>
               <button onClick={handleRegenerate} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--m-border-light)", background: "transparent", color: "var(--m-text-soft)", fontSize: "13px", cursor: "pointer", fontFamily: "inherit" }}>
-                🔄 Tekrar Oluştur
+                {t('repurpose.regenerate')}
               </button>
             </div>
           </div>
@@ -263,10 +265,10 @@ export default function RepurposeModal({ open, onClose, content, mode, api, API 
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button onClick={copyImagePrompt} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #8b5cf6, #a855f7)", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                📋 Prompt'u Kopyala
+                {t('repurpose.copyPrompt')}
               </button>
               <button onClick={handleRegenerate} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--m-border-light)", background: "transparent", color: "var(--m-text-soft)", fontSize: "13px", cursor: "pointer", fontFamily: "inherit" }}>
-                🔄 Tekrar Oluştur
+                {t('repurpose.regenerate')}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft, ChevronRight, Copy, Heart, ExternalLink,
   Flame, Calendar, Twitter, Quote, MessageSquare, PenLine,
@@ -15,17 +16,13 @@ import api, { API } from "@/lib/api";
 /* ── Config ─────────────────────────────────────── */
 
 const typeConfig = {
-  tweet:   { label: "Tweet",   icon: Twitter,        color: "bg-sky-500",    ring: "ring-sky-400",    text: "text-sky-500",    bg: "bg-sky-500/15" },
-  quote:   { label: "Alıntı",  icon: Quote,          color: "bg-purple-500", ring: "ring-purple-400", text: "text-purple-500", bg: "bg-purple-500/15" },
-  reply:   { label: "Yanıt",   icon: MessageSquare,  color: "bg-emerald-500",ring: "ring-emerald-400",text: "text-emerald-500",bg: "bg-emerald-500/15" },
-  article: { label: "Makale",  icon: FileText,        color: "bg-orange-500", ring: "ring-orange-400", text: "text-orange-500", bg: "bg-orange-500/15" },
+  tweet:   { labelKey: "calendar.typeLabels.tweet",   icon: Twitter,        color: "bg-sky-500",    ring: "ring-sky-400",    text: "text-sky-500",    bg: "bg-sky-500/15" },
+  quote:   { labelKey: "calendar.typeLabels.quote",   icon: Quote,          color: "bg-purple-500", ring: "ring-purple-400", text: "text-purple-500", bg: "bg-purple-500/15" },
+  reply:   { labelKey: "calendar.typeLabels.reply",   icon: MessageSquare,  color: "bg-emerald-500",ring: "ring-emerald-400",text: "text-emerald-500",bg: "bg-emerald-500/15" },
+  article: { labelKey: "calendar.typeLabels.article", icon: FileText,        color: "bg-orange-500", ring: "ring-orange-400", text: "text-orange-500", bg: "bg-orange-500/15" },
 };
 
-const DAY_NAMES_SHORT = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-const MONTH_NAMES = [
-  "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
-];
+// DAY_NAMES_SHORT and MONTH_NAMES are now loaded from translations inside components
 
 /* ── Helpers ────────────────────────────────────── */
 
@@ -42,15 +39,15 @@ function formatDateKey(year, month, day) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function getDayName(year, month, day) {
+function getDayIdx(year, month, day) {
   const d = new Date(year, month - 1, day);
-  const idx = (d.getDay() + 6) % 7; // Monday = 0
-  return DAY_NAMES_SHORT[idx];
+  return (d.getDay() + 6) % 7; // Monday = 0
 }
 
 /* ── Stories Date Bubble ────────────────────────── */
 
 function DateBubble({ day, dayName, isToday, isSelected, count, types, onClick }) {
+  const { t } = useTranslation();
   const hasContent = count > 0;
 
   // Get dominant type for ring color
@@ -118,7 +115,7 @@ function DateBubble({ day, dayName, isToday, isSelected, count, types, onClick }
           isToday && !isSelected && "text-purple-400"
         )}
       >
-        {isToday ? "Bugün" : dayName}
+        {isToday ? t('calendar.today') : dayName}
       </span>
     </button>
   );
@@ -127,6 +124,7 @@ function DateBubble({ day, dayName, isToday, isSelected, count, types, onClick }
 /* ── Generation Preview Card ────────────────────── */
 
 function GenerationPreviewCard({ gen, index }) {
+  const { t } = useTranslation();
   const type = typeConfig[gen.type] || typeConfig.tweet;
   const TypeIcon = type.icon;
 
@@ -134,7 +132,7 @@ function GenerationPreviewCard({ gen, index }) {
     e.stopPropagation();
     if (gen.content) {
       navigator.clipboard.writeText(gen.content);
-      toast.success("Kopyalandı!");
+      toast.success(t('common.copied'));
     }
   };
 
@@ -161,7 +159,7 @@ function GenerationPreviewCard({ gen, index }) {
             </p>
           )}
           <p className="text-sm leading-relaxed text-foreground/80 line-clamp-2">
-            {gen.content || "İçerik önizlemesi mevcut değil"}
+            {gen.content || ""}
           </p>
         </div>
 
@@ -190,7 +188,7 @@ function GenerationPreviewCard({ gen, index }) {
       {/* Time */}
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
         <Badge className={cn("text-[10px] gap-1 rounded-lg", type.bg, type.text)}>
-          <TypeIcon className="h-2.5 w-2.5" /> {type.label}
+          <TypeIcon className="h-2.5 w-2.5" /> {t(type.labelKey)}
         </Badge>
         <span className="text-[10px] text-muted-foreground">
           {gen.created_at
@@ -205,9 +203,12 @@ function GenerationPreviewCard({ gen, index }) {
 /* ── Main Calendar Component ────────────────────── */
 
 export default function ContentCalendar({ embedded = false }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const scrollRef = useRef(null);
   const todayStr = getToday();
+  const MONTH_NAMES = t('calendar.months', { returnObjects: true });
+  const DAY_NAMES_SHORT = t('calendar.shortDays', { returnObjects: true });
 
   const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth() + 1);
@@ -274,7 +275,7 @@ export default function ContentCalendar({ embedded = false }) {
   // Type summary for selected day
   const typeSummary = selectedDayData?.types
     ? Object.entries(selectedDayData.types)
-        .map(([t, c]) => `${c} ${typeConfig[t]?.label?.toLowerCase() || t}`)
+        .map(([tp, c]) => `${c} ${typeConfig[tp]?.labelKey ? t(typeConfig[tp].labelKey) : tp}`)
         .join(" · ")
     : null;
 
@@ -305,8 +306,8 @@ export default function ContentCalendar({ embedded = false }) {
               </h3>
               <p className="text-xs text-muted-foreground">
                 {totalThisMonth > 0
-                  ? `Bu ay ${totalThisMonth} içerik üretildi`
-                  : "Bu ay henüz içerik üretilmedi"}
+                  ? t('calendar.thisMonthGenerated', { count: totalThisMonth })
+                  : t('calendar.noContentThisMonth')}
               </p>
             </div>
           </div>
@@ -317,7 +318,7 @@ export default function ContentCalendar({ embedded = false }) {
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/20">
                 <Flame className="h-4 w-4 text-orange-500" />
                 <span className="text-sm font-semibold text-orange-500">{streak}</span>
-                <span className="text-[10px] text-orange-500/70 hidden sm:inline">gün seri</span>
+                <span className="text-[10px] text-orange-500/70 hidden sm:inline">{t('calendar.dayStreak')}</span>
               </div>
             )}
 
@@ -339,7 +340,7 @@ export default function ContentCalendar({ embedded = false }) {
                   }}
                   className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-purple-500/10 hover:bg-purple-500/20 transition-colors text-purple-500 border border-purple-500/20"
                 >
-                  Bugün
+                  {t('calendar.today')}
                 </button>
               )}
               <button
@@ -375,7 +376,7 @@ export default function ContentCalendar({ embedded = false }) {
                 <div key={day} data-today={isToday || undefined} className="snap-center">
                   <DateBubble
                     day={day}
-                    dayName={getDayName(currentYear, currentMonth, day)}
+                    dayName={DAY_NAMES_SHORT[getDayIdx(currentYear, currentMonth, day)]}
                     isToday={isToday}
                     isSelected={isSelected}
                     count={dayData?.count || 0}
@@ -397,10 +398,9 @@ export default function ContentCalendar({ embedded = false }) {
                 <div className="flex items-center gap-2">
                   <PenLine className="h-4 w-4 text-purple-500" />
                   <span className="text-sm font-medium">
-                    {selectedDate === todayStr ? "Bugün" : new Date(selectedDate + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
-                    {" "}
-                    <span className="text-purple-500 font-semibold">{selectedDayData.count} içerik</span>
-                    {" "}üretildi
+                    {selectedDate === todayStr ? t('calendar.today') : new Date(selectedDate + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}
+                    {" — "}
+                    <span className="text-purple-500 font-semibold">{t('calendar.nContentGenerated', { count: selectedDayData.count })}</span>
                   </span>
                 </div>
                 {typeSummary && (
@@ -425,20 +425,20 @@ export default function ContentCalendar({ embedded = false }) {
               </div>
               <p className="text-sm text-muted-foreground mb-1">
                 {selectedDate === todayStr
-                  ? "Bugün henüz içerik üretmediniz"
-                  : `${new Date(selectedDate + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} sessiz geçmiş`}
+                  ? t('calendar.todayNoContent')
+                  : t('calendar.dateSilent', { date: new Date(selectedDate + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" }) })}
               </p>
               {selectedDate === todayStr && (
                 <>
                   <p className="text-xs text-muted-foreground/60 mb-4">
-                    İlham mı lazım? Hadi başlayalım! ✨
+                    {t('calendar.needInspiration')}
                   </p>
                   <Button
                     size="sm"
                     onClick={() => navigate("/dashboard/create?platform=twitter")}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl gap-1.5"
                   >
-                    <PenLine className="h-3.5 w-3.5" /> İçerik Üret
+                    <PenLine className="h-3.5 w-3.5" /> {t('calendar.generateContent')}
                   </Button>
                 </>
               )}
@@ -470,7 +470,7 @@ export default function ContentCalendar({ embedded = false }) {
                     )}
                   >
                     <Icon className="h-3 w-3" />
-                    {count} {cfg.label.toLowerCase()}
+                    {count} {t(cfg.labelKey)}
                   </div>
                 );
               })}
@@ -479,7 +479,7 @@ export default function ContentCalendar({ embedded = false }) {
             {/* Monthly total */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span>Bu ay toplam <span className="font-semibold text-foreground">{totalThisMonth}</span></span>
+              <span>{t('calendar.totalThisMonth')} <span className="font-semibold text-foreground">{totalThisMonth}</span></span>
             </div>
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
@@ -218,6 +219,7 @@ const holoEase = [0.4, 0, 0.2, 1];
 const holoTransition = { duration: 0.65, ease: holoEase };
 
 function Navbar() {
+  const { t, i18n } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -227,10 +229,10 @@ function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: 'Nasıl Çalışır', href: '#how-it-works' },
-    { label: 'Özellikler', href: '#features' },
-    { label: 'Platformlar', href: '#platforms' },
-    { label: 'SSS', href: '#faq' },
+    { label: t('landing.navbar.howItWorks'), href: '#how-it-works' },
+    { label: t('landing.navbar.features'), href: '#features' },
+    { label: t('landing.navbar.platforms'), href: '#platforms' },
+    { label: t('landing.navbar.faq'), href: '#faq' },
   ];
 
   return (
@@ -298,6 +300,16 @@ function Navbar() {
           </motion.div>
         </motion.div>
 
+        {/* Language Toggle */}
+        <motion.div layout transition={{ layout: holoTransition }}>
+          <button
+            onClick={() => i18n.changeLanguage(i18n.language === 'tr' ? 'en' : 'tr')}
+            className="px-3 py-1.5 text-[14px] font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100/70 rounded-full transition-all duration-200"
+          >
+            {i18n.language === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+          </button>
+        </motion.div>
+
         <motion.div layout transition={{ layout: holoTransition }}>
           <Link
             to="/login"
@@ -314,7 +326,7 @@ function Navbar() {
               style={{ background: 'rgb(251, 251, 251)', borderRadius: 100, padding: '13px 22px' }}
             >
               <span className="text-[15px] font-bold text-gray-900 tracking-tight" style={{ fontFamily: satoshiFont }}>
-                Hemen Başla
+                {t('landing.navbar.getStarted')}
               </span>
             </div>
           </Link>
@@ -327,15 +339,15 @@ function Navbar() {
       >
         <div className="flex items-center gap-1 px-3" style={{ height: 44, borderRadius: 22, ...glassStyle }}>
           {[
-            { label: 'Özellikler', href: '#features' },
-            { label: 'SSS', href: '#faq' },
+            { label: t('landing.navbar.features'), href: '#features' },
+            { label: t('landing.navbar.faq'), href: '#faq' },
           ].map((item) => (
             <a key={item.label} href={item.href} className="px-3 py-1 text-[13px] font-medium text-gray-500 hover:text-gray-900 rounded-full transition-colors">
               {item.label}
             </a>
           ))}
           <Link to="/login" className="px-3 py-1 text-[13px] font-medium text-gray-500 hover:text-gray-900 rounded-full transition-colors">
-            Giriş
+            {t('landing.navbar.login')}
           </Link>
         </div>
       </div>
@@ -376,32 +388,33 @@ function InlineVideo({ src, className = '' }) {
 }
 
 function ValueStatements() {
+  const { t } = useTranslation();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
 
-  /*
-   * 3-act story: Discover → Create → Win
-   * Copywriting: specific > vague, benefit > feature, customer language
-   * Psychology: Loss Aversion (3rd line), Specificity (1st line), JTBD (2nd line)
-   */
+  const line1 = t('landing.valueStatements.line1');
+  const line2 = t('landing.valueStatements.line2');
+  const line3 = t('landing.valueStatements.line3');
+
+  // Split lines around the video insertion points (approximate word boundaries)
   const lines = [
     {
       segments: [
-        { type: 'text', content: 'Type Hype' },
+        { type: 'text', content: line1.split('yazım')[0] },
         { type: 'video', src: '/glass-boomerang.webm' },
-        { type: 'text', content: 'yazım tarzını çözer. Her kelimeni, her virgülünü öğrenir.' },
+        { type: 'text', content: 'yazım' + (line1.split('yazım')[1] || '') },
       ],
     },
     {
       segments: [
-        { type: 'text', content: 'Senden' },
+        { type: 'text', content: line2.split('ayırt')[0] || line2.substring(0, 6) },
         { type: 'video', src: '/pencil-boomerang.webm' },
-        { type: 'text', content: 'ayırt edilemez içerikler üretir. 6 platform, tek tık.' },
+        { type: 'text', content: line2.includes('ayırt') ? ('ayırt' + line2.split('ayırt')[1]) : line2.substring(6) },
       ],
     },
     {
       segments: [
-        { type: 'text', content: 'Bir ajansın tüm işini tek başına halledersin.' },
+        { type: 'text', content: line3 },
       ],
     },
   ];
@@ -460,6 +473,7 @@ function ValueStatements() {
    Psychology: JTBD, Loss Aversion, Social Proof
    ═══════════════════════════════════════════ */
 function Hero() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden" style={{ background: '#fbfbfb', paddingTop: 130, paddingBottom: 60, fontFamily: satoshiFont }}>
       {/* Subtle ambient glow */}
@@ -470,7 +484,7 @@ function Hero() {
         <motion.div variants={fadeUp} className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-50/80 rounded-full border border-violet-100/60">
             <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-            <span className="text-[13px] text-violet-600 font-medium">AI içerik asistanın hazır</span>
+            <span className="text-[13px] text-violet-600 font-medium">{t('landing.hero.badge')}</span>
           </div>
         </motion.div>
 
@@ -480,9 +494,9 @@ function Hero() {
           className="text-[36px] sm:text-[48px] md:text-[64px] lg:text-[72px] text-[#1d1d1f] leading-[1.05] tracking-[-0.03em] max-w-[850px] mx-auto"
           style={{ fontFamily: clashFont, fontWeight: 600 }}
         >
-          Hype ile tanış.{' '}
+          {t('landing.hero.title')}{' '}
           <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
-            İçerik üret.
+            {t('landing.hero.titleHighlight')}
           </span>
         </motion.h1>
 
@@ -492,16 +506,15 @@ function Hero() {
           className="mt-5 text-[18px] sm:text-[22px] md:text-[28px] text-gray-400 max-w-[600px] mx-auto leading-[1.4] tracking-[-0.01em]"
           style={{ fontFamily: satoshiFont, fontWeight: 500 }}
         >
-          Senin yazım tarzını öğrenen, senin sesinde
-          6 platforma içerik üreten AI ekibin.
+          {t('landing.hero.subtitle')}
         </motion.p>
 
         {/* CTA — action-oriented, specific */}
         <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <HoloButton to="/login">
-            Ücretsiz Başla <ArrowRight className="w-4 h-4 inline ml-1" />
+            {t('landing.hero.cta')} <ArrowRight className="w-4 h-4 inline ml-1" />
           </HoloButton>
-          <span className="text-[13px] text-gray-300 font-medium">Kredi kartı gerekmez</span>
+          <span className="text-[13px] text-gray-300 font-medium">{t('landing.hero.noCreditCard')}</span>
         </motion.div>
 
         {/* Social proof strip */}
@@ -512,13 +525,13 @@ function Hero() {
                 <div key={i} className={`w-7 h-7 rounded-full ${bg} border-2 border-white`} />
               ))}
             </div>
-            <span className="font-medium">500+ içerik üreticisi</span>
+            <span className="font-medium">{t('landing.hero.socialProof')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
             ))}
-            <span className="ml-1 font-medium">4.9/5</span>
+            <span className="ml-1 font-medium">{t('landing.hero.rating')}</span>
           </div>
         </motion.div>
 
@@ -537,17 +550,18 @@ function Hero() {
    S4: HOW IT WORKS — 3 Steps
    ═══════════════════════════════════════════ */
 function HowItWorks() {
+  const { t } = useTranslation();
   const steps = [
-    { num: '01', title: 'Konunu Yaz', desc: "AI'ya ne hakkında içerik istediğini söyle." },
-    { num: '02', title: 'Stil & Ton Seç', desc: '5 karakter, 4 ton. Tarzını belirle.' },
-    { num: '03', title: 'Paylaş & Büyü', desc: 'Kopyala veya direkt paylaş. 10x içerik.' },
+    { num: '01', title: t('landing.howItWorks.step1Title'), desc: t('landing.howItWorks.step1Desc') },
+    { num: '02', title: t('landing.howItWorks.step2Title'), desc: t('landing.howItWorks.step2Desc') },
+    { num: '03', title: t('landing.howItWorks.step3Title'), desc: t('landing.howItWorks.step3Desc') },
   ];
 
   return (
     <section id="how-it-works" style={{ background: '#fbfbfb', fontFamily: satoshiFont, paddingTop: 140, paddingBottom: 60 }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-          <SectionTitle className="text-center">3 Adımda Başla</SectionTitle>
+          <SectionTitle className="text-center">{t('landing.howItWorks.title')}</SectionTitle>
         </motion.div>
 
         <motion.div
@@ -583,21 +597,22 @@ function HowItWorks() {
    S5: BRAND DNA FEATURES — 3 Big Cards
    ═══════════════════════════════════════════ */
 function BrandDNAFeatures() {
+  const { t } = useTranslation();
   const features = [
     {
       icon: <Brain className="w-7 h-7 text-white" />,
-      title: 'Stil Klonlama',
-      desc: 'Herhangi bir Twitter hesabının yazım stilini analiz et ve aynı tarzda içerik üret.',
+      title: t('landing.features.styleCloning'),
+      desc: t('landing.features.styleCloningDesc'),
     },
     {
       icon: <Wand2 className="w-7 h-7 text-white" />,
-      title: '5 AI Karakteri',
-      desc: "Saf, Otorite, Insider, Mentalist, Haber. Her biri benzersiz yazım DNA'sına sahip.",
+      title: t('landing.features.aiCharacters'),
+      desc: t('landing.features.aiCharactersDesc'),
     },
     {
       icon: <Flame className="w-7 h-7 text-white" />,
-      title: 'APEX Modu',
-      desc: "Maksimum viral potansiyel. Hook pattern'leri ve engagement optimizasyonu.",
+      title: t('landing.features.apexMode'),
+      desc: t('landing.features.apexModeDesc'),
     },
   ];
 
@@ -605,8 +620,8 @@ function BrandDNAFeatures() {
     <section id="features" style={{ background: '#f8f8f8', fontFamily: satoshiFont, paddingTop: 140, paddingBottom: 60 }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-          <SectionTitle className="text-center">Senin İçerik DNA'n</SectionTitle>
-          <SectionDescription className="mt-4">Type Hype'ın AI'ı seni anlar. Sonra seninle yazar.</SectionDescription>
+          <SectionTitle className="text-center">{t('landing.features.title')}</SectionTitle>
+          <SectionDescription className="mt-4">{t('landing.features.subtitle')}</SectionDescription>
         </motion.div>
 
         <motion.div
@@ -637,13 +652,14 @@ function BrandDNAFeatures() {
    S6: STYLE SHOWCASE (Brand DNA — preserved)
    ═══════════════════════════════════════════ */
 function StyleShowcase() {
+  const { t } = useTranslation();
   const dimensions = [
-    { name: 'Kelime Seçimi', score: 72 },
-    { name: 'Cümle Akışı', score: 65 },
-    { name: 'Mizah Seviyesi', score: 95 },
-    { name: 'Emoji Kullanımı', score: 78 },
-    { name: 'Etkileşim Gücü', score: 97 },
-    { name: 'Provokatiflik', score: 92 },
+    { name: t('landing.styleShowcase.wordChoice'), score: 72 },
+    { name: t('landing.styleShowcase.sentenceFlow'), score: 65 },
+    { name: t('landing.styleShowcase.humorLevel'), score: 95 },
+    { name: t('landing.styleShowcase.emojiUsage'), score: 78 },
+    { name: t('landing.styleShowcase.engagementPower'), score: 97 },
+    { name: t('landing.styleShowcase.provocativeness'), score: 92 },
   ];
 
   return (
@@ -656,11 +672,11 @@ function StyleShowcase() {
                 <div className="w-11 h-11 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-full flex items-center justify-center text-white text-[13px] font-bold">SK</div>
                 <div className="flex-1">
                   <div className="text-[14px] font-semibold text-[#1d1d1f]">@semihdev</div>
-                  <div className="text-[12px] text-gray-400">Stil Profili Aktif</div>
+                  <div className="text-[12px] text-gray-400">{t('landing.styleShowcase.profileActive')}</div>
                 </div>
                 <div className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[11px] font-medium flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                  Analiz Edildi
+                  {t('landing.styleShowcase.analyzed')}
                 </div>
               </div>
               <div className="space-y-3.5">
@@ -682,28 +698,28 @@ function StyleShowcase() {
               </div>
               <div className="mt-6 p-4 bg-violet-50/60 rounded-xl border border-violet-100/60">
                 <p className="text-[12px] text-violet-600 leading-[1.6]" style={{ fontWeight: 500 }}>
-                  💡 Yüksek etkileşim, provokatif mizah. Kısa ve vurucu cümleler. Raw ve Unhinged tonları ile en iyi sonuç.
+                  {t('landing.styleShowcase.tip')}
                 </p>
               </div>
             </div>
           </motion.div>
 
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerSlow}>
-            <motion.div variants={fadeUp}><SectionBadge>Style DNA</SectionBadge></motion.div>
+            <motion.div variants={fadeUp}><SectionBadge>{t('landing.styleShowcase.badge')}</SectionBadge></motion.div>
             <motion.div variants={fadeUp}>
-              <SectionTitle className="mt-5">
-                Senin Tarzını Öğrenir,<br />Seninle Yazar.
+              <SectionTitle className="mt-5 whitespace-pre-line">
+                {t('landing.styleShowcase.title')}
               </SectionTitle>
             </motion.div>
             <motion.p variants={fadeUp} className="mt-5 text-[16px] md:text-[18px] text-gray-400 leading-[1.7] max-w-[420px]" style={{ fontWeight: 500 }}>
-              Herhangi bir Twitter hesabını analiz et. 9 boyutlu stil profili oluştur ve o tarzda yazı üretmeye başla.
+              {t('landing.styleShowcase.subtitle')}
             </motion.p>
             <motion.div variants={fadeUp} className="mt-8 space-y-3.5">
               {[
-                "100 tweet analiz et, yazım DNA'sını çıkar",
-                '9 boyutlu derinlemesine stil profili',
-                'Herhangi bir stilde yeni içerik üret',
-                "Persona ve tonlarla stilini mix'le",
+                t('landing.styleShowcase.bullet1'),
+                t('landing.styleShowcase.bullet2'),
+                t('landing.styleShowcase.bullet3'),
+                t('landing.styleShowcase.bullet4'),
               ].map((text, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-5 h-5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-full flex items-center justify-center shrink-0">
@@ -724,16 +740,17 @@ function StyleShowcase() {
    S7: STATS — Full-width, no cards
    ═══════════════════════════════════════════ */
 function StatsSection() {
+  const { t } = useTranslation();
   const [count1, ref1] = useCounter(50, 1500);
   const [count2, ref2] = useCounter(6, 800);
   const [count3, ref3] = useCounter(9, 800);
   const [count4, ref4] = useCounter(500, 1800);
 
   const stats = [
-    { value: `${count1}K+`, label: 'içerik üretildi', ref: ref1 },
-    { value: count2.toString(), label: 'platform desteği', ref: ref2 },
-    { value: count3.toString(), label: 'stil boyutu', ref: ref3 },
-    { value: `${count4}+`, label: 'aktif kullanıcı', ref: ref4 },
+    { value: `${count1}K+`, label: t('landing.stats.contentGenerated'), ref: ref1 },
+    { value: count2.toString(), label: t('landing.stats.platformSupport'), ref: ref2 },
+    { value: count3.toString(), label: t('landing.stats.styleDimensions'), ref: ref3 },
+    { value: `${count4}+`, label: t('landing.stats.activeUsers'), ref: ref4 },
   ];
 
   return (
@@ -766,22 +783,23 @@ function StatsSection() {
    S8: PLATFORM SUPPORT
    ═══════════════════════════════════════════ */
 function PlatformSupport() {
+  const { t } = useTranslation();
   const platforms = [
-    { name: 'X / Twitter', icon: <FaXTwitter className="w-7 h-7" />, desc: 'Tweet, Quote, Reply, Thread, Article', color: 'text-gray-800', bg: 'bg-gray-50' },
-    { name: 'Instagram', icon: <FaInstagram className="w-7 h-7" />, desc: 'Caption, Story, Reel açıklaması', color: 'text-pink-500', bg: 'bg-pink-50' },
-    { name: 'TikTok', icon: <FaTiktok className="w-7 h-7" />, desc: 'Video script, caption, hashtag', color: 'text-gray-800', bg: 'bg-gray-50' },
-    { name: 'YouTube', icon: <FaYoutube className="w-7 h-7" />, desc: 'Başlık, açıklama, script', color: 'text-red-500', bg: 'bg-red-50' },
-    { name: 'LinkedIn', icon: <FaLinkedinIn className="w-7 h-7" />, desc: 'Profesyonel post, article', color: 'text-blue-600', bg: 'bg-blue-50' },
-    { name: 'Blog', icon: <HiDocumentText className="w-7 h-7" />, desc: 'SEO uyumlu uzun içerik', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { name: t('landing.platforms.twitter'), icon: <FaXTwitter className="w-7 h-7" />, desc: t('landing.platforms.twitterDesc'), color: 'text-gray-800', bg: 'bg-gray-50' },
+    { name: t('landing.platforms.instagram'), icon: <FaInstagram className="w-7 h-7" />, desc: t('landing.platforms.instagramDesc'), color: 'text-pink-500', bg: 'bg-pink-50' },
+    { name: t('landing.platforms.tiktok'), icon: <FaTiktok className="w-7 h-7" />, desc: t('landing.platforms.tiktokDesc'), color: 'text-gray-800', bg: 'bg-gray-50' },
+    { name: t('landing.platforms.youtube'), icon: <FaYoutube className="w-7 h-7" />, desc: t('landing.platforms.youtubeDesc'), color: 'text-red-500', bg: 'bg-red-50' },
+    { name: t('landing.platforms.linkedin'), icon: <FaLinkedinIn className="w-7 h-7" />, desc: t('landing.platforms.linkedinDesc'), color: 'text-blue-600', bg: 'bg-blue-50' },
+    { name: t('landing.platforms.blog'), icon: <HiDocumentText className="w-7 h-7" />, desc: t('landing.platforms.blogDesc'), color: 'text-emerald-500', bg: 'bg-emerald-50' },
   ];
 
   return (
     <section id="platforms" style={{ background: '#fbfbfb', fontFamily: satoshiFont, paddingTop: 140, paddingBottom: 60 }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <motion.div className="text-center mb-14" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-          <SectionBadge>Platformlar</SectionBadge>
-          <SectionTitle className="mt-5 text-center">6 Platform, Tek Araç</SectionTitle>
-          <SectionDescription className="mt-4">Araç değiştirmeden tüm platformlara özel içerik üret.</SectionDescription>
+          <SectionBadge>{t('landing.platforms.badge')}</SectionBadge>
+          <SectionTitle className="mt-5 text-center">{t('landing.platforms.title')}</SectionTitle>
+          <SectionDescription className="mt-4">{t('landing.platforms.subtitle')}</SectionDescription>
         </motion.div>
 
         <motion.div className="grid grid-cols-2 md:grid-cols-3 gap-5" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
@@ -806,29 +824,30 @@ function PlatformSupport() {
    S9: COST COMPARISON — Grid table
    ═══════════════════════════════════════════ */
 function CostComparison() {
+  const { t } = useTranslation();
   const rows = [
-    'Stil Klonlama',
-    '5 AI Karakteri',
-    'APEX Modu',
-    '6 Platform Desteği',
-    'Trend Takibi',
-    '7/24 Üretim',
+    t('landing.costComparison.styleCloning'),
+    t('landing.costComparison.aiCharacters'),
+    t('landing.costComparison.apexMode'),
+    t('landing.costComparison.platformSupport'),
+    t('landing.costComparison.trendTracking'),
+    t('landing.costComparison.alwaysOn'),
   ];
 
   return (
     <section style={{ background: '#f8f8f8', fontFamily: satoshiFont, paddingTop: 140, paddingBottom: 60 }}>
       <div className="max-w-[900px] mx-auto px-6">
         <motion.div className="text-center mb-14" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-          <SectionTitle className="text-center">Hepsini Yapan Tek Araç</SectionTitle>
-          <SectionDescription className="mt-4">Ayda $142+ tasarruf et. Sadece Type Hype yeterli.</SectionDescription>
+          <SectionTitle className="text-center">{t('landing.costComparison.title')}</SectionTitle>
+          <SectionDescription className="mt-4">{t('landing.costComparison.subtitle')}</SectionDescription>
         </motion.div>
 
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={scaleIn}>
           <div className="bg-white rounded-[20px] border border-gray-100 overflow-hidden">
             {/* Header */}
             <div className="grid grid-cols-3 border-b border-gray-100">
-              <div className="px-6 py-4 text-[13px] font-semibold text-gray-400" style={{ fontWeight: 600 }}>Özellik</div>
-              <div className="px-6 py-4 text-center text-[13px] font-semibold text-gray-400" style={{ fontWeight: 600 }}>Diğer Araçlar</div>
+              <div className="px-6 py-4 text-[13px] font-semibold text-gray-400" style={{ fontWeight: 600 }}>{t('landing.costComparison.feature')}</div>
+              <div className="px-6 py-4 text-center text-[13px] font-semibold text-gray-400" style={{ fontWeight: 600 }}>{t('landing.costComparison.otherTools')}</div>
               <div className="px-6 py-4 text-center text-[13px] font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-500" style={{ fontWeight: 700 }}>Type Hype</div>
             </div>
             {/* Rows */}
@@ -849,7 +868,7 @@ function CostComparison() {
             ))}
             {/* Price row */}
             <div className="grid grid-cols-3 border-t border-gray-100 bg-gray-50/30">
-              <div className="px-6 py-5 text-[14px] text-[#1d1d1f]" style={{ fontWeight: 700 }}>Aylık Maliyet</div>
+              <div className="px-6 py-5 text-[14px] text-[#1d1d1f]" style={{ fontWeight: 700 }}>{t('landing.costComparison.monthlyCost')}</div>
               <div className="px-6 py-5 text-center">
                 <span className="text-[20px] text-red-500 line-through" style={{ fontWeight: 700 }}>$142+/ay</span>
               </div>
@@ -868,23 +887,24 @@ function CostComparison() {
    S10: PRIVACY & SECURITY
    ═══════════════════════════════════════════ */
 function PrivacySecurity() {
+  const { t } = useTranslation();
   return (
     <section style={{ background: '#fbfbfb', fontFamily: satoshiFont, paddingTop: 180, paddingBottom: 60 }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="grid md:grid-cols-2 gap-14 items-center">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerSlow}>
-            <motion.div variants={fadeUp}><SectionBadge>Güvenlik</SectionBadge></motion.div>
+            <motion.div variants={fadeUp}><SectionBadge>{t('landing.privacy.badge')}</SectionBadge></motion.div>
             <motion.div variants={fadeUp}>
-              <SectionTitle className="mt-5">Büyük güç,<br />büyük gizlilik.</SectionTitle>
+              <SectionTitle className="mt-5 whitespace-pre-line">{t('landing.privacy.title')}</SectionTitle>
             </motion.div>
             <motion.p variants={fadeUp} className="mt-5 text-[16px] md:text-[18px] text-gray-400 leading-[1.7] max-w-[400px]" style={{ fontWeight: 500 }}>
-              İçeriklerini koruma altına alıyoruz. Tam şifreleme, sıfır veri paylaşımı ve mutlak kontrol senin elinde.
+              {t('landing.privacy.subtitle')}
             </motion.p>
             <motion.div variants={fadeUp} className="mt-8 space-y-4">
               {[
-                { icon: <Lock className="w-4 h-4" />, text: 'End-to-end şifreleme' },
-                { icon: <Shield className="w-4 h-4" />, text: 'Verilerin asla paylaşılmaz veya eğitimde kullanılmaz' },
-                { icon: <Eye className="w-4 h-4" />, text: 'Tam kontrol ve şeffaflık' },
+                { icon: <Lock className="w-4 h-4" />, text: t('landing.privacy.encryption') },
+                { icon: <Shield className="w-4 h-4" />, text: t('landing.privacy.noSharing') },
+                { icon: <Eye className="w-4 h-4" />, text: t('landing.privacy.fullControl') },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center text-violet-500">{item.icon}</div>
@@ -916,22 +936,23 @@ function PrivacySecurity() {
    S11: FAQ
    ═══════════════════════════════════════════ */
 function FAQ() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(0);
   const items = [
-    { q: 'Type Hype nedir?', a: 'Type Hype, AI destekli bir içerik üretim platformudur. 5 farklı AI karakteri, 4 yazım tonu ve gelişmiş stil klonlama teknolojisiyle sosyal medya içeriklerinizi saniyeler içinde üretir.' },
-    { q: 'Style Cloning nasıl çalışır?', a: 'Herhangi bir Twitter hesabının kullanıcı adını girin. AI son 100 tweeti analiz eder, 9 farklı boyutta yazım stilini çıkarır (kelime seçimi, mizah, cümle yapısı vb.) ve o stilde yeni içerik üretmenize olanak tanır.' },
-    { q: 'Hangi platformlar destekleniyor?', a: 'X/Twitter (Tweet, Quote, Reply, Thread, Article), Instagram caption, TikTok script, YouTube açıklama, LinkedIn post ve Blog makaleleri destekleniyor.' },
-    { q: 'AI Karakterleri nedir?', a: 'Beş farklı yazım karakteri: Saf (otantik ve basit), Otorite (uzman ve otoriter), Insider (sektör sırları), Mentalist (psikolojik hooklar) ve Haber (güncel haberler). Her biri benzersiz bir sesle yazar.' },
-    { q: 'Ücretsiz mi?', a: 'Evet! Ücretsiz plan ile günlük sınırlı sayıda içerik üretebilirsiniz. Pro plan ile sınırsız üretim, tüm personalar, tam Style Lab erişimi ve APEX modu dahil olur.' },
-    { q: 'Verilerim güvende mi?', a: 'Kesinlikle. Verileriniz şifrelenir, asla üçüncü taraflarla paylaşılmaz ve AI model eğitiminde kullanılmaz. Her şey tamamen sizin kontrolünüzde.' },
+    { q: t('landing.faq.q1'), a: t('landing.faq.a1') },
+    { q: t('landing.faq.q2'), a: t('landing.faq.a2') },
+    { q: t('landing.faq.q3'), a: t('landing.faq.a3') },
+    { q: t('landing.faq.q4'), a: t('landing.faq.a4') },
+    { q: t('landing.faq.q5'), a: t('landing.faq.a5') },
+    { q: t('landing.faq.q6'), a: t('landing.faq.a6') },
   ];
 
   return (
     <section id="faq" style={{ background: '#f8f8f8', fontFamily: satoshiFont, paddingTop: 180, paddingBottom: 60 }}>
       <div className="max-w-[800px] mx-auto px-6">
         <motion.div className="text-center mb-14" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-          <SectionBadge>SSS</SectionBadge>
-          <SectionTitle className="mt-5 text-center">Sık Sorulan Sorular</SectionTitle>
+          <SectionBadge>{t('landing.faq.badge')}</SectionBadge>
+          <SectionTitle className="mt-5 text-center">{t('landing.faq.title')}</SectionTitle>
         </motion.div>
 
         <motion.div className="space-y-3" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
@@ -964,6 +985,7 @@ function FAQ() {
    S12: FINAL CTA
    ═══════════════════════════════════════════ */
 function FinalCTA() {
+  const { t } = useTranslation();
   return (
     <section className="relative overflow-hidden" style={{ background: '#fbfbfb', fontFamily: satoshiFont, paddingTop: 120, paddingBottom: 120 }}>
       <div className="absolute inset-0 -z-10">
@@ -976,21 +998,21 @@ function FinalCTA() {
         </motion.div>
 
         <motion.h2 variants={fadeUp} className="text-[36px] md:text-[56px] text-[#1d1d1f] leading-[1.05] tracking-[-0.03em]" style={{ fontWeight: 900 }}>
-          İçerik üretmeye<br />
+          {t('landing.finalCta.title')}<br />
           <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
-            hazır mısın?
+            {t('landing.finalCta.titleHighlight')}
           </span>
         </motion.h2>
 
         <motion.p variants={fadeUp} className="mt-5 text-[16px] md:text-[18px] text-gray-400 max-w-[450px] mx-auto leading-[1.65]" style={{ fontWeight: 500 }}>
-          Binlerce içerik üreticisi Type Hype ile daha hızlı ve etkili içerik üretiyor. Sen de katıl.
+          {t('landing.finalCta.subtitle')}
         </motion.p>
 
         <motion.div variants={fadeUp} className="mt-9 flex flex-col items-center gap-4">
           <HoloButton to="/login">
-            Ücretsiz Başla <ArrowRight className="w-4 h-4 inline ml-1" />
+            {t('landing.finalCta.cta')} <ArrowRight className="w-4 h-4 inline ml-1" />
           </HoloButton>
-          <p className="text-[13px] text-gray-400" style={{ fontWeight: 500 }}>Kredi kartı gerekmez. Hemen başla.</p>
+          <p className="text-[13px] text-gray-400" style={{ fontWeight: 500 }}>{t('landing.finalCta.noCreditCard')}</p>
         </motion.div>
       </motion.div>
     </section>
@@ -1001,11 +1023,12 @@ function FinalCTA() {
    S13: FOOTER
    ═══════════════════════════════════════════ */
 function Footer() {
+  const { t } = useTranslation();
   const columns = [
-    { title: 'Ürün', links: ['Özellikler', 'Platformlar', 'Style Lab', 'Fiyatlandırma'] },
-    { title: 'Karakterler', links: ['Otorite', 'Insider', 'Mentalist', 'Saf', 'Haber'] },
-    { title: 'Teknoloji', links: ['APEX Modu', 'Stil Klonlama', 'Trend Motoru'] },
-    { title: 'Kaynaklar', links: ['Blog', 'Değişiklik Günlüğü', 'Dokümantasyon'] },
+    { title: t('landing.footer.product'), links: [t('landing.footer.featuresLink'), t('landing.footer.platformsLink'), t('landing.footer.styleLabLink'), t('landing.footer.pricingLink')] },
+    { title: t('landing.footer.characters'), links: [t('landing.footer.authority'), t('landing.footer.insider'), t('landing.footer.mentalist'), t('landing.footer.saf'), t('landing.footer.news')] },
+    { title: t('landing.footer.technology'), links: [t('landing.footer.apexMode'), t('landing.footer.styleCloning'), t('landing.footer.trendEngine')] },
+    { title: t('landing.footer.resources'), links: [t('landing.footer.blogLink'), t('landing.footer.changelog'), t('landing.footer.docs')] },
   ];
 
   return (
@@ -1019,8 +1042,8 @@ function Footer() {
               </div>
               <span className="text-[17px] text-[#1d1d1f]" style={{ fontWeight: 700 }}>Type Hype</span>
             </div>
-            <p className="text-[12px] text-gray-400 leading-[1.6]" style={{ fontWeight: 500 }}>
-              AI destekli içerik üretim platformu.<br />© 2026 Type Hype. Tüm hakları saklıdır.
+            <p className="text-[12px] text-gray-400 leading-[1.6] whitespace-pre-line" style={{ fontWeight: 500 }}>
+              {t('landing.footer.copyright')}
             </p>
           </div>
 
@@ -1036,7 +1059,7 @@ function Footer() {
           ))}
 
           <div>
-            <div className="text-[13px] text-[#1d1d1f] mb-4" style={{ fontWeight: 700 }}>Takip Et</div>
+            <div className="text-[13px] text-[#1d1d1f] mb-4" style={{ fontWeight: 700 }}>{t('landing.footer.followUs')}</div>
             <div className="flex gap-3 mb-4">
               {[
                 { icon: <FaXTwitter className="w-4 h-4" />, color: 'text-gray-600' },
@@ -1049,16 +1072,16 @@ function Footer() {
               ))}
             </div>
             <a href="mailto:hello@typehype.io" className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-100 transition-colors">
-              İletişim
+              {t('landing.footer.contact')}
             </a>
           </div>
         </div>
 
         <div className="mt-12 pt-6 border-t border-gray-200/60 flex flex-col sm:flex-row justify-between items-center text-[12px] text-gray-400">
-          <span>AI ile üretildi, içerik üreticileri için.</span>
+          <span>{t('landing.footer.builtWithAi')}</span>
           <div className="flex gap-6 mt-2 sm:mt-0">
-            <span className="hover:text-gray-600 cursor-pointer">Gizlilik Politikası</span>
-            <span className="hover:text-gray-600 cursor-pointer">Kullanım Şartları</span>
+            <span className="hover:text-gray-600 cursor-pointer">{t('landing.footer.privacyPolicy')}</span>
+            <span className="hover:text-gray-600 cursor-pointer">{t('landing.footer.termsOfService')}</span>
           </div>
         </div>
       </div>

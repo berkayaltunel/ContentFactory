@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,21 +27,22 @@ import api, { API } from "@/lib/api";
 
 
 const TYPE_CONFIG = {
-  tweet: { label: "Tweet", color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
-  quote: { label: "Alıntı", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
-  reply: { label: "Yanıt", color: "bg-green-500/10 text-green-400 border-green-500/20" },
-  article: { label: "Makale", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  tweet: { labelKey: "create.contentTypes.tweet", color: "bg-sky-500/10 text-sky-400 border-sky-500/20" },
+  quote: { labelKey: "create.contentTypes.quote", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  reply: { labelKey: "create.contentTypes.reply", color: "bg-green-500/10 text-green-400 border-green-500/20" },
+  article: { labelKey: "create.contentTypes.article", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
 };
 
 function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelected, onToggleSelect }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [favoritedVariants, setFavoritedVariants] = useState(gen.favorited_variants || {});
   const variants = gen.variants || [];
-  const typeConfig = TYPE_CONFIG[gen.type] || { label: gen.type, color: "bg-secondary text-muted-foreground" };
+  const typeConfig = TYPE_CONFIG[gen.type] || { labelKey: gen.type, color: "bg-secondary text-muted-foreground" };
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content);
-    toast.success("Kopyalandı!");
+    toast.success(t("common.copied"));
   };
 
   const handleTweet = (content) => {
@@ -60,15 +62,15 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
       const next = { ...favoritedVariants };
       if (res.data.action === "added") {
         next[variantIndex] = res.data.favorite_id;
-        toast.success("Favorilere eklendi!");
+        toast.success(t("history.favoriteAdded"));
       } else {
         delete next[variantIndex];
-        toast.success("Favorilerden kaldırıldı");
+        toast.success(t("history.favoriteRemoved"));
       }
       setFavoritedVariants(next);
       if (onFavoriteChange) onFavoriteChange(gen.id, next);
     } catch {
-      toast.error("Favori işlemi başarısız");
+      toast.error(t("history.favoriteError"));
     }
   };
 
@@ -88,7 +90,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
               </button>
             )}
             <Badge className={typeConfig.color}>
-              {typeConfig.label}
+              {t(typeConfig.labelKey)}
             </Badge>
             {gen.persona && (
               <Badge variant="outline" className="text-xs">
@@ -123,7 +125,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
                 )}
                 {gen.tweet_url && (
                   <a href={gen.tweet_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[200px]">
-                    {gen.tweet_url.match(/@?(\w+)\/status/)?.[1] ? `@${gen.tweet_url.match(/@?(\w+)\/status/)[1]}` : "Orijinal tweet"}
+                    {gen.tweet_url.match(/@?(\w+)\/status/)?.[1] ? `@${gen.tweet_url.match(/@?(\w+)\/status/)[1]}` : t('history.originalTweet')}
                   </a>
                 )}
               </div>
@@ -136,7 +138,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
               size="sm"
               className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
               onClick={() => {
-                if (window.confirm("Bu üretimi silmek istediğinize emin misiniz?")) {
+                if (window.confirm(t('history.deleteConfirm'))) {
                   onDelete(gen.id);
                 }
               }}
@@ -149,7 +151,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
         {/* Topic */}
         {gen.topic && (
           <p className="text-xs text-muted-foreground mb-3 truncate">
-            Konu: {gen.topic}
+            {t('history.topicLabel', { topic: gen.topic })}
           </p>
         )}
 
@@ -166,11 +168,11 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">
-                      {variant.character_count || variant.content?.length || 0} karakter
+                      {t('common.nCharacters', { count: variant.character_count || variant.content?.length || 0 })}
                     </Badge>
                     {variants.length > 1 && (
                       <Badge variant="outline" className="text-xs">
-                        Varyant {variantIndex + 1}
+                        {t('common.variant')} {variantIndex + 1}
                       </Badge>
                     )}
                   </div>
@@ -182,7 +184,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
                       className="gap-1.5 h-8"
                     >
                       <Copy className="h-4 w-4" />
-                      <span className="hidden sm:inline">Kopyala</span>
+                      <span className="hidden sm:inline">{t('common.copy')}</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -207,7 +209,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
                       className="gap-1.5 h-8 text-sky-400 hover:text-sky-300"
                     >
                       <Send className="h-4 w-4" />
-                      <span className="hidden sm:inline">Tweetle</span>
+                      <span className="hidden sm:inline">{t('common.tweetle')}</span>
                     </Button>
                   </div>
                 </div>
@@ -227,12 +229,12 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
             {expanded ? (
               <>
                 <ChevronUp className="h-4 w-4" />
-                Sadece ilkini göster
+                {t('history.showOnlyFirst')}
               </>
             ) : (
               <>
                 <ChevronDown className="h-4 w-4" />
-                Tüm {variants.length} varyantı göster
+                {t('history.showAllVariants', { count: variants.length })}
               </>
             )}
           </Button>
@@ -243,6 +245,7 @@ function HistoryCard({ gen, onFavoriteChange, onDelete, selectionMode, isSelecte
 }
 
 export default function HistoryPage() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -258,35 +261,35 @@ export default function HistoryPage() {
     try {
       await api.delete(`${API}/generations/${id}`);
       setGenerations((prev) => prev.filter((g) => g.id !== id));
-      toast.success("Üretim silindi");
+      toast.success(t("history.deleted"));
     } catch {
-      toast.error("Silinemedi");
+      toast.error(t("history.deleteError"));
     }
   };
 
   const handleDeleteAll = async () => {
-    if (!window.confirm("Tüm üretim geçmişinizi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
+    if (!window.confirm(t('history.deleteAllConfirm'))) return;
     try {
       const res = await api.delete(`${API}/generations/all`);
       setGenerations([]);
-      toast.success(`${res.data.deleted} üretim silindi`);
+      toast.success(t('history.allDeleted', { count: res.data.deleted }));
     } catch {
-      toast.error("Silinemedi");
+      toast.error(t("history.deleteError"));
     }
   };
 
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`${selectedIds.size} üretimi silmek istediğinize emin misiniz?`)) return;
+    if (!window.confirm(t('history.bulkDeleteConfirm', { count: selectedIds.size }))) return;
     try {
       const ids = Array.from(selectedIds);
       await api.delete(`${API}/generations/bulk`, { data: { ids } });
       setGenerations((prev) => prev.filter((g) => !selectedIds.has(g.id)));
-      toast.success(`${ids.length} üretim silindi`);
+      toast.success(t('history.allDeleted', { count: ids.length }));
       setSelectedIds(new Set());
       setSelectionMode(false);
     } catch {
-      toast.error("Silinemedi");
+      toast.error(t("history.deleteError"));
     }
   };
 
@@ -332,29 +335,29 @@ export default function HistoryPage() {
       <div className="mb-8">
         <h1 className="font-outfit text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
           <History className="h-10 w-10 text-muted-foreground" />
-          Üretim Geçmişi
+          {t('history.title')}
         </h1>
         <p className="text-muted-foreground">
-          Daha önce ürettiğiniz tüm içerikler. Beğendiklerinizi favorilere ekleyin.
+          {t('history.subtitle')}
         </p>
         {generations.length > 0 && (
           <div className="flex items-center gap-2 mt-4">
             {!selectionMode ? (
               <>
                 <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
-                  <CheckSquare className="h-4 w-4 mr-1.5" /> Seç
+                  <CheckSquare className="h-4 w-4 mr-1.5" /> {t('history.selectMode')}
                 </Button>
                 <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteAll}>
-                  <Trash2 className="h-4 w-4 mr-1.5" /> Tümünü Sil
+                  <Trash2 className="h-4 w-4 mr-1.5" /> {t('history.deleteAll')}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
-                  <X className="h-4 w-4 mr-1.5" /> İptal
+                  <X className="h-4 w-4 mr-1.5" /> {t('common.cancel')}
                 </Button>
                 <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteSelected} disabled={selectedIds.size === 0}>
-                  <Trash2 className="h-4 w-4 mr-1.5" /> Seçilenleri Sil ({selectedIds.size})
+                  <Trash2 className="h-4 w-4 mr-1.5" /> {t('history.deleteSelected', { count: selectedIds.size })}
                 </Button>
               </>
             )}
@@ -366,9 +369,9 @@ export default function HistoryPage() {
         <Card className="bg-card border-border">
           <CardContent className="py-16 text-center">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-outfit text-xl font-semibold mb-2">Henüz içerik üretmediniz</h3>
+            <h3 className="font-outfit text-xl font-semibold mb-2">{t('history.noContent')}</h3>
             <p className="text-muted-foreground">
-              X AI modülünü kullanarak ilk içeriğinizi üretin.
+              {t('history.noContentDesc')}
             </p>
           </CardContent>
         </Card>
@@ -386,7 +389,7 @@ export default function HistoryPage() {
                   : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               )}
             >
-              Tümü ({generations.length})
+              {t('common.all')} ({generations.length})
             </button>
             {Object.entries(typeCounts).map(([type, count]) => {
               const cfg = TYPE_CONFIG[type] || {};
@@ -401,7 +404,7 @@ export default function HistoryPage() {
                       : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                   )}
                 >
-                  {cfg.label || type} ({count})
+                  {cfg.labelKey ? t(cfg.labelKey) : type} ({count})
                 </button>
               );
             })}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { User, Search, BarChart3, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -11,14 +12,15 @@ import {
 
 
 function DimensionRadar({ dimensions }) {
+  const { t } = useTranslation();
   if (!dimensions) return null;
   const data = [
-    { subject: "İçerik", value: dimensions.content_quality || 0 },
-    { subject: "Etkileşim", value: dimensions.engagement_rate || 0 },
-    { subject: "Tutarlılık", value: dimensions.consistency || 0 },
-    { subject: "Yaratıcılık", value: dimensions.creativity || 0 },
-    { subject: "Topluluk", value: dimensions.community || 0 },
-    { subject: "Büyüme", value: dimensions.growth_potential || 0 },
+    { subject: t('account.dimensions.content'), value: dimensions.content_quality || 0 },
+    { subject: t('account.dimensions.engagement'), value: dimensions.engagement_rate || 0 },
+    { subject: t('account.dimensions.consistency'), value: dimensions.consistency || 0 },
+    { subject: t('account.dimensions.creativity'), value: dimensions.creativity || 0 },
+    { subject: t('account.dimensions.community'), value: dimensions.community || 0 },
+    { subject: t('account.dimensions.growth'), value: dimensions.growth_potential || 0 },
   ];
 
   return (
@@ -57,9 +59,10 @@ function DimensionRadar({ dimensions }) {
 }
 
 function PostingHeatmap({ heatmap }) {
+  const { t } = useTranslation();
   if (!heatmap || !Array.isArray(heatmap)) return null;
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  const days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const days = t('coach.shortDays', { returnObjects: true });
 
   // Normalize
   let max = 0;
@@ -157,6 +160,7 @@ function TopTweet({ tweet, index }) {
 }
 
 export default function AccountAnalysisPage() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
@@ -178,16 +182,16 @@ export default function AccountAnalysisPage() {
 
   const handleAnalyze = async () => {
     if (!username.trim()) {
-      toast.error("Kullanıcı adı girin");
+      toast.error(t('account.emptyUsername'));
       return;
     }
     setLoading(true);
     setResult(null);
-    setLoadingStep("Tweet'ler çekiliyor...");
+    setLoadingStep(t('account.fetchingTweets'));
 
     try {
-      setTimeout(() => setLoadingStep("AI analiz ediliyor..."), 8000);
-      setTimeout(() => setLoadingStep("Rapor hazırlanıyor..."), 15000);
+      setTimeout(() => setLoadingStep(t('account.aiAnalyzing')), 8000);
+      setTimeout(() => setLoadingStep(t('account.preparingReport')), 15000);
 
       const res = await api.post(`${API}/analyze/account`, {
         username: username.replace("@", ""),
@@ -195,13 +199,13 @@ export default function AccountAnalysisPage() {
 
       if (res.data.success) {
         setResult(res.data);
-        toast.success("Analiz tamamlandı! 🎉");
+        toast.success(t('account.analysisComplete'));
         fetchHistory();
       } else {
-        toast.error(res.data.error || "Analiz başarısız");
+        toast.error(res.data.error || t('account.analysisError'));
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Analiz hatası");
+      toast.error(err.response?.data?.detail || t('account.analysisError'));
     } finally {
       setLoading(false);
       setLoadingStep("");
@@ -219,10 +223,10 @@ export default function AccountAnalysisPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            👤 Hesap Analizi
+            {t('account.title')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Twitter hesaplarını AI ile detaylı analiz et
+            {t('account.subtitle')}
           </p>
         </div>
       </div>
@@ -236,7 +240,7 @@ export default function AccountAnalysisPage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-            placeholder="@kullaniciadi"
+            placeholder={t('account.placeholder')}
             className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/50"
           />
         </div>
@@ -245,7 +249,7 @@ export default function AccountAnalysisPage() {
           disabled={loading}
           className="px-6 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
         >
-          {loading ? "Analiz Ediliyor..." : "Analiz Et"}
+          {loading ? t('account.analyzing') : t('account.analyze')}
         </Button>
       </div>
 
@@ -257,7 +261,7 @@ export default function AccountAnalysisPage() {
             <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
           </div>
           <p className="text-lg font-medium">{loadingStep}</p>
-          <p className="text-sm text-muted-foreground mt-1">Bu işlem 15-30 saniye sürebilir</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('account.processingTime')}</p>
           <div className="w-64 mx-auto mt-4 h-1.5 bg-secondary rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" style={{ width: "60%" }} />
           </div>
@@ -276,12 +280,12 @@ export default function AccountAnalysisPage() {
               <div>
                 <h2 className="text-xl font-bold">@{result.username}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {result.tweet_count_analyzed} tweet analiz edildi
+                  {t('account.tweetsAnalyzed', { count: result.tweet_count_analyzed })}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Genel Skor</p>
+              <p className="text-sm text-muted-foreground">{t('account.overallScore')}</p>
               <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                 {analysis.overall_score || 0}/100
               </p>
@@ -293,7 +297,7 @@ export default function AccountAnalysisPage() {
             <div className="rounded-xl border border-border bg-card p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
-                Performans Boyutları
+                {t('account.performanceDimensions')}
               </h3>
               <DimensionRadar dimensions={analysis.dimensions} />
             </div>
@@ -302,7 +306,7 @@ export default function AccountAnalysisPage() {
               {/* Tone */}
               {analysis.tone_analysis && (
                 <div className="rounded-xl border border-border bg-card p-6">
-                  <h3 className="font-semibold mb-2">🎭 Ton Analizi</h3>
+                  <h3 className="font-semibold mb-2">{t('account.toneAnalysis')}</h3>
                   <p className="text-sm text-muted-foreground">{analysis.tone_analysis}</p>
                 </div>
               )}
@@ -312,7 +316,7 @@ export default function AccountAnalysisPage() {
                 <div className="rounded-xl border border-border bg-card p-6">
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
                     <Clock className="h-4 w-4 text-blue-500" />
-                    Paylaşım Sıklığı
+                    {t('account.postingFrequency')}
                   </h3>
                   <p className="text-sm text-muted-foreground">{analysis.posting_frequency}</p>
                 </div>
@@ -321,7 +325,7 @@ export default function AccountAnalysisPage() {
               {/* Hashtag Strategy */}
               {analysis.hashtag_strategy && (
                 <div className="rounded-xl border border-border bg-card p-6">
-                  <h3 className="font-semibold mb-2">#️⃣ Hashtag Stratejisi</h3>
+                  <h3 className="font-semibold mb-2">{t('account.hashtagStrategy')}</h3>
                   <p className="text-sm text-muted-foreground">{analysis.hashtag_strategy}</p>
                 </div>
               )}
@@ -329,7 +333,7 @@ export default function AccountAnalysisPage() {
               {/* Growth Tips */}
               {analysis.growth_tips && (
                 <div className="rounded-xl border border-border bg-card p-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5">
-                  <h3 className="font-semibold mb-2">🚀 Büyüme Stratejisi</h3>
+                  <h3 className="font-semibold mb-2">{t('account.growthStrategy')}</h3>
                   <p className="text-sm text-muted-foreground">{analysis.growth_tips}</p>
                 </div>
               )}
@@ -339,19 +343,19 @@ export default function AccountAnalysisPage() {
           {/* Strengths / Weaknesses / Recommendations */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <InfoCard
-              title="Güçlü Yönler"
+              title={t('account.strengths')}
               items={analysis.strengths}
               icon={ThumbsUp}
               color="green"
             />
             <InfoCard
-              title="Zayıf Yönler"
+              title={t('account.weaknesses')}
               items={analysis.weaknesses}
               icon={ThumbsDown}
               color="red"
             />
             <InfoCard
-              title="Öneriler"
+              title={t('account.recommendations')}
               items={analysis.recommendations}
               icon={Lightbulb}
               color="blue"
@@ -361,7 +365,7 @@ export default function AccountAnalysisPage() {
           {/* Posting Heatmap */}
           {analysis.posting_heatmap && (
             <div className="rounded-xl border border-border bg-card p-6">
-              <h3 className="font-semibold mb-4">📅 Paylaşım Haritası</h3>
+              <h3 className="font-semibold mb-4">{t('account.postingHeatmap')}</h3>
               <PostingHeatmap heatmap={analysis.posting_heatmap} />
             </div>
           )}
@@ -369,7 +373,7 @@ export default function AccountAnalysisPage() {
           {/* Top Tweets */}
           {analysis.top_tweets && analysis.top_tweets.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-6">
-              <h3 className="font-semibold mb-4">🏆 En İyi Tweet'ler</h3>
+              <h3 className="font-semibold mb-4">{t('account.topTweets')}</h3>
               <div className="space-y-3">
                 {analysis.top_tweets.map((tweet, i) => (
                   <TopTweet key={i} tweet={tweet} index={i} />
@@ -383,7 +387,7 @@ export default function AccountAnalysisPage() {
       {/* History */}
       {!loading && !result && history.length > 0 && (
         <div className="mt-8">
-          <h3 className="font-semibold mb-4 text-muted-foreground">Geçmiş Analizler</h3>
+          <h3 className="font-semibold mb-4 text-muted-foreground">{t('account.previousAnalyses')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {history.map((item) => (
               <button

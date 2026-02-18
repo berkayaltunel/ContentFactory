@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Dna, ChevronUp, Plus, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useProfile } from "@/contexts/ProfileContext";
 import { useNavigate } from "react-router-dom";
 
 export default function ProfileSwitcher() {
+  const { t } = useTranslation();
   const { profiles, activeProfile, setActiveProfile } = useProfile();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -15,7 +17,7 @@ export default function ProfileSwitcher() {
       {open && (
         <div className="absolute bottom-full left-0 right-0 mb-1 bg-popover border border-border rounded-lg shadow-xl overflow-hidden z-50">
           <div className="p-2 border-b border-border">
-            <p className="text-xs font-medium text-muted-foreground px-2">Stil Profilleri</p>
+            <p className="text-xs font-medium text-muted-foreground px-2">{t('profileSwitcher.styleProfiles')}</p>
           </div>
           <div className="max-h-[200px] overflow-y-auto p-1">
             {/* No profile option */}
@@ -29,7 +31,7 @@ export default function ProfileSwitcher() {
               <div className="h-6 w-6 rounded-full bg-secondary flex items-center justify-center shrink-0">
                 <Dna className="h-3 w-3 text-muted-foreground" />
               </div>
-              <span className="truncate">Profil Yok</span>
+              <span className="truncate">{t('profileSwitcher.noProfile')}</span>
               {!activeProfile && <Check className="h-4 w-4 ml-auto shrink-0" />}
             </button>
 
@@ -58,7 +60,7 @@ export default function ProfileSwitcher() {
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-secondary transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Yeni Profil Oluştur
+              {t('profileSwitcher.createNewProfile')}
             </button>
           </div>
         </div>
@@ -89,10 +91,10 @@ export default function ProfileSwitcher() {
         </div>
         <div className="flex-1 min-w-0 text-left">
           <p className="text-sm font-medium truncate">
-            {activeProfile ? activeProfile.name : "Profil Seçilmedi"}
+            {activeProfile ? activeProfile.name : t('profileSwitcher.profileNotSelected')}
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {activeProfile ? "Aktif stil profili" : "Stil klonlama kapalı"}
+            {activeProfile ? t('profileSwitcher.activeStyleProfile') : t('profileSwitcher.styleCloningOff')}
           </p>
         </div>
         <ChevronUp className={cn(
