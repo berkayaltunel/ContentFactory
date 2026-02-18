@@ -823,7 +823,9 @@
       "Lifestyle"
     ],
     "timeFilters": {
+      "6h": "Last 6 Hours",
       "24h": "Last 24 Hours",
+      "48h": "Last 48 Hours",
       "7d": "Last Week",
       "all": "All"
     },

@@ -55,7 +55,9 @@ def get_supabase():
 
 
 SINCE_DELTAS = {
+    "6h": timedelta(hours=6),
     "24h": timedelta(hours=24),
+    "48h": timedelta(hours=48),
     "7d": timedelta(days=7),
     "30d": timedelta(days=30),
 }
@@ -64,8 +66,9 @@ SINCE_DELTAS = {
 @router.get("")
 async def list_trends(
     category: Optional[str] = Query(None),
-    since: Optional[str] = Query(None, description="24h, 7d, or 30d"),
+    since: Optional[str] = Query("48h", description="6h, 24h, 48h, 7d, 30d, or all"),
     show_hidden: bool = Query(False, description="Show hidden (low-score) trends"),
+    archived: bool = Query(False, description="Show archived trends"),
     limit: int = Query(20, le=100),
     user=Depends(require_auth),
 ):
@@ -77,10 +80,15 @@ async def list_trends(
         if not show_hidden:
             query = query.eq("is_visible", True)
 
+        if archived:
+            query = query.eq("is_archived", True)
+        else:
+            query = query.or_("is_archived.is.null,is_archived.eq.false")
+
         if category:
             query = query.eq("category", category)
 
-        if since and since in SINCE_DELTAS:
+        if since and since != "all" and since in SINCE_DELTAS:
             cutoff = (datetime.now(timezone.utc) - SINCE_DELTAS[since]).isoformat()
             query = query.gte("created_at", cutoff)
 
@@ -89,6 +97,16 @@ async def list_trends(
     except Exception as e:
         logger.error(f"Trends list error: {e}")
         raise HTTPException(status_code=500, detail="Bir hata oluştu")
+
+
+@router.post("/archive-old")
+async def archive_old_trends(user=Depends(require_auth)):
+    """48 saatten eski trendleri arşivle."""
+    sb = get_supabase()
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+    result = sb.table("trends").update({"is_archived": True}).lt("created_at", cutoff).eq("is_archived", False).execute()
+    count = len(result.data) if result.data else 0
+    return {"archived": count, "cutoff": cutoff}
 
 
 @router.post("/refresh")

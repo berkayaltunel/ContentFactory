@@ -403,7 +403,9 @@ export default function TrendDashboardPage() {
   const CATEGORY_VALUES = ["all", "AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"];
   const CATEGORIES = CATEGORY_VALUES.map((v, i) => ({ value: v, label: CATEGORY_LABELS[i] || v }));
   const TIME_FILTERS = [
+    { label: t('trends.timeFilters.6h'), value: "6h" },
     { label: t('trends.timeFilters.24h'), value: "24h" },
+    { label: t('trends.timeFilters.48h'), value: "48h" },
     { label: t('trends.timeFilters.7d'), value: "7d" },
     { label: t('trends.timeFilters.all'), value: "all" },
   ];
@@ -416,7 +418,7 @@ export default function TrendDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedTime, setSelectedTime] = useState("all");
+  const [selectedTime, setSelectedTime] = useState("48h");
   const [selectedSort, setSelectedSort] = useState("score");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeTab, setActiveTab] = useState("gundem"); // "gundem" | "arsiv"
@@ -429,9 +431,13 @@ export default function TrendDashboardPage() {
     try {
       const params = { limit: 30 };
       if (category && category !== "all") params.category = category;
-      if (since && since !== "all") params.since = since;
+      if (activeTab === "arsiv") {
+        params.archived = true;
+        params.since = "all";
+      } else {
+        if (since && since !== "all") params.since = since;
+      }
       if (sort) params.sort = sort;
-      if (activeTab === "arsiv") params.archived = true;
       const res = await api.get(`${API}/trends`, { params });
       setTrends(res.data.trends || []);
       if (res.data.trends?.length > 0) {
