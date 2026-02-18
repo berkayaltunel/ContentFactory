@@ -893,18 +893,18 @@ function StyleProfileBadge() {
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
   const btnRef = useRef(null);
-  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const [dropPos, setDropPos] = useState(null);
 
-  // Buton pozisyonunu hesapla (dropdown açılınca)
-  useEffect(() => {
-    if (showDropdown && btnRef.current) {
+  const openDropdown = () => {
+    if (btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
       setDropPos({
-        top: rect.top - 8, // butonun hemen üstü
-        left: rect.left + rect.width / 2, // ortala
+        top: rect.top - 8,
+        left: rect.left + rect.width / 2,
       });
     }
-  }, [showDropdown]);
+    setShowDropdown(true);
+  };
 
   if (!profiles || profiles.length === 0) return null;
 
@@ -955,7 +955,7 @@ function StyleProfileBadge() {
     <div style={{ position: "relative" }}>
       <button
         ref={btnRef}
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={() => showDropdown ? setShowDropdown(false) : openDropdown()}
         style={{
           display: "flex",
           alignItems: "center",
@@ -985,7 +985,7 @@ function StyleProfileBadge() {
         <ChevronDown size={12} style={{ opacity: 0.5 }} />
       </button>
 
-      {showDropdown && createPortal(
+      {showDropdown && dropPos && createPortal(
         <>
           {/* Backdrop */}
           <div
