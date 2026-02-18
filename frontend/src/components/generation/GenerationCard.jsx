@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna } from "lucide-react";
+import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -366,7 +366,7 @@ function StyleScoreCard({ scores, isBest }) {
   );
 }
 
-export default function GenerationCard({ job, onEvolve }) {
+export default function GenerationCard({ job, onEvolve, selectionMode, selectedVariants, onVariantSelect }) {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState(new Map());
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
@@ -475,11 +475,26 @@ export default function GenerationCard({ job, onEvolve }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {job.variants?.map((variant, index) => (
+            {job.variants?.map((variant, index) => {
+              const isSelected = selectedVariants?.some(sv => sv.generationId === job.generationId && sv.variantIndex === index);
+              return (
               <div
                 key={variant.id || index}
-                className="rounded-lg border border-border p-3 space-y-2"
+                className="rounded-lg border border-border p-3 space-y-2 relative"
               >
+                {selectionMode && (
+                  <button
+                    onClick={() => onVariantSelect?.(job.generationId, index)}
+                    className={cn(
+                      "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all z-10",
+                      isSelected
+                        ? "bg-violet-500 border-violet-500 text-white"
+                        : "border-white/30 hover:border-violet-400"
+                    )}
+                  >
+                    {isSelected && <Check className="w-3 h-3" />}
+                  </button>
+                )}
                 <p className="text-sm whitespace-pre-wrap">{variant.content}</p>
                 <StyleScoreCard
                   scores={variant.style_scores || job.style_scores?.[index] || null}
@@ -590,7 +605,8 @@ export default function GenerationCard({ job, onEvolve }) {
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

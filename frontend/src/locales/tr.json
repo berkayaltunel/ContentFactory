@@ -1183,6 +1183,9 @@
     "viewChain": "Geçmişi gör",
     "nSelected": "{{count}} varyant seçili",
     "merge": "Birleştir",
+    "selectMode": "Seç",
+    "exitSelection": "Seçimi İptal",
+    "original": "Orijinal",
     "tags": {
       "shorter": "Daha kısa",
       "longer": "Daha uzun",

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import EvolveQuickTags from "./EvolveQuickTags";
 
-export default function EvolvePanel({ variant, variants, onEvolve, isLoading, onClose }) {
+export default function EvolvePanel({ variant, variants, onEvolve, isLoading, onClose, isMerge }) {
   const { t } = useTranslation();
   const [feedback, setFeedback] = useState("");
   const [quickTags, setQuickTags] = useState([]);
@@ -31,8 +31,22 @@ export default function EvolvePanel({ variant, variants, onEvolve, isLoading, on
         <X className="h-4 w-4" />
       </button>
 
+      {/* Title for merge mode */}
+      {isMerge && (
+        <p className="text-sm font-semibold text-violet-300 mb-1">{t('evolve.mergeTitle')}</p>
+      )}
+
       {/* Reference preview */}
-      {referenceContent && (
+      {isMerge && variants?.length > 0 ? (
+        <div>
+          <p className="text-[11px] text-muted-foreground mb-1">{t('evolve.reference')} ({variants.length})</p>
+          {variants.map((v, i) => (
+            <div key={i} className="text-xs text-muted-foreground/70 mb-1 line-clamp-2 border-l-2 border-violet-500/30 pl-2">
+              {v.content?.substring(0, 120)}...
+            </div>
+          ))}
+        </div>
+      ) : referenceContent ? (
         <div>
           <p className="text-[11px] text-muted-foreground mb-1">{t('evolve.reference')}</p>
           <div
@@ -45,7 +59,7 @@ export default function EvolvePanel({ variant, variants, onEvolve, isLoading, on
             {referenceContent}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Quick tags */}
       <EvolveQuickTags selectedTags={quickTags} onTagsChange={setQuickTags} />
@@ -54,7 +68,7 @@ export default function EvolvePanel({ variant, variants, onEvolve, isLoading, on
       <textarea
         value={feedback}
         onChange={(e) => setFeedback(e.target.value)}
-        placeholder={t('evolve.feedbackPlaceholder')}
+        placeholder={isMerge ? t('evolve.feedbackPlaceholderMerge') : t('evolve.feedbackPlaceholder')}
         className="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/50 placeholder:text-muted-foreground/50"
         rows={2}
       />

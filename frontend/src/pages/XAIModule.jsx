@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import GenerationCard from "@/components/generation/GenerationCard";
+import EvolvePanel from "@/components/generation/EvolvePanel";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 import RepurposeModal from "@/components/RepurposeModal";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -1220,6 +1221,9 @@ export default function XAIModule() {
   const [trendContext, setTrendContext] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [repurposeModal, setRepurposeModal] = useState({ open: false, content: "", mode: "video" });
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedVariants, setSelectedVariants] = useState([]);
+  const [mergeEvolveOpen, setMergeEvolveOpen] = useState(false);
   const [imagePrompts, setImagePrompts] = useState({}); // unused, kept for compat
   const [generating, setGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -1601,6 +1605,18 @@ export default function XAIModule() {
       toast.error(detail);
       throw e;
     }
+  };
+
+  const handleVariantSelect = (generationId, variantIndex) => {
+    setSelectedVariants(prev => {
+      const exists = prev.find(sv => sv.generationId === generationId && sv.variantIndex === variantIndex);
+      if (exists) {
+        return prev.filter(sv => !(sv.generationId === generationId && sv.variantIndex === variantIndex));
+      }
+      const job = jobs.find(j => j.generationId === generationId);
+      const content = job?.variants?.[variantIndex]?.content || "";
+      return [...prev, { generationId, variantIndex, content }];
+    });
   };
 
   // Placeholder based on active tab
@@ -2153,10 +2169,84 @@ export default function XAIModule() {
             marginBottom: "80px",
           }}
         >
+          {/* Selection mode toggle */}
+          {jobs.length > 0 && jobs.some(j => j.variants?.length > 1) && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+              <button
+                onClick={() => {
+                  setSelectionMode(!selectionMode);
+                  if (selectionMode) setSelectedVariants([]);
+                }}
+                className={cn(
+                  "text-xs px-3 py-1.5 rounded-full transition-all",
+                  selectionMode
+                    ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
+                    : "text-white/40 hover:text-white/60 border border-white/10 hover:border-white/20"
+                )}
+              >
+                {selectionMode ? t('evolve.exitSelection') : t('evolve.selectMode')}
+              </button>
+            </div>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: window.innerWidth < 640 ? "10px" : "16px" }}>
             {jobs.map((job) => (
-              <GenerationCard key={job.id} job={job} onEvolve={handleEvolve} />
+              <GenerationCard
+                key={job.id}
+                job={job}
+                onEvolve={handleEvolve}
+                selectionMode={selectionMode}
+                selectedVariants={selectedVariants}
+                onVariantSelect={handleVariantSelect}
+              />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Floating merge toolbar */}
+      {selectedVariants.length >= 2 && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#1A1A1A]/95 backdrop-blur-xl border border-violet-500/30 shadow-2xl shadow-violet-500/10">
+          <span className="text-sm text-white/70">
+            {t('evolve.nSelected', { count: selectedVariants.length })}
+          </span>
+          <button
+            onClick={() => setMergeEvolveOpen(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            <Dna className="w-4 h-4" />
+            {t('evolve.merge')}
+          </button>
+          <button
+            onClick={() => { setSelectedVariants([]); setSelectionMode(false); }}
+            className="p-2 rounded-full text-white/40 hover:text-white/70 hover:bg-white/10 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Merge evolve dialog */}
+      {mergeEvolveOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg mx-4 mb-4 md:mb-0 rounded-2xl bg-[#1A1A1A] border border-white/10 p-4">
+            <EvolvePanel
+              variants={selectedVariants}
+              onEvolve={async (feedback, quickTags, variantCount) => {
+                await handleEvolve({
+                  parentGenerationId: selectedVariants[0].generationId,
+                  selectedVariantIndices: selectedVariants.map(sv => sv.variantIndex),
+                  feedback,
+                  quickTags,
+                  variantCount,
+                });
+                setMergeEvolveOpen(false);
+                setSelectedVariants([]);
+                setSelectionMode(false);
+              }}
+              isLoading={false}
+              onClose={() => setMergeEvolveOpen(false)}
+              isMerge={true}
+            />
           </div>
         </div>
       )}

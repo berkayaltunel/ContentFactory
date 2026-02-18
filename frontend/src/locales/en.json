@@ -1183,6 +1183,9 @@
     "viewChain": "View history",
     "nSelected": "{{count}} variants selected",
     "merge": "Merge",
+    "selectMode": "Select",
+    "exitSelection": "Cancel Selection",
+    "original": "Original",
     "tags": {
       "shorter": "Shorter",
       "longer": "Longer",
