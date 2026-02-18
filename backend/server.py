@@ -1151,6 +1151,194 @@ async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
     supabase.table("favorites").delete().eq("id", favorite_id).eq("user_id", user.id).execute()
     return {"success": True}
 
+# ==================== CONTENT EVOLUTION ====================
+from prompts.evolve import build_evolve_prompt, QUICK_TAG_PROMPTS
+import json as json_module
+
+
+class EvolveRequest(BaseModel):
+    parent_generation_id: str
+    selected_variant_indices: list[int]
+    feedback: str = ""
+    quick_tags: list[str] = []
+    variant_count: int = 3
+
+
+def _get_platform(content_type: str) -> str:
+    """Content type'dan platform adı çıkar."""
+    mapping = {
+        "tweet": "Twitter/X",
+        "quote": "Twitter/X",
+        "reply": "Twitter/X",
+        "thread": "Twitter/X",
+        "title-desc": "YouTube",
+        "shorts-script": "YouTube",
+        "caption": "Instagram",
+        "reel-script": "Instagram",
+        "story": "Instagram",
+        "hook": "TikTok",
+        "script": "TikTok",
+        "post": "LinkedIn",
+        "article": "LinkedIn/Blog",
+        "carousel": "LinkedIn",
+        "listicle": "Blog",
+        "tutorial": "Blog",
+    }
+    return mapping.get(content_type, "Sosyal Medya")
+
+
+@api_router.post("/evolve")
+async def evolve_content(req: EvolveRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+    """Evolve: seçilen varyant(lar)dan yeni varyantlar üret."""
+
+    # 1. Parent generation'ı çek
+    parent = supabase.table("generations").select("*").eq("id", req.parent_generation_id).eq("user_id", user.id).single().execute()
+    if not parent.data:
+        raise HTTPException(status_code=404, detail="Üretim bulunamadı")
+
+    parent_data = parent.data
+
+    # 2. Derinlik kontrolü
+    current_depth = (parent_data.get("evolution_depth") or 0) + 1
+    if current_depth > 10:
+        raise HTTPException(status_code=400, detail="Maksimum geliştirme derinliğine ulaşıldı (10 tur)")
+
+    # 3. Seçilen varyantları al
+    variants = parent_data.get("variants", [])
+    selected_contents = []
+    for idx in req.selected_variant_indices:
+        if idx < len(variants):
+            selected_contents.append(variants[idx]["content"])
+
+    if not selected_contents:
+        raise HTTPException(status_code=400, detail="Geçerli varyant seçilmedi")
+
+    # 4. Quick tag validasyonu
+    valid_tags = [t for t in req.quick_tags if t in QUICK_TAG_PROMPTS]
+
+    # 5. Stil prompt'u çek (varsa)
+    style_prompt = ""
+    try:
+        style_res = supabase.table("style_profiles").select("style_prompt").eq("user_id", user.id).eq("is_active", True).limit(1).execute()
+        if style_res.data:
+            style_prompt = style_res.data[0].get("style_prompt", "")
+    except Exception:
+        pass
+
+    # 6. Chain ID belirle
+    chain_id = parent_data.get("evolution_chain_id") or parent_data["id"]
+
+    # 7. Prompt oluştur
+    prompt = build_evolve_prompt(
+        selected_variants=selected_contents,
+        feedback=req.feedback,
+        quick_tags=valid_tags,
+        original_topic=parent_data.get("topic", ""),
+        platform=_get_platform(parent_data.get("type", "tweet")),
+        content_type=parent_data.get("type", "tweet"),
+        variant_count=req.variant_count,
+        style_prompt=style_prompt,
+    )
+
+    # 8. AI'a gönder (mevcut openai_client ve MODEL_CONTENT kullanılıyor)
+    if not openai_client:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
+
+    # Check token budget
+    check_token_budget(user.id)
+
+    response = openai_client.chat.completions.create(
+        model=MODEL_CONTENT,
+        messages=[
+            {"role": "system", "content": "Sen bir sosyal medya içerik uzmanısın. İstenen formatta JSON döndür."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.8,
+        response_format={"type": "json_object"},
+    )
+
+    raw = response.choices[0].message.content
+    parsed = json_module.loads(raw)
+    result_variants = parsed.get("variants", [])
+
+    # Track token usage
+    if response.usage:
+        record_token_usage(user.id, response.usage.total_tokens)
+
+    # 9. Varyantları formatla
+    formatted_variants = []
+    for i, v in enumerate(result_variants):
+        content = v.get("content", "")
+        formatted_variants.append({
+            "id": str(uuid.uuid4()),
+            "content": content,
+            "variant_index": i,
+            "character_count": len(content),
+        })
+
+    # 10. DB'ye kaydet
+    gen_id = str(uuid.uuid4())
+    generation_record = {
+        "id": gen_id,
+        "user_id": user.id,
+        "type": parent_data.get("type", "tweet"),
+        "topic": parent_data.get("topic", ""),
+        "mode": parent_data.get("mode", "classic"),
+        "length": parent_data.get("length", ""),
+        "persona": parent_data.get("persona", ""),
+        "tone": parent_data.get("tone", ""),
+        "language": parent_data.get("language", "tr"),
+        "variants": formatted_variants,
+        "parent_generation_id": req.parent_generation_id,
+        "parent_variant_indices": req.selected_variant_indices,
+        "evolution_feedback": req.feedback or None,
+        "evolution_quick_tags": valid_tags,
+        "evolution_depth": current_depth,
+        "evolution_chain_id": chain_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    supabase.table("generations").insert(generation_record).execute()
+
+    return {
+        "success": True,
+        "generation_id": gen_id,
+        "variants": formatted_variants,
+        "evolution_depth": current_depth,
+        "evolution_chain_id": chain_id,
+    }
+
+
+@api_router.get("/evolve/chain/{chain_id}")
+async def get_evolution_chain(chain_id: str, user=Depends(require_auth)):
+    """Bir evolution chain'indeki tüm üretimleri getir."""
+    result = supabase.table("generations") \
+        .select("id, topic, type, variants, evolution_depth, parent_generation_id, parent_variant_indices, evolution_feedback, evolution_quick_tags, created_at") \
+        .eq("evolution_chain_id", chain_id) \
+        .eq("user_id", user.id) \
+        .order("evolution_depth") \
+        .execute()
+
+    # Orijinal üretimi de ekle (chain_id = kendi id'si olan)
+    original = supabase.table("generations") \
+        .select("id, topic, type, variants, evolution_depth, parent_generation_id, parent_variant_indices, created_at") \
+        .eq("id", chain_id) \
+        .eq("user_id", user.id) \
+        .execute()
+
+    all_gens = (original.data or []) + (result.data or [])
+
+    # Deduplicate by id
+    seen = set()
+    unique = []
+    for g in all_gens:
+        if g["id"] not in seen:
+            seen.add(g["id"])
+            unique.append(g)
+
+    return {"chain": unique, "total": len(unique)}
+
+
 # Include sources router
 from routes.sources import router as sources_router
 api_router.include_router(sources_router)

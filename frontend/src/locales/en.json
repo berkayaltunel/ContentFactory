@@ -1165,6 +1165,45 @@
       "shorts": "YouTube Shorts"
     }
   },
+  "evolve": {
+    "evolve": "Evolve",
+    "evolveButton": "Evolve this content",
+    "mergeButton": "Merge selected content",
+    "title": "Evolve Content",
+    "mergeTitle": "Merge Content",
+    "reference": "Reference",
+    "feedbackPlaceholder": "What should I change? (optional)",
+    "feedbackPlaceholderMerge": "How should I combine the best of both?",
+    "variantCount": "Number of variants",
+    "generate": "🧬 Evolve",
+    "round": "Round {{round}}",
+    "maxDepthReached": "Maximum evolution depth reached (10 rounds)",
+    "error": "Error during evolution",
+    "backToOriginal": "Back to original",
+    "viewChain": "View history",
+    "nSelected": "{{count}} variants selected",
+    "merge": "Merge",
+    "tags": {
+      "shorter": "Shorter",
+      "longer": "Longer",
+      "bolder": "Bolder",
+      "softer": "Softer",
+      "professional": "More professional",
+      "casual": "More casual",
+      "provocative": "More provocative",
+      "informative": "More informative",
+      "differentOpening": "Different opening",
+      "strongerEnding": "Stronger ending",
+      "addHook": "Add a hook",
+      "simplify": "Simplify"
+    },
+    "tagCategories": {
+      "length": "Length",
+      "tone": "Tone",
+      "structure": "Structure"
+    },
+    "maxTags": "You can select up to 3 directions"
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Configure application settings",

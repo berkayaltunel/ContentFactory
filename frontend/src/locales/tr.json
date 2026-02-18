@@ -1165,6 +1165,45 @@
       "shorts": "YouTube Shorts"
     }
   },
+  "evolve": {
+    "evolve": "Geliştir",
+    "evolveButton": "İçeriği geliştir",
+    "mergeButton": "İçerikleri birleştir",
+    "title": "İçeriği Geliştir",
+    "mergeTitle": "İçerikleri Birleştir",
+    "reference": "Referans",
+    "feedbackPlaceholder": "Neyi değiştirmemi istersin? (opsiyonel)",
+    "feedbackPlaceholderMerge": "Bu ikisinin en iyi yanlarını nasıl birleştireyim?",
+    "variantCount": "Varyant sayısı",
+    "generate": "🧬 Geliştir",
+    "round": "{{round}}. tur",
+    "maxDepthReached": "Maksimum geliştirme derinliğine ulaşıldı (10 tur)",
+    "error": "Geliştirme sırasında hata oluştu",
+    "backToOriginal": "Orijinale dön",
+    "viewChain": "Geçmişi gör",
+    "nSelected": "{{count}} varyant seçili",
+    "merge": "Birleştir",
+    "tags": {
+      "shorter": "Daha kısa",
+      "longer": "Daha uzun",
+      "bolder": "Daha cesur",
+      "softer": "Daha yumuşak",
+      "professional": "Daha profesyonel",
+      "casual": "Daha samimi",
+      "provocative": "Daha provokatif",
+      "informative": "Daha bilgilendirici",
+      "differentOpening": "Farklı açılış",
+      "strongerEnding": "Güçlü kapanış",
+      "addHook": "Hook ekle",
+      "simplify": "Sadeleştir"
+    },
+    "tagCategories": {
+      "length": "Uzunluk",
+      "tone": "Ton",
+      "structure": "Yapı"
+    },
+    "maxTags": "En fazla 3 yönlendirme seçebilirsin"
+  },
   "settings": {
     "title": "Ayarlar",
     "subtitle": "Uygulama ayarlarını yapılandırın",

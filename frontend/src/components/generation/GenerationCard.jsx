@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette } from "lucide-react";
+import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import SkeletonTweetRow from "./SkeletonTweetRow";
+import EvolvePanel from "./EvolvePanel";
 
 
 const PERSONA_COLORS = {
@@ -365,13 +366,15 @@ function StyleScoreCard({ scores, isBest }) {
   );
 }
 
-export default function GenerationCard({ job }) {
+export default function GenerationCard({ job, onEvolve }) {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState(new Map());
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [videoContent, setVideoContent] = useState("");
   const [imagePromptOpen, setImagePromptOpen] = useState(false);
   const [imagePromptContent, setImagePromptContent] = useState("");
+  const [evolveIndex, setEvolveIndex] = useState(null);
+  const [evolveLoading, setEvolveLoading] = useState(false);
   const color = PERSONA_COLORS[job.persona] || "#6B7280";
   const isGenerating = job.status === "generating";
 
@@ -443,9 +446,16 @@ export default function GenerationCard({ job }) {
           {/* Prompt + Tags */}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{job.topic}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {job.personaLabel} · {job.toneLabel} · {job.lengthLabel}
-            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-muted-foreground">
+                {job.personaLabel} · {job.toneLabel} · {job.lengthLabel}
+              </p>
+              {job.evolutionDepth > 0 && (
+                <Badge variant="outline" className="border-violet-500/30 text-violet-400 text-[10px] px-1.5 py-0">
+                  🧬 {t('evolve.round', { round: job.evolutionDepth })}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Status */}
@@ -535,6 +545,16 @@ export default function GenerationCard({ job }) {
                       <ImageIcon className="h-4 w-4" />
                     </Button>
                     <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEvolveIndex(evolveIndex === index ? null : index)}
+                      className="gap-1.5 text-violet-400 hover:text-violet-300"
+                      title={t('evolve.evolveButton')}
+                    >
+                      <Dna className="h-4 w-4" />
+                      <span className="hidden sm:inline">{t('evolve.evolve')}</span>
+                    </Button>
+                    <Button
                       variant="default"
                       size="sm"
                       onClick={() => handleTweet(variant.content)}
@@ -545,6 +565,30 @@ export default function GenerationCard({ job }) {
                     </Button>
                   </div>
                 </div>
+                {evolveIndex === index && (
+                  <EvolvePanel
+                    variant={variant}
+                    onEvolve={async (feedback, quickTags, variantCount) => {
+                      setEvolveLoading(true);
+                      try {
+                        await onEvolve?.({
+                          parentGenerationId: job.generationId,
+                          selectedVariantIndices: [index],
+                          feedback,
+                          quickTags,
+                          variantCount,
+                        });
+                        setEvolveIndex(null);
+                      } catch (e) {
+                        toast.error(t('evolve.error'));
+                      } finally {
+                        setEvolveLoading(false);
+                      }
+                    }}
+                    isLoading={evolveLoading}
+                    onClose={() => setEvolveIndex(null)}
+                  />
+                )}
               </div>
             ))}
           </div>

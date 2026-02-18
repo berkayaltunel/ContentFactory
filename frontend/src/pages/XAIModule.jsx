@@ -1566,6 +1566,43 @@ export default function XAIModule() {
     }
   }, [inputValue, activeTab, settings, fetched, fetchPhase, tweetUrl, tweetData, activeProfileId, imageUrl, imageBase64, trendContext, updateJob]);
 
+  // Handle evolve
+  const handleEvolve = async ({ parentGenerationId, selectedVariantIndices, feedback, quickTags, variantCount }) => {
+    try {
+      const res = await api.post(`${API}/evolve`, {
+        parent_generation_id: parentGenerationId,
+        selected_variant_indices: selectedVariantIndices,
+        feedback,
+        quick_tags: quickTags,
+        variant_count: variantCount,
+      });
+
+      if (res.data.success) {
+        const newJob = {
+          id: res.data.generation_id,
+          generationId: res.data.generation_id,
+          topic: "🧬 Geliştirme",
+          status: "completed",
+          variants: res.data.variants,
+          evolutionDepth: res.data.evolution_depth,
+          evolutionChainId: res.data.evolution_chain_id,
+          persona: "",
+          personaLabel: t('evolve.round', { round: res.data.evolution_depth }),
+          toneLabel: "",
+          lengthLabel: "",
+          type: "tweet",
+          variantCount: res.data.variants.length,
+        };
+        setJobs(prev => [newJob, ...prev]);
+        toast.success(t('evolve.evolve') + ' ✨');
+      }
+    } catch (e) {
+      const detail = e.response?.data?.detail || t('evolve.error');
+      toast.error(detail);
+      throw e;
+    }
+  };
+
   // Placeholder based on active tab
   const basePlaceholderKeys = PLATFORM_PLACEHOLDER_KEYS[activePlatform] || PLATFORM_PLACEHOLDER_KEYS.twitter;
   const resolvedPlaceholders = {};
@@ -2118,7 +2155,7 @@ export default function XAIModule() {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: window.innerWidth < 640 ? "10px" : "16px" }}>
             {jobs.map((job) => (
-              <GenerationCard key={job.id} job={job} />
+              <GenerationCard key={job.id} job={job} onEvolve={handleEvolve} />
             ))}
           </div>
         </div>
