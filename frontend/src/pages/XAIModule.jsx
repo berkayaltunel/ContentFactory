@@ -2298,124 +2298,35 @@ export default function XAIModule() {
                 {t('create.noHistory')}
               </div>
             )}
-            {history.map((gen) => {
-              const isExpanded = expandedHistoryId === gen.id;
-              const variants = gen.variants || [];
-              const createdAt = gen.created_at ? new Date(gen.created_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
-              const preview = variants[0]?.content?.slice(0, 100) || gen.topic?.slice(0, 100) || "";
-
-              return (
-                <div
-                  key={gen.id}
-                  style={{
-                    background: "var(--m-surface)",
-                    border: "1px solid var(--m-border-light)",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    transition: "border-color 0.2s ease",
-                  }}
-                >
-                  {/* Summary row */}
-                  <button
-                    onClick={() => setExpandedHistoryId(isExpanded ? null : gen.id)}
-                    className="haptic-btn"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: window.innerWidth < 640 ? "8px" : "12px",
-                      width: "100%",
-                      padding: window.innerWidth < 640 ? "10px 12px" : "12px 16px",
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      fontFamily: "inherit",
-                      color: "var(--m-text)",
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
-                        <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--m-text)" }}>
-                          {gen.topic || gen.type || t('create.content')}
-                        </span>
-                        <span style={{
-                          fontSize: "11px",
-                          padding: "2px 8px",
-                          borderRadius: "999px",
-                          background: "var(--m-border-light)",
-                          color: "var(--m-text-muted)",
-                        }}>
-                          {variants.length} {t('common.variant').toLowerCase()}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>
-                        {createdAt}
-                        {!isExpanded && preview && (
-                          <span style={{ marginLeft: "8px", opacity: 0.7 }}>
-                            — {preview}{preview.length >= 100 ? "..." : ""}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {isExpanded ? <ChevronUp size={14} style={{ color: "var(--m-text-muted)", flexShrink: 0 }} /> : <ChevronDown size={14} style={{ color: "var(--m-text-muted)", flexShrink: 0 }} />}
-                  </button>
-
-                  {/* Expanded: show all variants using GenerationCard-style layout */}
-                  {isExpanded && variants.length > 0 && (
-                    <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                      {variants.map((variant, idx) => (
-                        <div
-                          key={variant.id || idx}
-                          style={{
-                            border: "1px solid var(--m-border-light)",
-                            borderRadius: "8px",
-                            padding: "12px",
-                          }}
-                        >
-                          <p style={{ fontSize: "13px", whiteSpace: "pre-wrap", lineHeight: "1.55", color: "var(--m-text)", marginBottom: "10px" }}>
-                            {variant.content}
-                          </p>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--m-border-light)", paddingTop: "8px" }}>
-                            <span style={{ fontSize: "11px", color: "var(--m-text-muted)" }}>
-                              {t('common.nCharacters', { count: variant.character_count || variant.content?.length || 0 })}
-                              {variants.length > 1 && ` · ${t('common.variant')} ${idx + 1}`}
-                            </span>
-                            <div style={{ display: "flex", gap: "4px" }}>
-                              {[
-                                { icon: "📋", label: t('common.copy'), action: () => { navigator.clipboard.writeText(variant.content); toast.success(t('common.copied')); } },
-                                { icon: "♡", label: t('common.favorites'), action: () => { api.post(`${API}/favorites/toggle`, { content: variant.content, type: gen.type || "tweet", generation_id: gen.id, variant_index: idx }).then(() => toast.success(t('create.favoriteUpdated'))).catch(() => toast.error(t('common.error'))); } },
-                                { icon: "📹", label: t('generation.videoScriptConvert'), action: () => setRepurposeModal({ open: true, content: variant.content, mode: "video" }) },
-                                { icon: "🖼️", label: t('generation.imagePromptCreate'), action: () => setRepurposeModal({ open: true, content: variant.content, mode: "image" }) },
-                                { icon: "🐦", label: t('common.tweetle'), action: () => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(variant.content)}`, "_blank") },
-                              ].map((btn) => (
-                                <button
-                                  key={btn.label}
-                                  onClick={btn.action}
-                                  title={btn.label}
-                                  style={{
-                                    padding: "4px 8px",
-                                    borderRadius: "6px",
-                                    border: "1px solid var(--m-border-light)",
-                                    background: "transparent",
-                                    cursor: "pointer",
-                                    fontSize: "12px",
-                                    color: "var(--m-text-soft)",
-                                    transition: "all 0.15s ease",
-                                    fontFamily: "inherit",
-                                  }}
-                                >
-                                  {btn.icon}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {history.map((gen) => (
+              <GenerationCard
+                key={gen.id}
+                job={{
+                  generationId: gen.id,
+                  topic: gen.topic || '',
+                  persona: gen.persona || 'expert',
+                  personaLabel: gen.persona || '',
+                  toneLabel: gen.tone || '',
+                  lengthLabel: gen.length || '',
+                  type: gen.type || 'tweet',
+                  status: 'completed',
+                  variants: (gen.variants || []).map((v, i) => ({
+                    ...v,
+                    variant_index: v.variant_index ?? i,
+                    character_count: v.character_count || v.content?.length || 0,
+                  })),
+                  variantCount: gen.variants?.length || 0,
+                  evolutionDepth: gen.evolution_depth || 0,
+                  style_scores: gen.style_scores || null,
+                }}
+                onEvolve={handleEvolve}
+                showDate={true}
+                createdAt={gen.created_at}
+                tweetContent={gen.tweet_content}
+                tweetUrl={gen.tweet_url}
+                initialFavorites={gen.favorited_variants}
+              />
+            ))}
           </div>
         )}
       </div>
