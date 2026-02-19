@@ -67,7 +67,7 @@ class TrendEngine:
 
     CATEGORIES = ["AI", "Tech", "Crypto", "Gündem", "Business", "Lifestyle"]
 
-    SCORE_THRESHOLD = 60  # Trends with score >= 60 are visible
+    SCORE_THRESHOLD = 70  # Trends with score >= 70 are visible
 
     MAX_AGE_HOURS = 72  # Son 72 saatin haberleri
 
@@ -161,46 +161,81 @@ class TrendEngine:
             elif item.get('summary'):
                 items_text += f"Özet: {item['summary'][:300]}\n"
 
-        prompt = f"""Sen bir trend analisti ve haber editörüsün. Aşağıdaki haberleri analiz et, grupla ve SIKI şekilde skorla.
+        prompt = f"""Sen sert, seçici bir haber editörüsün. Haberleri analiz et, grupla ve ACIMADAN skorla.
 
-KURALLAR:
+TEMEL KURALLAR:
 1. SADECE gerçek, doğrulanabilir haberler trend olabilir
-2. Küçük güncellemeler, minor release'ler, blog yazıları düşük skor alır
-3. Birden fazla kaynakta geçen konular daha yüksek skor alır
-4. HER trend'in url'i, aşağıdaki item'lardan birinin GERÇEK URL'i olmalı. URL UYDURMA.
-5. published_at değerini ilgili item'dan AYNEN al, değiştirme.
+2. Aynı konuyu farklı kaynaklar yazdıysa BİRLEŞTİR, duplicate trend oluşturma
+3. HER trend'in url'i aşağıdaki item'lardan birinin GERÇEK URL'i olmalı. URL UYDURMA.
+4. published_at değerini ilgili item'dan AYNEN al, değiştirme.
+5. category TEK değer olmalı: AI, Tech, Crypto, Gündem, Business veya Lifestyle. ASLA birleşik yazma (AI|Tech YANLIŞ, AI DOĞRU).
+
+SELF-PROMO CEZASI:
+- Şirketin kendi blog'unda kendi ürününü tanıttığı yazılar (örn: NVIDIA Blog'da NVIDIA ürünü, OpenAI Blog'da OpenAI ürünü) PRATİK DEĞER'den max 5 alır ve KAYNAK GÜVENİLİRLİĞİ'nden max 5 alır. Bunlar reklam, haber değil.
 
 {items_text}
 
-SKORLAMA (toplam 100):
+SKORLAMA KRİTERLERİ (toplam 100):
 
-| Kriter | Puan | Açıklama |
-|--------|------|----------|
-| Etki büyüklüğü | 0-25 | Büyük lansman/duyuru=20-25, API güncelleme=10-15, blog yazısı=5-10 |
-| Viral potansiyel | 0-20 | Tartışma yaratır mı? Paylaşılır mı? |
-| Pratik değer | 0-15 | Geliştiriciler/kullanıcılar için uygulanabilir mi? |
-| Kaynak güvenilirliği | 0-15 | Resmi blog=15, haber sitesi=10, aggregator=5 |
-| TAZELİK (KRİTİK) | 0-25 | 0-6 saat=25, 6-12 saat=20, 12-24 saat=15, 24-48 saat=8, 48-72 saat=3 |
+1. ETKİ BÜYÜKLÜĞÜ (0-25):
+   - 20-25: Sektörü değiştiren olay (yeni büyük model, büyük satın alma, yasal düzenleme)
+   - 12-18: Önemli ama sektör değiştirmeyen (yeni özellik, orta çaplı anlaşma)
+   - 5-11: Küçük güncelleme, partnership, genişleme
+   - 0-4: Rutin blog yazısı, araştırma makalesi, etkinlik duyurusu
 
-TAZELİK ZORUNLU:
-- 24 saatten eski haber MAX 85 puan alabilir
-- 48 saatten eski haber MAX 70 puan alabilir
-- 72 saatten eski haber MAX 50 puan alabilir
-- "Yaş" alanına bak, saat bilgisi yazıyor
+2. VİRAL POTANSİYEL (0-20):
+   - 15-20: Herkes konuşacak, tartışma yaratır (tartışmalı karar, skandal, sürpriz)
+   - 8-14: İlgi çekici ama sınırlı kitle
+   - 0-7: Niş haber, sınırlı paylaşılabilirlik
 
-SKOR ÖRNEKLERİ:
-- "OpenAI yeni model duyurdu" (2 saat önce, resmi blog) → 85-95
-- "Google AI küçük API güncellemesi" (5 saat önce) → 45-55
-- "HuggingFace yeni kütüphane" (18 saat önce) → 55-65
-- "MIT araştırma makalesi" (30 saat önce) → 45-55
-- Herhangi bir haber (50+ saat) → MAX 50
+3. PRATİK DEĞER (0-15):
+   - 12-15: Geliştiriciler/kullanıcılar hemen uygulayabilir (yeni API, tool, ücretsiz erişim)
+   - 6-11: Dolaylı fayda (gelecek plan, beta)
+   - 0-5: Akademik, teorik, self-promo
+
+4. KAYNAK GÜVENİLİRLİĞİ (0-15):
+   - 12-15: Bağımsız haber sitesi (TechCrunch, Verge, Wired, Ars Technica)
+   - 7-11: Resmi şirket blog'u (kendi ürünü dışında), sektör siteleri
+   - 3-6: Self-promo blog, aggregator, küçük kaynak
+   - 0-2: Belirsiz kaynak
+
+5. TAZELİK (0-25):
+   - 22-25: 0-6 saat
+   - 16-21: 6-12 saat
+   - 10-15: 12-24 saat
+   - 4-9: 24-48 saat
+   - 0-3: 48-72 saat
+
+SKOR DAĞILIMI HEDEFİ (BU ÇOK ÖNEMLİ):
+- 90+: Sadece sektörü sarsan haberler. Refresh başına 0-1 tane olmalı.
+- 80-89: Gerçekten önemli, geniş kitlenin ilgilendiği haberler. 2-3 tane olmalı.
+- 70-79: İyi haberler, nişe hitap eder. Çoğunluk burası.
+- 60-69: Orta kalite, ama yine de paylaşılabilir.
+- 50-59: Zayıf ama mevcut. Düşük öncelik.
+- <50: Bu trendleri listeye KOYMA, çöpe at.
+
+SKOR ÖRNEKLERİ (KALİBRASYON):
+- "OpenAI GPT-5 duyurdu" (2 saat, resmi) → 90-95
+- "Google yeni Gemini modeli çıkardı" (4 saat) → 82-88
+- "Mistral AI bir startup satın aldı" (8 saat) → 72-78
+- "HuggingFace yeni kütüphane yayınladı" (12 saat) → 58-65
+- "NVIDIA kendi blog'unda kendi GPU'sunu övdü" (3 saat) → 40-50
+- "Küçük API güncellemesi" (6 saat) → 45-55
+- "Araştırma makalesi yayınlandı" (20 saat) → 40-50
+- "Lego akıllı tuğla yaptı" (10 saat, tech ama niş) → 55-62
+- "Herhangi bir haber" (50+ saat) → MAX 45
+
+TAZELİK HARD CAP (GPT bu kuralı çiğneyemez):
+- >24 saat → MAX 80
+- >48 saat → MAX 65
+- >72 saat → MAX 45
 
 JSON formatı:
 {{
   "trends": [
     {{
       "topic": "Türkçe, kısa ve çarpıcı başlık",
-      "category": "AI|Tech|Crypto|Gündem|Business|Lifestyle",
+      "category": "AI veya Tech veya Crypto veya Gündem veya Business veya Lifestyle",
       "score": 0-100,
       "summary": "2-3 cümle Türkçe özet. Ne oldu, neden önemli.",
       "url": "İlgili item'ın GERÇEK URL'i",
@@ -217,17 +252,18 @@ JSON formatı:
   ]
 }}
 
-En az 3, en fazla 12 trend döndür. Düşük kaliteli/eski haberleri ATLA, trend yapma.
+En az 3, en fazla 10 trend döndür. 50 altı skorlu haberleri ATLA.
+Aynı konunun tekrarını YAPMA, birleştir.
 Başka açıklama ekleme, sadece JSON döndür."""
 
         try:
             response = openai_client.chat.completions.create(
                 model=os.environ.get('MODEL_ANALYSIS', 'gpt-4o-mini'),
                 messages=[
-                    {"role": "system", "content": "Sen bir trend analisti ve içerik stratejistisin. JSON formatında yanıt ver."},
+                    {"role": "system", "content": "Sen sert bir haber editörüsün. Skorları şişirme, acımasızca değerlendir. Sadece JSON döndür."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.4,  # Daha tutarlı skorlama
+                temperature=0.3,  # Düşük temperature = tutarlı, sıkı skorlama
                 max_tokens=4000,
                 response_format={"type": "json_object"}
             )
@@ -270,20 +306,32 @@ Başka açıklama ekleme, sadece JSON döndür."""
                     if matched_item:
                         age_hours = matched_item.get("age_hours")
 
-                # Zamanlılık cezası uygula (24h → 48h → 72h katmanları)
+                # Zamanlılık cezası uygula (hard cap, prompt'a güvenme)
                 gpt_score = trend.get("score", 0)
                 if age_hours is not None:
-                    if age_hours > 48:
-                        trend["score"] = min(gpt_score, 50)  # 48-72h: max 50
+                    if age_hours > 72:
+                        trend["score"] = min(gpt_score, 45)  # 72h+: max 45
+                    elif age_hours > 48:
+                        trend["score"] = min(gpt_score, 65)  # 48-72h: max 65
                     elif age_hours > 24:
-                        trend["score"] = min(gpt_score, 70)  # 24-48h: max 70
-                    elif age_hours > 12:
-                        trend["score"] = min(gpt_score, 85)  # 12-24h: max 85
+                        trend["score"] = min(gpt_score, 80)  # 24-48h: max 80
 
                     if gpt_score != trend["score"]:
                         logger.info(f"Score capped: '{trend.get('topic', '?')}' {gpt_score}→{trend['score']} (age: {age_hours:.1f}h)")
 
                 trend["_age_hours"] = age_hours  # Debug bilgisi
+
+                # Kategori temizliği: birleşik kategoriyi tek kategoriye çevir
+                cat = trend.get("category", "")
+                if "|" in cat:
+                    trend["category"] = cat.split("|")[0].strip()
+                    logger.info(f"Category fixed: '{cat}' → '{trend['category']}'")
+
+            # 50 altı skorlu trendleri filtrele
+            before_count = len(trends)
+            trends = [t for t in trends if t.get("score", 0) >= 50]
+            if before_count != len(trends):
+                logger.info(f"Filtered {before_count - len(trends)} low-score trends (<50)")
 
             logger.info(f"Analyzed {len(trends)} trends (post-processed with age penalties)")
             return trends
@@ -296,7 +344,7 @@ Başka açıklama ekleme, sadece JSON döndür."""
         """Full refresh: fetch RSS, analyze with GPT-4o, upsert to Supabase.
 
         Uses URL-based deduplication (upsert on conflict url).
-        Sets is_visible based on score threshold (>= 80).
+        Sets is_visible based on score threshold (>= 70).
         """
         logger.info("Starting full trend refresh...")
 

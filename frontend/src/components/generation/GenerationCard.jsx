@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna, Check } from "lucide-react";
+import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna, Check, Calendar, Trash2, Twitter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -366,9 +366,11 @@ function StyleScoreCard({ scores, isBest }) {
   );
 }
 
-export default function GenerationCard({ job, onEvolve, selectionMode, selectedVariants, onVariantSelect }) {
+export default function GenerationCard({ job, onEvolve, selectionMode, selectedVariants, onVariantSelect, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites }) {
   const { t } = useTranslation();
-  const [favorites, setFavorites] = useState(new Map());
+  const [favorites, setFavorites] = useState(() =>
+    new Map(Object.entries(initialFavorites || {}).map(([k, v]) => [parseInt(k), v]))
+  );
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [videoContent, setVideoContent] = useState("");
   const [imagePromptOpen, setImagePromptOpen] = useState(false);
@@ -458,13 +460,61 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
             </div>
           </div>
 
+          {/* Date badge */}
+          {showDate && createdAt && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {new Date(createdAt).toLocaleDateString("tr-TR", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+
           {/* Status */}
           {isGenerating && (
             <span className="text-xs text-orange-400 whitespace-nowrap shrink-0">
               {t('generation.nTweetsGenerating', { count: job.variantCount })}
             </span>
           )}
+
+          {/* Delete button */}
+          {onDelete && !isGenerating && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 shrink-0"
+              onClick={() => {
+                if (window.confirm(t('history.deleteConfirm'))) {
+                  onDelete(job.generationId);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
+
+        {/* Original tweet preview for quote/reply */}
+        {tweetContent && (
+          <div className="p-3 rounded-lg border border-border/50 bg-secondary/20">
+            <div className="flex items-center gap-2 mb-1.5">
+              {job.type === "quote" ? (
+                <Twitter className="h-3.5 w-3.5 text-sky-400" />
+              ) : (
+                <Send className="h-3.5 w-3.5 text-green-400" />
+              )}
+              {tweetUrl && (
+                <a href={tweetUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[200px]">
+                  {tweetUrl.match(/@?(\w+)\/status/)?.[1] ? `@${tweetUrl.match(/@?(\w+)\/status/)[1]}` : t('history.originalTweet')}
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-3">{tweetContent}</p>
+          </div>
+        )}
 
         {/* Content: Skeleton rows (generating) or real content (completed) */}
         {isGenerating ? (
