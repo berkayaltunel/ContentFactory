@@ -55,36 +55,59 @@ async def analyze_account(request: AccountAnalysisRequest, user=Depends(require_
         lang = "Türkçe" if request.language != "en" else "English"
 
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": f"""Sen bir sosyal medya analisti sin. Twitter hesabını derinlemesine analiz et.
+                {"role": "system", "content": f"""Sen bir sosyal medya analistisin. Twitter hesabını derinlemesine analiz et.
 {lang} yaz.
 
-Analiz çıktısı JSON formatında olsun:
+JSON formatında döndür. HER ALAN ZORUNLU:
 {{
+  "overall_score": 0-100 arası genel skor (integer),
   "summary": "Genel profil değerlendirmesi (3-5 cümle)",
-  "strengths": ["Güçlü yön 1", "Güçlü yön 2", ...],
-  "weaknesses": ["Zayıf yön 1", "Zayıf yön 2", ...],
-  "recommendations": ["Öneri 1", "Öneri 2", ...],
-  "content_style": "İçerik stili açıklaması",
-  "posting_patterns": {{
-    "avg_length": "kısa/orta/uzun",
-    "tone": "samimi/profesyonel/agresif/eğitici",
-    "topics": ["konu1", "konu2"],
-    "hook_quality": "düşük/orta/yüksek",
-    "engagement_analysis": "Engagement değerlendirmesi"
+  "dimensions": {{
+    "content_quality": 0-100,
+    "engagement_rate": 0-100,
+    "consistency": 0-100,
+    "creativity": 0-100,
+    "community": 0-100,
+    "growth_potential": 0-100
   }},
-  "growth_tips": ["Büyüme önerisi 1", "Büyüme önerisi 2", ...]
-}}"""},
+  "strengths": [
+    {{"title": "Güçlü yön başlığı", "description": "Detaylı açıklama"}},
+    ...en az 3 tane
+  ],
+  "weaknesses": [
+    {{"title": "Zayıf yön başlığı", "description": "Detaylı açıklama"}},
+    ...en az 3 tane
+  ],
+  "recommendations": [
+    {{"title": "Öneri başlığı", "description": "Detaylı açıklama"}},
+    ...en az 3 tane
+  ],
+  "tone_analysis": "Hesabın genel tonu ve iletişim stili analizi (2-3 cümle)",
+  "posting_frequency": "Paylaşım sıklığı ve düzeni analizi (2-3 cümle)",
+  "hashtag_strategy": "Hashtag kullanım analizi ve öneriler (2-3 cümle)",
+  "growth_tips": "Büyüme stratejisi ve öneriler (3-5 cümle)",
+  "top_tweets": [
+    {{"content": "Tweet metni", "likes": 123, "retweets": 45, "replies": 10, "why_good": "Neden iyi performans gösterdi"}},
+    ...en iyi 3-5 tweet
+  ]
+}}
+
+SKORLAMA:
+- 80+: Profesyonel, tutarlı, yüksek etkileşim
+- 60-79: İyi ama geliştirilebilir
+- 40-59: Orta, ciddi eksikler var
+- <40: Başlangıç seviyesi veya inaktif"""},
                 {"role": "user", "content": f"""Hesap: @{username}
 Bio: {user_info.get('bio', 'N/A')}
 Takipçi: {user_info.get('followers', 0)}
 Takip: {user_info.get('following', 0)}
 
-Son tweet'ler:
+Son {len(tweet_texts)} tweet:
 {tweet_summary}"""}
             ],
-            temperature=0.7,
+            temperature=0.5,
             response_format={"type": "json_object"}
         )
 
