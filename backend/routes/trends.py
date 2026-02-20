@@ -111,10 +111,10 @@ async def archive_old_trends(user=Depends(require_auth)):
 
 @router.post("/refresh")
 async def refresh_trends(request: Optional[TrendRefreshRequest] = None, user=Depends(require_auth)):
-    """Trend'leri yenile - gerçek RSS verisi + GPT-4o analizi."""
+    """Trend'leri yenile - RSS + Twitter + GPT-4o analizi."""
     try:
         from services.trend_engine import trend_engine
-        result = await trend_engine.refresh_all()
+        result = await trend_engine.refresh_all(include_twitter_search=True)
 
         if not result.get("success"):
             raise HTTPException(status_code=500, detail=result.get("error", "Trend yenileme başarısız"))
@@ -138,7 +138,14 @@ async def auto_refresh_trends(
 
     try:
         from services.trend_engine import trend_engine
-        result = await trend_engine.refresh_all()
+        from datetime import datetime, timezone
+
+        # Keyword search sadece 06:00, 14:00, 22:00 saatlerinde (günde 3)
+        current_hour = datetime.now(timezone.utc).hour
+        search_hours = {3, 11, 19}  # UTC (Istanbul 06, 14, 22)
+        include_search = current_hour in search_hours
+
+        result = await trend_engine.refresh_all(include_twitter_search=include_search)
         return result
     except Exception as e:
         logger.error(f"Auto-refresh error: {e}")

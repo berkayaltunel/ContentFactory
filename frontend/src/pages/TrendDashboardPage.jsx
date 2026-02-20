@@ -49,6 +49,40 @@ function scoreBadge(score, t) {
 
 const SOURCE_ICONS = { rss: Rss, twitter: Twitter, ai: Zap };
 
+/* ── source type helpers ── */
+
+function sourceTypeBadge(sourceType, t) {
+  switch (sourceType) {
+    case "twitter":
+      return { label: t('trends.signal.twitter'), cls: "bg-sky-500/20 text-sky-400 border-sky-500/30", icon: Twitter };
+    case "merged":
+      return { label: t('trends.signal.merged'), cls: "bg-violet-500/20 text-violet-400 border-violet-500/30", icon: null };
+    case "rss":
+    default:
+      return { label: t('trends.signal.rss'), cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30", icon: Rss };
+  }
+}
+
+function formatEngagement(num) {
+  if (!num || num <= 0) return null;
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+  return String(num);
+}
+
+const TIER_COLORS = {
+  1: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  2: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  3: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+};
+
+const PILLAR_CONFIG = {
+  insight: { emoji: "💡", gradient: "from-blue-500 to-cyan-500" },
+  building: { emoji: "🔨", gradient: "from-green-500 to-emerald-500" },
+  hot_take: { emoji: "🔥", gradient: "from-red-500 to-orange-500" },
+  engagement: { emoji: "💬", gradient: "from-violet-500 to-purple-500" },
+};
+
 /* ── constants ── */
 
 // Categories and time filters moved inside components to use t()
@@ -105,15 +139,24 @@ function TrendCard({ trend, onGenerate }) {
   const { t } = useTranslation();
   const catColor = categoryColors[trend.category] || "bg-gray-500/20 text-gray-400";
   const badge = scoreBadge(trend.score || 0, t);
+  const srcBadge = sourceTypeBadge(trend.source_type, t);
+  const engStr = formatEngagement(trend.engagement_total);
+  const tweetCount = trend.source_tweets?.length || 0;
 
   return (
     <div className="rounded-xl border border-border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col"
-         style={{ minHeight: 320 }}>
+         style={{ minHeight: 340 }}>
       <div className="p-5 flex-1 flex flex-col">
-        {/* Row 1: Badges */}
-        <div className="flex items-center gap-2 mb-2">
+        {/* Row 1: Category + Score + Source Type badges */}
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
           <span className={cn("text-xs px-2 py-0.5 rounded-full border", catColor)}>{trend.category}</span>
           <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", badge.cls)}>{badge.emoji} {badge.label}</span>
+          <span className={cn("text-xs px-2 py-0.5 rounded-full border", srcBadge.cls)}>{srcBadge.label}</span>
+          {trend.signal_count > 1 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
+              {t('trends.signal.signalCount', { count: trend.signal_count })}
+            </span>
+          )}
         </div>
 
         {/* Row 2: Title (exactly 2 lines) */}
@@ -121,13 +164,34 @@ function TrendCard({ trend, onGenerate }) {
           {trend.topic}
         </h3>
 
-        {/* Row 3: Source + time + freshness indicator */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
-          <Newspaper className="h-3 w-3 flex-shrink-0" />
-          <span className="truncate">{trend.source_name || "RSS"}</span>
-          {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && (
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded ml-1 flex-shrink-0">
+        {/* Row 3: Source + Twitter account + time + engagement + freshness */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 flex-wrap">
+          {trend.source_type === "twitter" || trend.source_type === "merged" ? (
+            <>
+              <Twitter className="h-3 w-3 flex-shrink-0 text-sky-400" />
+              {trend.twitter_account && (
+                <span className="text-sky-400 font-medium">@{trend.twitter_account}</span>
+              )}
+              {tweetCount > 1 && (
+                <span className="bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded">
+                  {t('trends.signal.twitterSource', { count: tweetCount })}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <Newspaper className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate max-w-[120px]">{trend.source_name || "RSS"}</span>
+            </>
+          )}
+          {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && trend.source_type !== "twitter" && (
+            <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex-shrink-0">
               +{(trend.source_count || (trend.sample_sources?.length || 0) + 1) - 1} 📰
+            </span>
+          )}
+          {engStr && (
+            <span className="bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded flex-shrink-0">
+              {t('trends.signal.engagement', { count: engStr })}
             </span>
           )}
           {trend.published_at && (
@@ -145,11 +209,17 @@ function TrendCard({ trend, onGenerate }) {
         {/* Row 5: Summary (exactly 3 lines, fills remaining space) */}
         <p className="text-sm text-muted-foreground mt-3 line-clamp-3 flex-1">{trend.summary}</p>
 
-        {/* Row 6: Keywords (fixed single row, always rendered for spacing) */}
+        {/* Row 6: Key angles preview (if available) or keywords */}
         <div className="flex gap-1 mt-3 h-6 overflow-hidden">
-          {(trend.keywords || []).slice(0, 3).map((kw, i) => (
-            <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground whitespace-nowrap">#{kw}</span>
-          ))}
+          {trend.key_angles && trend.key_angles.length > 0 ? (
+            <span className="text-xs text-orange-400/80 truncate">
+              🎯 {trend.key_angles[0]?.replace(/^Açı \d+:\s*/, '')}
+            </span>
+          ) : (
+            (trend.keywords || []).slice(0, 3).map((kw, i) => (
+              <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground whitespace-nowrap">#{kw}</span>
+            ))
+          )}
         </div>
       </div>
 
@@ -196,20 +266,27 @@ function GeneratePanel({ open, onOpenChange, trend }) {
     tiktok: "/dashboard/create?platform=tiktok",
   };
 
-  // Navigate to the module with topic + compact context (max 500 chars total)
+  // Navigate to the module with topic + enriched context (max 800 chars)
   const handleGoToModule = () => {
     if (!trend) return;
     const route = PLATFORM_ROUTES[platform] || PLATFORM_ROUTES.twitter;
 
-    // Kompakt context oluştur: topic + en önemli bilgiler, 500 karaktere sığdır
+    // Zengin context: topic + summary + key_angles + hooks + user input
     const parts = [trend.topic];
     if (trend.content_angle) parts.push(trend.content_angle);
     if (trend.summary) parts.push(trend.summary);
-    if (trend.keywords?.length) parts.push(trend.keywords.slice(0, 5).join(", "));
+    // Key angles (first 2)
+    if (trend.key_angles?.length) {
+      const angles = trend.key_angles.slice(0, 2).map(a => a.replace(/^Açı \d+:\s*/, '')).join("; ");
+      parts.push(`Açılar: ${angles}`);
+    }
+    // Selected hook from additionalContext (if user clicked one)
     if (additionalContext) parts.push(additionalContext);
+    // Keywords fallback
+    else if (trend.keywords?.length) parts.push(trend.keywords.slice(0, 5).join(", "));
 
     let combined = parts.join(" | ");
-    if (combined.length > 490) combined = combined.slice(0, 487) + "...";
+    if (combined.length > 790) combined = combined.slice(0, 787) + "...";
 
     const topic = encodeURIComponent(combined);
     onOpenChange(false);
@@ -290,9 +367,122 @@ function GeneratePanel({ open, onOpenChange, trend }) {
           <div className="space-y-5 mt-4">
             {/* Trend summary (read-only) */}
             <div className="p-3 rounded-lg bg-secondary/30 border border-border/50">
-              <h4 className="font-semibold text-sm mb-1">{trend.topic}</h4>
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <h4 className="font-semibold text-sm">{trend.topic}</h4>
+                {(() => {
+                  const pSrcBadge = sourceTypeBadge(trend.source_type, t);
+                  return <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border", pSrcBadge.cls)}>{pSrcBadge.label}</span>;
+                })()}
+                {trend.signal_count > 1 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
+                    {t('trends.signal.signalCount', { count: trend.signal_count })}
+                  </span>
+                )}
+                {formatEngagement(trend.engagement_total) && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400">
+                    {t('trends.signal.engagement', { count: formatEngagement(trend.engagement_total) })}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground line-clamp-3">{trend.summary}</p>
             </div>
+
+            {/* Key Angles (collapsible) */}
+            {trend.key_angles && trend.key_angles.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  {t('trends.enrichment.keyAngles')}
+                </label>
+                <div className="space-y-1.5">
+                  {trend.key_angles.map((angle, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setAdditionalContext(prev => prev ? `${prev}\n${angle.replace(/^Açı \d+:\s*/, '')}` : angle.replace(/^Açı \d+:\s*/, ''))}
+                      className="w-full text-left p-2.5 rounded-lg bg-orange-500/5 border border-orange-500/10 hover:border-orange-500/30 hover:bg-orange-500/10 transition-all group/angle"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-orange-400 text-xs mt-0.5 flex-shrink-0">🎯</span>
+                        <span className="text-xs text-foreground/80 group-hover/angle:text-foreground leading-relaxed">
+                          {angle.replace(/^Açı \d+:\s*/, '')}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Suggested Hooks (4 pillars) */}
+            {trend.suggested_hooks && typeof trend.suggested_hooks === 'object' && Object.keys(trend.suggested_hooks).length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  {t('trends.enrichment.suggestedHooks')}
+                </label>
+                <div className="grid grid-cols-1 gap-2">
+                  {Object.entries(trend.suggested_hooks).map(([pillar, hookText]) => {
+                    const cfg = PILLAR_CONFIG[pillar] || { emoji: "📝", gradient: "from-gray-500 to-gray-600" };
+                    return (
+                      <button
+                        key={pillar}
+                        onClick={() => setAdditionalContext(hookText)}
+                        className="text-left p-3 rounded-lg border border-border/50 hover:border-orange-500/30 bg-card/50 hover:bg-card transition-all group/hook"
+                      >
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full text-white bg-gradient-to-r", cfg.gradient)}>
+                            {cfg.emoji} {t(`trends.enrichment.${pillar}`)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {t(`trends.enrichment.${pillar}Desc`)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-foreground/70 group-hover/hook:text-foreground leading-relaxed line-clamp-2">
+                          {hookText}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Source Tweets (if twitter/merged) */}
+            {trend.source_tweets && trend.source_tweets.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <Twitter className="h-3.5 w-3.5 text-sky-400" />
+                  {t('trends.signal.sourceTweets')}
+                  <span className="text-xs text-muted-foreground font-normal">({trend.source_tweets.length})</span>
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {trend.source_tweets.slice(0, 5).map((tw, i) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-sky-500/5 border border-sky-500/10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-sky-400">@{tw.username}</span>
+                        <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border", TIER_COLORS[tw.tier] || TIER_COLORS[3])}>
+                          {tw.tier === 1 ? t('trends.enrichment.tier1') : tw.tier === 2 ? t('trends.enrichment.tier2') : t('trends.enrichment.tier3')}
+                        </span>
+                        {tw.likes > 0 && (
+                          <span className="text-[10px] text-pink-400">❤️ {formatEngagement(tw.likes)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{tw.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Content Pillars tags */}
+            {trend.content_pillars && trend.content_pillars.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-muted-foreground">{t('trends.enrichment.contentPillars')}:</span>
+                {trend.content_pillars.map((p, i) => (
+                  <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border/50">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Platform selector */}
             <div className="space-y-2">
@@ -601,25 +791,60 @@ export default function TrendDashboardPage() {
                       <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">{t('trends.verified.multiSource')}</span>
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {verifiedTrends.map(trend => (
+                      {verifiedTrends.map(trend => {
+                        const vSrcBadge = sourceTypeBadge(trend.source_type, t);
+                        const vEngStr = formatEngagement(trend.engagement_total);
+                        const vTweetCount = trend.source_tweets?.length || 0;
+                        return (
                         <div key={trend.id} className="relative border-l-4 border-red-500 bg-gradient-to-r from-red-950/30 to-transparent rounded-xl p-5 cursor-pointer hover:from-red-950/50 transition-all" onClick={() => handleGenerate(trend)}>
-                          <div className="flex items-center gap-2 mb-2">
+                          {/* Badges row */}
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium">
                               {t('trends.verified.verifiedFrom', { count: (trend.source_count || (trend.sample_sources?.length || 0) + 1) })}
                             </span>
                             <span className="text-xs bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
                               {trend.score}/100
                             </span>
+                            <span className={cn("text-xs px-2 py-0.5 rounded-full border", vSrcBadge.cls)}>{vSrcBadge.label}</span>
+                            {vTweetCount > 0 && (
+                              <span className="text-xs bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full">
+                                {t('trends.signal.twitterSource', { count: vTweetCount })}
+                              </span>
+                            )}
+                            {vEngStr && (
+                              <span className="text-xs bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full">
+                                {t('trends.signal.engagement', { count: vEngStr })}
+                              </span>
+                            )}
                           </div>
+
                           <h3 className="text-xl font-bold text-white mb-2">{trend.topic}</h3>
                           <p className="text-sm text-gray-400 mb-3">{trend.summary}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+
+                          {/* Source info */}
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 flex-wrap">
+                            {trend.twitter_account && (
+                              <span className="text-sky-400">@{trend.twitter_account}</span>
+                            )}
                             <span>{trend.source_name}</span>
                             {trend.sample_sources?.map((s, i) => (
                               <span key={i}>• {s}</span>
                             ))}
                             <span>• {timeAgo(trend.published_at)}</span>
                           </div>
+
+                          {/* Key angles preview (first 2) */}
+                          {trend.key_angles && trend.key_angles.length > 0 && (
+                            <div className="mb-3 space-y-1">
+                              {trend.key_angles.slice(0, 2).map((angle, i) => (
+                                <div key={i} className="text-xs text-orange-300/70 flex items-start gap-1.5">
+                                  <span className="flex-shrink-0 mt-0.5">🎯</span>
+                                  <span className="line-clamp-1">{angle.replace(/^Açı \d+:\s*/, '')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
                           <div className="flex gap-2">
                             {trend.url && (
                               <a href={trend.url} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-400 hover:text-orange-300" onClick={e => e.stopPropagation()}>
@@ -628,7 +853,8 @@ export default function TrendDashboardPage() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -636,19 +862,38 @@ export default function TrendDashboardPage() {
                 {activeTab === "arsiv" ? (
                   /* Arşiv: compact list */
                   <div className="space-y-2">
-                    {regularTrends.map(trend => (
-                      <div key={trend.id} className="flex items-center gap-4 p-3 rounded-lg border border-border bg-card hover:border-violet-500/40 transition-all cursor-pointer" onClick={() => handleGenerate(trend)}>
+                    {regularTrends.map(trend => {
+                      const aSrcBadge = sourceTypeBadge(trend.source_type, t);
+                      return (
+                      <div key={trend.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:border-violet-500/40 transition-all cursor-pointer" onClick={() => handleGenerate(trend)}>
+                        {/* Source type icon */}
+                        {trend.source_type === "twitter" ? (
+                          <Twitter className="h-3.5 w-3.5 text-sky-400 flex-shrink-0" />
+                        ) : trend.source_type === "merged" ? (
+                          <span className="text-xs flex-shrink-0">🔀</span>
+                        ) : (
+                          <Rss className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+                        )}
                         <span className="text-xs text-muted-foreground w-20 flex-shrink-0">{timeAgo(trend.published_at)}</span>
                         <h3 className="font-medium text-sm flex-1 truncate">{trend.topic}</h3>
                         <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", scoreBadge(trend.score || 0).cls)}>{trend.score}</span>
+                        {trend.signal_count > 1 && (
+                          <span className="text-xs bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                            {trend.signal_count}×
+                          </span>
+                        )}
                         {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && (
-                          <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">
+                          <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex-shrink-0">
                             +{(trend.source_count || (trend.sample_sources?.length || 0) + 1) - 1} 📰
                           </span>
                         )}
-                        <span className="text-xs text-muted-foreground">{trend.source_name}</span>
+                        {trend.twitter_account && (
+                          <span className="text-xs text-sky-400 flex-shrink-0">@{trend.twitter_account}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground flex-shrink-0">{trend.source_name}</span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">

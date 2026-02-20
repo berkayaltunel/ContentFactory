@@ -1,7 +1,10 @@
-"""Trend Discovery Engine - RSS + GPT-4o Analysis
+"""Trend Discovery Engine - RSS + Twitter + GPT-4o Analysis
 
-Fetches real data from RSS feeds, analyzes with GPT-4o,
-and saves to Supabase with URL-based deduplication.
+Multi-signal trend intelligence:
+- RSS feeds (mevcut)
+- Twitter signals (Tier 1 resmi, Tier 2 key people, Tier 3 keyword search)
+- GPT-4o skorlama + context enrichment
+- Topic clustering (dedup + merge)
 """
 import asyncio
 import json
@@ -130,9 +133,54 @@ class TrendEngine:
         logger.info(f"Fetched {len(items)} RSS items (skipped: {skipped_no_date} no-date, {skipped_old} old)")
         return items
 
-    # Twitter fetch disabled - Bird CLI not available
-    # async def fetch_twitter_trends(self, keywords=None) -> list:
-    #     ...
+    async def fetch_twitter_signals(self, include_search: bool = False) -> list:
+        """Twitter'dan trend sinyalleri topla ve RSS formatına dönüştür.
+
+        Args:
+            include_search: Tier 3 keyword search dahil mi (günde 3 kez)
+        """
+        try:
+            from services.twitter_trend_fetcher import fetch_all_twitter_signals
+        except ImportError as e:
+            logger.warning(f"twitter_trend_fetcher import hatası: {e}")
+            return []
+
+        signals = await fetch_all_twitter_signals(include_search=include_search)
+
+        # Twitter sinyallerini RSS item formatına dönüştür (analyze_trends ile uyumlu)
+        items = []
+        for signal in signals:
+            # Yaş hesapla
+            age_hours = 0
+            if signal.get("created_at"):
+                try:
+                    # Twitter tarih formatı: "Mon Feb 20 12:00:00 +0000 2026"
+                    from email.utils import parsedate_to_datetime
+                    tweet_dt = parsedate_to_datetime(signal["created_at"])
+                    age_hours = (datetime.now(timezone.utc) - tweet_dt).total_seconds() / 3600
+                except Exception:
+                    age_hours = 1  # Parse edilemezse taze kabul et
+
+            items.append({
+                "title": signal["text"][:120],
+                "source": f"@{signal['username']} (Twitter)",
+                "url": signal["url"],
+                "published_at": signal.get("created_at"),
+                "age_hours": age_hours,
+                "raw_content": signal["text"],
+                "summary": signal["text"],
+                # Twitter-specific metadata
+                "_source_type": "twitter",
+                "_tweet_id": signal["tweet_id"],
+                "_twitter_account": signal["username"],
+                "_tier": signal.get("tier", 3),
+                "_likes": signal.get("likes", 0),
+                "_retweets": signal.get("retweets", 0),
+                "_views": signal.get("views", 0),
+            })
+
+        logger.info(f"Converted {len(items)} Twitter signals to trend items")
+        return items
 
     async def analyze_trends(self, raw_items: list) -> list:
         """Analyze raw RSS items with GPT-4o and return scored trends.
@@ -340,18 +388,25 @@ Başka açıklama ekleme, sadece JSON döndür."""
             logger.error(f"Trend analysis failed: {e}")
             return []
 
-    async def refresh_all(self) -> dict:
-        """Full refresh: fetch RSS, analyze with GPT-4o, upsert to Supabase.
+    async def refresh_all(self, include_twitter_search: bool = False) -> dict:
+        """Full refresh: fetch RSS + Twitter, analyze with GPT-4o, upsert to Supabase.
 
         Uses URL-based deduplication (upsert on conflict url).
         Sets is_visible based on score threshold (>= 70).
+
+        Args:
+            include_twitter_search: Tier 3 keyword search dahil mi (günde 3 kez)
         """
-        logger.info("Starting full trend refresh...")
+        logger.info("Starting full trend refresh (RSS + Twitter)...")
 
-        # Fetch RSS only (Twitter disabled)
+        # Fetch from both sources
         rss_items = await self.fetch_rss_trends()
+        twitter_items = await self.fetch_twitter_signals(include_search=include_twitter_search)
 
-        if not rss_items:
+        # Birleştir
+        all_items = rss_items + twitter_items
+
+        if not all_items:
             return {"success": False, "error": "No items fetched", "trends": 0}
 
         # Build URL lookup for fallback matching
@@ -359,13 +414,31 @@ Başka açıklama ekleme, sadece JSON döndür."""
         for item in rss_items:
             items_by_title[item.get("title", "")] = item
 
-        # Analyze with GPT-4o
-        trends = await self.analyze_trends(rss_items)
+        # Analyze ALL items with GPT-4o (RSS + Twitter birlikte)
+        trends = await self.analyze_trends(all_items)
         if not trends:
             return {"success": False, "error": "Analysis returned no trends", "trends": 0}
 
+        # Build twitter metadata lookup (URL → twitter signal)
+        twitter_by_url = {}
+        for item in twitter_items:
+            twitter_by_url[item["url"]] = item
+
+        # Build all items lookup for matching
+        all_items_by_title = {}
+        for item in all_items:
+            all_items_by_title[item.get("title", "")] = item
+
+        # Enrichment import
+        try:
+            from services.trend_enrichment import enrich_trend, calculate_multi_signal_score
+        except ImportError:
+            enrich_trend = None
+            calculate_multi_signal_score = None
+
         # Save to Supabase with URL-based dedup
         saved = 0
+        enriched_count = 0
         now = datetime.now(timezone.utc).isoformat()
 
         for trend in trends:
@@ -373,31 +446,78 @@ Başka açıklama ekleme, sadece JSON döndür."""
                 # Get URL: from GPT analysis or fallback to matching item
                 trend_url = trend.get("url") or ""
                 if not trend_url:
-                    # Try to match by topic/title
-                    for item in rss_items:
+                    for item in all_items:
                         if item.get("title", "").lower() in trend.get("topic", "").lower() or \
                            trend.get("topic", "").lower() in item.get("title", "").lower():
                             trend_url = item.get("url", "")
                             break
 
-                # Skip trends without URL (can't dedup)
                 if not trend_url:
                     logger.warning(f"Skipping trend without URL: {trend.get('topic')}")
                     continue
 
-                score = trend.get("score", 0)
+                # Determine source type and collect twitter metadata
+                source_item = twitter_by_url.get(trend_url)
+                is_twitter = source_item is not None
+                source_type = "twitter" if is_twitter else "rss"
+
+                # Collect all twitter signals related to this trend (by topic similarity)
+                related_tweets = []
+                if is_twitter:
+                    related_tweets.append(source_item)
+                # Also check if any twitter items mention similar topic
+                trend_topic_lower = trend.get("topic", "").lower()
+                for t_item in twitter_items:
+                    if t_item["url"] != trend_url and any(
+                        word in t_item.get("raw_content", "").lower()
+                        for word in trend_topic_lower.split()[:3]
+                        if len(word) > 4
+                    ):
+                        related_tweets.append(t_item)
+
+                # Calculate engagement and signal count
+                engagement_total = sum(t.get("_likes", 0) for t in related_tweets)
+                signal_count = 1 + len(related_tweets)  # 1 for base source
+                has_tier1 = any(t.get("_tier") == 1 for t in related_tweets)
+                has_tier2 = any(t.get("_tier") == 2 for t in related_tweets)
+
+                # Multi-signal scoring
+                base_score = trend.get("score", 0)
+                if calculate_multi_signal_score and related_tweets:
+                    final_score = calculate_multi_signal_score(
+                        base_score=base_score,
+                        engagement_total=engagement_total,
+                        signal_count=signal_count,
+                        has_tier1=has_tier1,
+                        has_tier2=has_tier2,
+                        age_hours=trend.get("age_hours", 0),
+                    )
+                else:
+                    final_score = base_score
+
+                # Source tweets JSON (for frontend display)
+                source_tweets_json = [
+                    {
+                        "tweet_id": t.get("_tweet_id"),
+                        "username": t.get("_twitter_account"),
+                        "likes": t.get("_likes", 0),
+                        "tier": t.get("_tier", 3),
+                        "text": t.get("raw_content", "")[:200],
+                    }
+                    for t in related_tweets[:5]
+                ]
 
                 doc = {
                     "id": str(uuid.uuid4()),
                     "topic": trend.get("topic", ""),
                     "category": trend.get("category", "AI"),
-                    "score": score,
+                    "score": final_score,
                     "summary": trend.get("summary", ""),
                     "url": trend_url,
-                    "source_type": "rss",
+                    "source_type": "merged" if (is_twitter and len(related_tweets) > 1) else source_type,
                     "source_name": trend.get("source", ""),
-                    "published_at": trend.get("published_at", None),
-                    "is_visible": score >= self.SCORE_THRESHOLD,
+                    "published_at": trend.get("published_at") if trend.get("published_at") and str(trend.get("published_at")) != "None" else None,
+                    "is_visible": final_score >= self.SCORE_THRESHOLD,
                     "raw_content": trend.get("raw_content", "")[:2000],
                     "tweet_count": trend.get("tweet_count", 0),
                     "avg_engagement": trend.get("avg_engagement", 0),
@@ -406,19 +526,57 @@ Başka açıklama ekleme, sadece JSON döndür."""
                     "keywords": trend.get("keywords", []),
                     "content_angle": trend.get("content_angle", ""),
                     "updated_at": now,
+                    # New fields
+                    "signal_count": signal_count,
+                    "engagement_total": engagement_total,
+                    "source_tweets": source_tweets_json,
+                    "twitter_account": source_item.get("_twitter_account") if source_item else None,
+                    "tweet_id": source_item.get("_tweet_id") if source_item else None,
                 }
 
+                # Context enrichment (high-score trends only, save API costs)
+                if enrich_trend and final_score >= 65:
+                    enrichment = await enrich_trend(
+                        topic=trend.get("topic", ""),
+                        summary=trend.get("summary", ""),
+                        source_tweets=source_tweets_json,
+                        engagement_total=engagement_total,
+                        signal_count=signal_count,
+                    )
+                    if enrichment:
+                        doc["key_angles"] = enrichment.get("key_angles", [])
+                        doc["suggested_hooks"] = enrichment.get("suggested_hooks", {})
+                        doc["content_pillars"] = enrichment.get("content_pillars", [])
+                        enriched_count += 1
+
                 # Check if URL already exists (dedup)
-                existing = supabase.table("trends").select("id").eq("url", trend_url).limit(1).execute()
+                existing = supabase.table("trends").select("id,signal_count,engagement_total,source_tweets").eq("url", trend_url).limit(1).execute()
                 if existing.data:
-                    # Update existing trend
-                    del doc["id"]  # keep original id
-                    supabase.table("trends").update(doc).eq("id", existing.data[0]["id"]).execute()
-                    logger.info(f"Updated existing trend: {trend.get('topic', '?')}")
+                    existing_doc = existing.data[0]
+                    del doc["id"]
+
+                    # Merge signals: keep higher signal count, combine tweets
+                    old_tweets = existing_doc.get("source_tweets") or []
+                    if isinstance(old_tweets, str):
+                        try:
+                            old_tweets = json.loads(old_tweets)
+                        except Exception:
+                            old_tweets = []
+
+                    # Merge source tweets (dedup by tweet_id)
+                    seen_ids = {t.get("tweet_id") for t in old_tweets if t.get("tweet_id")}
+                    for new_tweet in source_tweets_json:
+                        if new_tweet.get("tweet_id") not in seen_ids:
+                            old_tweets.append(new_tweet)
+                    doc["source_tweets"] = old_tweets[:10]  # Max 10 tweets
+                    doc["signal_count"] = max(doc["signal_count"], existing_doc.get("signal_count", 1))
+                    doc["engagement_total"] = max(doc["engagement_total"], existing_doc.get("engagement_total", 0))
+
+                    supabase.table("trends").update(doc).eq("id", existing_doc["id"]).execute()
+                    logger.info(f"Updated trend: {trend.get('topic', '?')} (score: {final_score}, signals: {signal_count})")
                 else:
-                    # Insert new trend
                     supabase.table("trends").insert(doc).execute()
-                    logger.info(f"Inserted new trend: {trend.get('topic', '?')}")
+                    logger.info(f"New trend: {trend.get('topic', '?')} (score: {final_score}, signals: {signal_count})")
                 saved += 1
             except Exception as e:
                 logger.error(f"Failed to save trend '{trend.get('topic', '?')}': {e}")
@@ -426,9 +584,10 @@ Başka açıklama ekleme, sadece JSON döndür."""
         result = {
             "success": True,
             "rss_items": len(rss_items),
-            "twitter_items": 0,
+            "twitter_items": len(twitter_items),
             "trends_analyzed": len(trends),
             "trends_saved": saved,
+            "trends_enriched": enriched_count,
             "updated_at": now,
         }
         logger.info(f"Trend refresh complete: {result}")

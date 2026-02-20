@@ -849,6 +849,37 @@
       "goToModule": "Write in Editor →",
       "regenerate": "Regenerate",
       "generateError": "Content generation error"
+    },
+    "signal": {
+      "rss": "📰 RSS",
+      "twitter": "🐦 Twitter",
+      "merged": "🔀 Multi-Signal",
+      "ai": "⚡ AI",
+      "signalCount": "+{{count}} signals",
+      "engagement": "❤️ {{count}}",
+      "fromTwitter": "@{{username}}",
+      "twitterSource": "🐦 {{count}} tweets",
+      "sourceTweets": "Source Tweets",
+      "noEngagement": "No engagement data"
+    },
+    "enrichment": {
+      "keyAngles": "🎯 Content Angles",
+      "suggestedHooks": "🪝 Suggested Hooks",
+      "contentPillars": "Content Pillars",
+      "insight": "💡 Insight",
+      "building": "🔨 Building",
+      "hot_take": "🔥 Hot Take",
+      "engagement": "💬 Engagement",
+      "insightDesc": "Value-driven knowledge",
+      "buildingDesc": "Process, experience sharing",
+      "hot_takeDesc": "Sharp opinion, debate",
+      "engagementDesc": "Interaction, polls, questions",
+      "useThisAngle": "Use this angle",
+      "useThisHook": "Use this hook",
+      "tweetSnippet": "Tweet",
+      "tier1": "Official",
+      "tier2": "Key Person",
+      "tier3": "Search"
     }
   },
   "account": {
