@@ -139,19 +139,35 @@ function TrendCard({ trend, onGenerate }) {
   const { t } = useTranslation();
   const catColor = categoryColors[trend.category] || "bg-gray-500/20 text-gray-400";
   const badge = scoreBadge(trend.score || 0, t);
-  const srcBadge = sourceTypeBadge(trend.source_type, t);
   const engStr = formatEngagement(trend.engagement_total);
   const tweetCount = trend.source_tweets?.length || 0;
+  const isTwitter = trend.source_type === "twitter" || trend.source_type === "merged";
 
   return (
-    <div className="rounded-xl border border-border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col"
-         style={{ minHeight: 340 }}>
-      <div className="p-5 flex-1 flex flex-col">
-        {/* Row 1: Category + Score + Source Type badges */}
+    <div className={cn(
+      "rounded-xl border bg-card hover:border-orange-500/40 transition-all duration-300 group flex flex-col relative overflow-hidden",
+      isTwitter ? "border-sky-500/30" : "border-border"
+    )} style={{ minHeight: 340 }}>
+      {/* Twitter accent bar */}
+      {isTwitter && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-400 to-sky-600" />
+      )}
+
+      <div className={cn("p-5 flex-1 flex flex-col", isTwitter && "pl-6")}>
+        {/* Row 1: Source indicator + Category + Score badges */}
         <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          {isTwitter ? (
+            <span className="text-xs px-2.5 py-1 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-semibold flex items-center gap-1.5">
+              <Twitter className="h-3 w-3" />
+              {trend.source_type === "merged" ? "X + RSS" : "X"}
+            </span>
+          ) : (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              <Rss className="h-2.5 w-2.5" /> RSS
+            </span>
+          )}
           <span className={cn("text-xs px-2 py-0.5 rounded-full border", catColor)}>{trend.category}</span>
           <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", badge.cls)}>{badge.emoji} {badge.label}</span>
-          <span className={cn("text-xs px-2 py-0.5 rounded-full border", srcBadge.cls)}>{srcBadge.label}</span>
           {trend.signal_count > 1 && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
               {t('trends.signal.signalCount', { count: trend.signal_count })}
@@ -164,35 +180,37 @@ function TrendCard({ trend, onGenerate }) {
           {trend.topic}
         </h3>
 
-        {/* Row 3: Source + Twitter account + time + engagement + freshness */}
+        {/* Row 3: Source details + time + engagement + freshness */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 flex-wrap">
-          {trend.source_type === "twitter" || trend.source_type === "merged" ? (
+          {isTwitter ? (
             <>
-              <Twitter className="h-3 w-3 flex-shrink-0 text-sky-400" />
               {trend.twitter_account && (
-                <span className="text-sky-400 font-medium">@{trend.twitter_account}</span>
+                <a href={`https://x.com/${trend.twitter_account}`} target="_blank" rel="noopener noreferrer"
+                   className="text-sky-400 font-medium hover:text-sky-300 transition-colors"
+                   onClick={e => e.stopPropagation()}>
+                  @{trend.twitter_account}
+                </a>
               )}
               {tweetCount > 1 && (
-                <span className="bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded">
-                  {t('trends.signal.twitterSource', { count: tweetCount })}
+                <span className="bg-sky-500/15 text-sky-400 px-1.5 py-0.5 rounded">
+                  {tweetCount} tweet
+                </span>
+              )}
+              {engStr && (
+                <span className="bg-pink-500/15 text-pink-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <Heart className="h-2.5 w-2.5 fill-current" /> {engStr}
                 </span>
               )}
             </>
           ) : (
             <>
-              <Newspaper className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate max-w-[120px]">{trend.source_name || "RSS"}</span>
+              <span className="truncate max-w-[140px]">{trend.source_name || "RSS"}</span>
+              {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && (
+                <span className="bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded flex-shrink-0">
+                  +{(trend.source_count || (trend.sample_sources?.length || 0) + 1) - 1} kaynak
+                </span>
+              )}
             </>
-          )}
-          {(trend.source_count > 1 || (trend.sample_sources && trend.sample_sources.length > 0)) && trend.source_type !== "twitter" && (
-            <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded flex-shrink-0">
-              +{(trend.source_count || (trend.sample_sources?.length || 0) + 1) - 1} 📰
-            </span>
-          )}
-          {engStr && (
-            <span className="bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded flex-shrink-0">
-              {t('trends.signal.engagement', { count: engStr })}
-            </span>
           )}
           {trend.published_at && (
             <>
