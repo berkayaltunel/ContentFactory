@@ -194,7 +194,7 @@ export default function AccountAnalysisPage() {
       setTimeout(() => setLoadingStep(t('account.preparingReport')), 15000);
 
       const res = await api.post(`${API}/analyze/account`, {
-        username: username.replace("@", ""),
+        twitter_username: username.replace("@", ""),
       });
 
       if (res.data.success) {
@@ -280,7 +280,7 @@ export default function AccountAnalysisPage() {
               <div>
                 <h2 className="text-xl font-bold">@{result.username}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {t('account.tweetsAnalyzed', { count: result.tweet_count_analyzed })}
+                  {t('account.tweetsAnalyzed', { count: result.tweets_analyzed || result.tweet_count_analyzed })}
                 </p>
               </div>
             </div>
