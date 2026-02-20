@@ -205,13 +205,20 @@ class TwitterScraper:
         try:
             user_result = user_data["data"]["user"]["result"]
             core = user_result.get("core", {})
+            legacy = user_result.get("legacy", {})
             avatar = user_result.get("avatar", {})
             avatar_url = (avatar.get("image_url") or "").replace("_normal.", "_400x400.")
             return {
-                'username': core.get('screen_name', username),
-                'name': core.get('name', ''),
+                'username': legacy.get('screen_name') or core.get('screen_name', username),
+                'name': core.get('name') or legacy.get('name', ''),
                 'user_id': user_result.get('rest_id'),
                 'avatar_url': avatar_url,
+                'bio': legacy.get('description', ''),
+                'followers': legacy.get('followers_count', 0),
+                'following': legacy.get('friends_count', 0),
+                'tweet_count': legacy.get('statuses_count', 0),
+                'listed_count': legacy.get('listed_count', 0),
+                'is_verified': user_result.get('is_blue_verified', False),
             }
         except (KeyError, TypeError) as e:
             logger.error(f"Failed to parse user info for @{username}: {e}")

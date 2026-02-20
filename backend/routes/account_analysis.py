@@ -48,9 +48,22 @@ async def analyze_account(request: AccountAnalysisRequest, user=Depends(require_
         # Tweet'leri çek (async, GraphQL fallback destekli)
         tweets = await scraper.get_user_tweets_async(username, count=200)
 
-        # AI analizi
-        tweet_texts = [t.get('content', '') for t in tweets[:100]]
-        tweet_summary = "\n---\n".join(tweet_texts)
+        # AI analizi: tweet metni + engagement verileri
+        tweet_lines = []
+        for t in tweets[:100]:
+            text = t.get('content', '')
+            likes = t.get('likes', 0)
+            rts = t.get('retweets', 0)
+            replies = t.get('replies', 0)
+            tweet_lines.append(f"[❤️{likes} 🔁{rts} 💬{replies}] {text}")
+        tweet_summary = "\n---\n".join(tweet_lines)
+        
+        # Engagement ortalamaları hesapla
+        total_likes = sum(t.get('likes', 0) for t in tweets)
+        total_rts = sum(t.get('retweets', 0) for t in tweets)
+        total_replies = sum(t.get('replies', 0) for t in tweets)
+        avg_likes = total_likes / max(len(tweets), 1)
+        avg_rts = total_rts / max(len(tweets), 1)
 
         lang = "Türkçe" if request.language != "en" else "English"
 
@@ -100,11 +113,19 @@ SKORLAMA:
 - 40-59: Orta, ciddi eksikler var
 - <40: Başlangıç seviyesi veya inaktif"""},
                 {"role": "user", "content": f"""Hesap: @{username}
+İsim: {user_info.get('name', 'N/A')}
 Bio: {user_info.get('bio', 'N/A')}
-Takipçi: {user_info.get('followers', 0)}
-Takip: {user_info.get('following', 0)}
+Takipçi: {user_info.get('followers', 0):,}
+Takip: {user_info.get('following', 0):,}
+Toplam tweet: {user_info.get('tweet_count', 0):,}
+Verified: {'Evet' if user_info.get('is_verified') else 'Hayır'}
 
-Son {len(tweet_texts)} tweet:
+Analiz edilen tweet sayısı: {len(tweets)}
+Ortalama like: {avg_likes:.1f}
+Ortalama RT: {avg_rts:.1f}
+Toplam like: {total_likes:,}
+
+Son {len(tweets)} tweet (engagement verileriyle):
 {tweet_summary}"""}
             ],
             temperature=0.5,
@@ -143,7 +164,9 @@ Son {len(tweet_texts)} tweet:
             "username": username,
             "display_name": user_info.get('name', ''),
             "followers": user_info.get('followers', 0),
+            "bio": user_info.get('bio', ''),
             "tweets_analyzed": len(tweets),
+            "tweet_count_analyzed": len(tweets),
             "analysis": analysis
         }
 
