@@ -26,7 +26,14 @@ export function ProtectedRoute() {
           setAuthorized(false);
         }
       } catch (err) {
-        // 401 veya 403 = yetkisiz
+        const status = err?.response?.status;
+        if (status === 401) {
+          // Token expire olmuş — session'ı temizle, login'e düşsün
+          console.warn('Session expired, signing out...');
+          await signOut();
+          return;
+        }
+        // 403 = whitelist'te değil (yetkisiz ama session geçerli)
         setAuthorized(false);
       } finally {
         setAuthChecked(true);
@@ -34,7 +41,7 @@ export function ProtectedRoute() {
       }
     };
     checkAccess();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, signOut]);
 
   if (loading || (isAuthenticated && !authChecked)) {
     return (
@@ -71,9 +78,30 @@ export function ProtectedRoute() {
 }
 
 export function PublicRoute() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, signOut } = useAuth();
+  const [verified, setVerified] = useState(null); // null=checking, true=valid, false=stale
 
-  if (loading) {
+  useEffect(() => {
+    const verify = async () => {
+      if (!isAuthenticated) {
+        setVerified(false);
+        return;
+      }
+      // Quick check: is the session actually valid?
+      try {
+        await api.get(`${API}/auth/check`);
+        setVerified(true);
+      } catch {
+        // Stale session — clear it so user can login fresh
+        console.warn('Stale session detected on public route, signing out...');
+        await signOut();
+        setVerified(false);
+      }
+    };
+    if (!loading) verify();
+  }, [isAuthenticated, loading, signOut]);
+
+  if (loading || verified === null) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -81,7 +109,7 @@ export function PublicRoute() {
     );
   }
 
-  if (isAuthenticated) {
+  if (verified) {
     return <Navigate to="/dashboard" replace />;
   }
 
