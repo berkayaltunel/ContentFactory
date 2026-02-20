@@ -29,6 +29,62 @@ supabase = create_client(supabase_url, supabase_key) if supabase_url else None
 openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY', ''))
 
 
+def _resolve_published_at(trend, source_item, items_by_title, all_items):
+    """Resolve published_at from multiple sources, ensuring proper format."""
+    from email.utils import parsedate_to_datetime
+
+    # 1. GPT output
+    pub = trend.get("published_at")
+    if pub and str(pub) != "None" and str(pub).strip():
+        # Validate it's a real date
+        try:
+            from datetime import datetime as dt
+            dt.fromisoformat(str(pub).replace("Z", "+00:00"))
+            return str(pub)
+        except Exception:
+            try:
+                parsed = parsedate_to_datetime(str(pub))
+                return parsed.isoformat()
+            except Exception:
+                pass
+
+    # 2. Matched Twitter source item
+    if source_item:
+        raw = source_item.get("published_at") or source_item.get("created_at")
+        if raw and str(raw) != "None":
+            try:
+                from datetime import datetime as dt
+                dt.fromisoformat(str(raw).replace("Z", "+00:00"))
+                return str(raw)
+            except Exception:
+                try:
+                    parsed = parsedate_to_datetime(str(raw))
+                    return parsed.isoformat()
+                except Exception:
+                    pass
+
+    # 3. Match by URL in all_items
+    trend_url = trend.get("url", "")
+    for item in all_items:
+        if item.get("url") == trend_url:
+            raw = item.get("published_at")
+            if raw and str(raw) != "None":
+                try:
+                    from datetime import datetime as dt
+                    dt.fromisoformat(str(raw).replace("Z", "+00:00"))
+                    return str(raw)
+                except Exception:
+                    try:
+                        parsed = parsedate_to_datetime(str(raw))
+                        return parsed.isoformat()
+                    except Exception:
+                        pass
+            break
+
+    return None
+
+
+
 class TrendEngine:
     """Discovers and analyzes trends from RSS feeds using GPT-4o."""
 
@@ -516,7 +572,7 @@ Başka açıklama ekleme, sadece JSON döndür."""
                     "url": trend_url,
                     "source_type": "merged" if (is_twitter and len(related_tweets) > 1) else source_type,
                     "source_name": trend.get("source", ""),
-                    "published_at": trend.get("published_at") if trend.get("published_at") and str(trend.get("published_at")) != "None" else None,
+                    "published_at": _resolve_published_at(trend, source_item, items_by_title, all_items),
                     "is_visible": final_score >= self.SCORE_THRESHOLD,
                     "raw_content": trend.get("raw_content", "")[:2000],
                     "tweet_count": trend.get("tweet_count", 0),

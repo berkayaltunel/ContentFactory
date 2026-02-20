@@ -111,12 +111,17 @@ async def fetch_account_tweets(
     username: str,
     since_tweet_id: Optional[str] = None,
     max_tweets: int = 20,
+    max_age_hours: float = 72,
 ) -> List[dict]:
-    """Bir hesabın son tweet'lerini çek, retweet/reply filtrele."""
+    """Bir hesabın son tweet'lerini çek, retweet/reply filtrele, yaş limiti uygula."""
+    from email.utils import parsedate_to_datetime
 
     tweets = await client.get_user_tweets(username, count=max_tweets, max_pages=1)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=max_age_hours)
 
     results = []
+    skipped_old = 0
     for tweet in tweets:
         tweet_id = tweet.get("id") or tweet.get("tweet_id")
 
@@ -134,17 +139,40 @@ async def fetch_account_tweets(
         if in_reply_to and in_reply_to.lower() != username.lower():
             continue
 
+        # Tarih parse (TwitterGraphQL camelCase: createdAt)
+        raw_date = tweet.get("createdAt") or tweet.get("created_at")
+        tweet_dt = None
+        if raw_date:
+            try:
+                tweet_dt = parsedate_to_datetime(raw_date)
+            except Exception:
+                try:
+                    tweet_dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+                except Exception:
+                    pass
+
+        # Yaş filtresi: max_age_hours'dan eski tweet'leri atla
+        if tweet_dt and tweet_dt < cutoff:
+            skipped_old += 1
+            continue
+
+        # ISO format published_at
+        published_iso = tweet_dt.isoformat() if tweet_dt else None
+
         results.append({
             "tweet_id": str(tweet_id),
             "username": username,
             "text": text,
-            "likes": tweet.get("favorite_count") or tweet.get("likes", 0),
-            "retweets": tweet.get("retweet_count") or tweet.get("retweets", 0),
-            "replies": tweet.get("reply_count") or tweet.get("replies", 0),
+            "likes": tweet.get("likeCount") or tweet.get("favorite_count") or tweet.get("likes", 0),
+            "retweets": tweet.get("retweetCount") or tweet.get("retweet_count") or tweet.get("retweets", 0),
+            "replies": tweet.get("replyCount") or tweet.get("reply_count") or tweet.get("replies", 0),
             "views": tweet.get("views") or tweet.get("impressions", 0),
-            "created_at": tweet.get("created_at"),
+            "created_at": published_iso or raw_date,
             "url": f"https://x.com/{username}/status/{tweet_id}",
         })
+
+    if skipped_old:
+        logger.info(f"  @{username}: {skipped_old} tweet skipped (>{max_age_hours}h old)")
 
     return results
 
@@ -209,6 +237,24 @@ async def fetch_keyword_search(
                 if not tweet_id or text.startswith("RT @"):
                     continue
 
+                # Parse date and convert to ISO
+                raw_date = legacy.get("created_at")
+                tweet_dt = None
+                published_iso = None
+                if raw_date:
+                    try:
+                        from email.utils import parsedate_to_datetime as _pdt
+                        tweet_dt = _pdt(raw_date)
+                        published_iso = tweet_dt.isoformat()
+                    except Exception:
+                        pass
+
+                # Skip tweets older than 72h
+                if tweet_dt:
+                    age_h = (datetime.now(timezone.utc) - tweet_dt).total_seconds() / 3600
+                    if age_h > 72:
+                        continue
+
                 results.append({
                     "tweet_id": str(tweet_id),
                     "username": username,
@@ -217,7 +263,7 @@ async def fetch_keyword_search(
                     "retweets": legacy.get("retweet_count", 0),
                     "replies": legacy.get("reply_count", 0),
                     "views": tweet_results.get("views", {}).get("count", 0),
-                    "created_at": legacy.get("created_at"),
+                    "created_at": published_iso or raw_date,
                     "url": f"https://x.com/{username}/status/{tweet_id}",
                 })
     except Exception as e:
