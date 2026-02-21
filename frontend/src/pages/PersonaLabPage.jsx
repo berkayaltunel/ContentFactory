@@ -591,7 +591,7 @@ function CreatePersonaDialog({ open, onClose, onCreated }) {
 // ─────────────────────────────────────────────
 // MAIN: PersonaLabPage
 // ─────────────────────────────────────────────
-export default function PersonaLabPage() {
+export default function PersonaLabPage({ embedded = false }) {
   const [personas, setPersonas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePersona, setActivePersona] = useState(null);
@@ -742,16 +742,16 @@ export default function PersonaLabPage() {
   return (
     <div
       style={{
-        minHeight: "calc(100vh - 80px)",
-        background: "var(--m-bg, #0a0a0a)",
-        padding: window.innerWidth < 640 ? "16px 12px" : "32px 24px",
+        minHeight: embedded ? "auto" : "calc(100vh - 80px)",
+        background: embedded ? "transparent" : "var(--m-bg, #0a0a0a)",
+        padding: embedded ? "0" : (window.innerWidth < 640 ? "16px 12px" : "32px 24px"),
         fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
         color: "var(--m-text, #fff)",
       }}
     >
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
         {/* Header */}
-        <motion.div
+        {!embedded && <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : -16 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -805,7 +805,7 @@ export default function PersonaLabPage() {
             X hesaplarını analiz et, yazım tarzlarını klonla. Her persona için 500+ tweet,
             stil parmak izi ve RAG tabanlı semantik eşleşme.
           </p>
-        </motion.div>
+        </motion.div>}
 
         {/* Toolbar */}
         <motion.div

@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
+import PersonaLabPage from "@/pages/PersonaLabPage";
 
 
 // Animated gradient background for cards
@@ -674,6 +675,7 @@ export default function StyleLabPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
   const [selectedProfileData, setSelectedProfileData] = useState(null);
+  const [activeTab, setActiveTab] = useState("styles"); // "styles" | "personas"
 
   useEffect(() => {
     fetchProfiles();
@@ -773,6 +775,47 @@ export default function StyleLabPage() {
         </div>
       </div>
 
+      {/* Segmented Control */}
+      <div className="flex justify-center mb-8">
+        <div className="inline-flex p-1 rounded-xl bg-card border border-border">
+          <button
+            onClick={() => setActiveTab("styles")}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+              activeTab === "styles"
+                ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border border-purple-500/30 shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Dna className="h-4 w-4" />
+            Hazır Stiller
+            <span className={cn(
+              "text-xs px-1.5 py-0.5 rounded-full",
+              activeTab === "styles" ? "bg-purple-500/20 text-purple-300" : "bg-muted text-muted-foreground"
+            )}>
+              {profiles.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("personas")}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+              activeTab === "personas"
+                ? "bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border border-violet-500/30 shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Fingerprint className="h-4 w-4" />
+            Persona Lab
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "personas" ? (
+        <PersonaLabPage embedded />
+      ) : (
+      <>
       {/* Style Profiles */}
       {profiles.length > 0 ? (
         <div className="mb-12">
@@ -817,6 +860,9 @@ export default function StyleLabPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      </>
       )}
 
       {/* Add Profile Dialog */}
