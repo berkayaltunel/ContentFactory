@@ -1,17 +1,21 @@
 /**
- * StyleTransferMode — "Tarzını Kopyala" modu
- * XAIModule içinde activePlatform === "style-transfer" olduğunda render edilir.
- * Self-contained: kendi state'i, kendi API call'ları, kendi UI.
+ * StyleTransferMode — "Tarzını Kopyala" Pipeline UI
+ * 
+ * 3 sabit node + animasyonlu SVG connector:
+ *   [Kaynak] ──→ [Persona] ──→ [Çıktı]
+ * 
+ * Desktop: soldan sağa
+ * Mobil: yukarıdan aşağıya
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   ChevronDown,
   Search,
   Sparkles,
-  ArrowRight,
   Link as LinkIcon,
   Type,
   User,
@@ -20,8 +24,10 @@ import {
   Check,
   X,
   RotateCcw,
+  FileText,
+  Zap,
+  ArrowRight,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import GenerationCard from "@/components/generation/GenerationCard";
@@ -29,21 +35,379 @@ import GenerationCard from "@/components/generation/GenerationCard";
 // ─────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────
-
-const fmt = (num) => {
-  if (!num) return "0";
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
-  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
-  return num.toString();
-};
-
 const isTwitterUrl = (text) => /(?:x|twitter)\.com\/.+\/status\/\d+/.test(text);
 
 // ─────────────────────────────────────────────
-// PROFILE SELECTOR
+// ANIMATED SVG CONNECTOR
 // ─────────────────────────────────────────────
+function Connector({ active, completed, vertical, generating }) {
+  const length = vertical ? 48 : 64;
+  const w = vertical ? 40 : length + 20;
+  const h = vertical ? length + 10 : 40;
 
-function ProfileSelector({ profiles, selected, onSelect, loading }) {
+  const pathD = vertical
+    ? `M 20 0 C 20 ${length * 0.4}, 20 ${length * 0.6}, 20 ${length}`
+    : `M 0 20 C ${length * 0.4} 20, ${length * 0.6} 20, ${length} 20`;
+
+  const baseColor = completed
+    ? "rgba(139, 92, 246, 0.6)"
+    : active
+    ? "rgba(139, 92, 246, 0.4)"
+    : "rgba(255,255,255,0.08)";
+
+  const glowColor = "rgba(139, 92, 246, 0.8)";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        position: "relative",
+      }}
+    >
+      <svg
+        width={w}
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        style={{ overflow: "visible" }}
+      >
+        {/* Base line */}
+        <path
+          d={pathD}
+          fill="none"
+          stroke={baseColor}
+          strokeWidth="2"
+          strokeLinecap="round"
+          transform={vertical ? "translate(0, 5)" : "translate(10, 0)"}
+        />
+
+        {/* Animated flowing line */}
+        {(active || generating) && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke={glowColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="8 12"
+            transform={vertical ? "translate(0, 5)" : "translate(10, 0)"}
+            style={{
+              animation: `flowDash ${generating ? "0.8s" : "2s"} linear infinite`,
+            }}
+          />
+        )}
+
+        {/* Completed glow */}
+        {completed && (
+          <path
+            d={pathD}
+            fill="none"
+            stroke={glowColor}
+            strokeWidth="3"
+            strokeLinecap="round"
+            transform={vertical ? "translate(0, 5)" : "translate(10, 0)"}
+            style={{ filter: "blur(3px)", opacity: 0.5 }}
+          />
+        )}
+
+        {/* Flowing dot */}
+        {(active || generating) && (
+          <circle r="3" fill="#a78bfa" style={{ filter: "blur(1px)" }}>
+            <animateMotion
+              dur={generating ? "0.8s" : "2s"}
+              repeatCount="indefinite"
+              path={
+                vertical
+                  ? `M 20 5 C 20 ${length * 0.4 + 5}, 20 ${length * 0.6 + 5}, 20 ${length + 5}`
+                  : `M 10 20 C ${length * 0.4 + 10} 20, ${length * 0.6 + 10} 20, ${length + 10} 20`
+              }
+            />
+          </circle>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// NODE WRAPPER
+// ─────────────────────────────────────────────
+function PipelineNode({ title, icon: Icon, index, active, completed, children, width }) {
+  const borderColor = completed
+    ? "rgba(139, 92, 246, 0.5)"
+    : active
+    ? "rgba(139, 92, 246, 0.35)"
+    : "rgba(255,255,255,0.06)";
+
+  const headerBg = completed
+    ? "rgba(139, 92, 246, 0.12)"
+    : active
+    ? "rgba(139, 92, 246, 0.06)"
+    : "rgba(255,255,255,0.02)";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: index * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        width: width || "100%",
+        maxWidth: "360px",
+        minWidth: "260px",
+        background: "var(--m-surface, #111111)",
+        border: `1.5px solid ${borderColor}`,
+        borderRadius: "16px",
+        overflow: "hidden",
+        transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+        boxShadow: completed
+          ? "0 0 30px rgba(139, 92, 246, 0.08)"
+          : active
+          ? "0 0 20px rgba(139, 92, 246, 0.05)"
+          : "none",
+        flexShrink: 0,
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "10px 14px",
+          background: headerBg,
+          borderBottom: `1px solid ${borderColor}`,
+          transition: "background 0.3s ease",
+        }}
+      >
+        <div
+          style={{
+            width: "22px",
+            height: "22px",
+            borderRadius: "6px",
+            background: completed
+              ? "rgba(139, 92, 246, 0.2)"
+              : "rgba(255,255,255,0.05)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background 0.3s ease",
+          }}
+        >
+          {completed ? (
+            <Check size={12} style={{ color: "#a78bfa" }} />
+          ) : (
+            <Icon size={12} style={{ color: active ? "#a78bfa" : "var(--m-text-faint, #555)" }} />
+          )}
+        </div>
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: "600",
+            color: active || completed ? "var(--m-text, #fff)" : "var(--m-text-muted, #888)",
+            letterSpacing: "0.3px",
+            textTransform: "uppercase",
+          }}
+        >
+          {title}
+        </span>
+        {completed && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            style={{
+              marginLeft: "auto",
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "#a78bfa",
+            }}
+          />
+        )}
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "14px" }}>
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// NODE 1: SOURCE (Kaynak)
+// ─────────────────────────────────────────────
+function SourceNode({ value, onChange, fetchedTweet, onClearTweet, onFetchTweet, fetching }) {
+  const showUrlHint = isTwitterUrl(value.trim()) && !fetchedTweet;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {/* Fetched tweet preview */}
+      <AnimatePresence>
+        {fetchedTweet && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{
+              background: "rgba(139, 92, 246, 0.05)",
+              border: "1px solid rgba(139, 92, 246, 0.15)",
+              borderRadius: "10px",
+              padding: "12px",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <button
+              onClick={onClearTweet}
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "8px",
+                width: "20px",
+                height: "20px",
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "var(--m-text-muted, #888)",
+              }}
+            >
+              <X size={10} />
+            </button>
+            <div style={{ display: "flex", gap: "10px", alignItems: "start" }}>
+              <img
+                src={`https://unavatar.io/x/${fetchedTweet.author_username}`}
+                alt=""
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  background: "rgba(255,255,255,0.05)",
+                }}
+                onError={(e) => {
+                  e.target.style.display = "none";
+                }}
+              />
+              <div style={{ flex: 1, paddingRight: "16px" }}>
+                <div style={{ fontSize: "11px", fontWeight: "600", color: "var(--m-text, #fff)", marginBottom: "2px" }}>
+                  {fetchedTweet.author_name}
+                  <span style={{ fontWeight: "400", color: "var(--m-text-muted, #888)", marginLeft: "6px" }}>
+                    @{fetchedTweet.author_username}
+                  </span>
+                </div>
+                <p style={{
+                  fontSize: "12px",
+                  color: "var(--m-text-soft, #ccc)",
+                  lineHeight: "1.5",
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 4,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}>
+                  {fetchedTweet.text}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input */}
+      {!fetchedTweet && (
+        <div style={{ position: "relative" }}>
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Tweet URL veya serbest metin yapıştır..."
+            rows={4}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                if (showUrlHint) onFetchTweet();
+              }
+            }}
+            disabled={fetching}
+            style={{
+              width: "100%",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "10px",
+              padding: "12px",
+              color: "var(--m-text, #fff)",
+              fontSize: "13px",
+              lineHeight: "1.55",
+              resize: "none",
+              fontFamily: "inherit",
+              outline: "none",
+              transition: "border-color 0.2s ease",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "rgba(139, 92, 246, 0.3)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.06)")}
+          />
+
+          {/* URL detect chip */}
+          {fetching && (
+            <div style={{
+              position: "absolute", bottom: "10px", right: "10px",
+              display: "flex", alignItems: "center", gap: "5px",
+              padding: "4px 10px", borderRadius: "16px",
+              background: "rgba(139, 92, 246, 0.15)", fontSize: "11px", color: "#a78bfa",
+            }}>
+              <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
+              Yükleniyor
+            </div>
+          )}
+
+          {showUrlHint && !fetching && (
+            <button
+              onClick={onFetchTweet}
+              style={{
+                position: "absolute", bottom: "10px", right: "10px",
+                display: "flex", alignItems: "center", gap: "5px",
+                padding: "5px 12px", borderRadius: "16px",
+                background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                border: "none", color: "white", fontSize: "11px",
+                fontWeight: "600", cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              <LinkIcon size={10} />
+              Yükle
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Mode indicator */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "5px",
+        fontSize: "10px", color: "var(--m-text-faint, #555)",
+      }}>
+        {fetchedTweet ? (
+          <><LinkIcon size={9} /> Tweet yüklendi</>
+        ) : value.trim() ? (
+          isTwitterUrl(value.trim())
+            ? <><LinkIcon size={9} /> URL algılandı</>
+            : <><Type size={9} /> Serbest metin</>
+        ) : (
+          <><FileText size={9} /> URL veya metin gir</>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// NODE 2: PERSONA
+// ─────────────────────────────────────────────
+function PersonaNode({ profiles, selected, onSelect, loading, generating }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef(null);
@@ -65,460 +429,311 @@ function ProfileSelector({ profiles, selected, onSelect, loading }) {
 
   const selectedProfile = profiles.find((p) => p.id === selected);
 
+  // Generating state
+  if (generating) {
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", gap: "12px", padding: "20px 0",
+      }}>
+        {selectedProfile?.avatar_url && (
+          <div style={{
+            width: "48px", height: "48px", borderRadius: "50%",
+            overflow: "hidden", position: "relative",
+          }}>
+            <img
+              src={selectedProfile.avatar_url}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            {/* Pulse ring */}
+            <div style={{
+              position: "absolute", inset: "-4px",
+              borderRadius: "50%",
+              border: "2px solid rgba(139, 92, 246, 0.5)",
+              animation: "pulseRing 1.5s ease-out infinite",
+            }} />
+          </div>
+        )}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "12px", fontWeight: "600", color: "#a78bfa", marginBottom: "4px" }}>
+            Tarz analiz ediliyor...
+          </div>
+          <div style={{ fontSize: "11px", color: "var(--m-text-faint, #555)" }}>
+            {selectedProfile?.display_name || selectedProfile?.name}
+          </div>
+        </div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 size={18} style={{ color: "#7c3aed" }} />
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      {/* Trigger Button */}
+      {/* Selected / Trigger */}
       <button
         onClick={() => setOpen(!open)}
         style={{
           width: "100%",
           display: "flex",
           alignItems: "center",
-          gap: "12px",
-          padding: "14px 16px",
-          background: open ? "rgba(139, 92, 246, 0.08)" : "var(--m-surface)",
-          border: open
-            ? "1.5px solid rgba(139, 92, 246, 0.4)"
-            : "1.5px solid var(--m-border-light)",
-          borderRadius: "14px",
+          gap: "10px",
+          padding: "10px 12px",
+          background: open ? "rgba(139, 92, 246, 0.06)" : "rgba(255,255,255,0.02)",
+          border: open ? "1.5px solid rgba(139, 92, 246, 0.3)" : "1.5px solid rgba(255,255,255,0.06)",
+          borderRadius: "10px",
           cursor: "pointer",
-          transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: "all 0.2s ease",
           fontFamily: "inherit",
         }}
       >
         {selectedProfile ? (
           <>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                overflow: "hidden",
-                flexShrink: 0,
-                background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div style={{
+              width: "34px", height: "34px", borderRadius: "50%",
+              overflow: "hidden", flexShrink: 0,
+              background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
               {selectedProfile.avatar_url ? (
-                <img
-                  src={selectedProfile.avatar_url}
-                  alt=""
+                <img src={selectedProfile.avatar_url} alt=""
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                    e.target.parentElement.innerHTML = `<span style="color:white;font-size:16px;font-weight:600">${(selectedProfile.display_name || selectedProfile.name || "?")[0]}</span>`;
-                  }}
+                  onError={(e) => { e.target.style.display = "none"; }}
                 />
               ) : (
-                <span style={{ color: "white", fontSize: "16px", fontWeight: "600" }}>
+                <span style={{ color: "white", fontSize: "14px", fontWeight: "600" }}>
                   {(selectedProfile.display_name || selectedProfile.name || "?")[0]}
                 </span>
               )}
             </div>
             <div style={{ flex: 1, textAlign: "left" }}>
-              <div
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "var(--m-text)",
-                  lineHeight: "1.3",
-                }}
-              >
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text, #fff)", lineHeight: "1.3" }}>
                 {selectedProfile.display_name || selectedProfile.name}
               </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "var(--m-text-muted)",
-                  marginTop: "1px",
-                }}
-              >
-                @{selectedProfile.username} · {selectedProfile.tweet_count} tweet analiz edildi
+              <div style={{ fontSize: "11px", color: "var(--m-text-muted, #888)" }}>
+                @{selectedProfile.username} · {selectedProfile.tweet_count} tweet
               </div>
             </div>
           </>
         ) : (
           <>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "var(--m-border-light)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <User size={18} style={{ color: "var(--m-text-faint)" }} />
+            <div style={{
+              width: "34px", height: "34px", borderRadius: "50%",
+              background: "rgba(255,255,255,0.05)",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <User size={16} style={{ color: "var(--m-text-faint, #555)" }} />
             </div>
-            <div style={{ flex: 1, textAlign: "left" }}>
-              <div
-                style={{
-                  fontSize: "14px",
-                  color: "var(--m-text-muted)",
-                }}
-              >
-                Kimin tarzında yazılsın?
-              </div>
+            <div style={{ fontSize: "13px", color: "var(--m-text-muted, #888)", textAlign: "left" }}>
+              Hedef kişiyi seç
             </div>
           </>
         )}
         <ChevronDown
-          size={18}
+          size={16}
           style={{
-            color: "var(--m-text-muted)",
+            color: "var(--m-text-muted, #888)", flexShrink: 0,
             transition: "transform 0.2s ease",
             transform: open ? "rotate(180deg)" : "rotate(0)",
-            flexShrink: 0,
           }}
         />
       </button>
 
       {/* Dropdown */}
-      {open && (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 6px)",
-            left: 0,
-            right: 0,
-            background: "var(--m-surface)",
-            border: "1.5px solid var(--m-border-light)",
-            borderRadius: "14px",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
-            zIndex: 50,
-            overflow: "hidden",
-            animation: "slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-          }}
-        >
-          {/* Search */}
-          {profiles.length > 3 && (
-            <div style={{ padding: "10px 12px 6px", borderBottom: "1px solid var(--m-border-light)" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 10px",
-                  background: "var(--m-input-bg)",
-                  borderRadius: "10px",
-                  border: "1px solid var(--m-border-light)",
-                }}
-              >
-                <Search size={14} style={{ color: "var(--m-text-faint)", flexShrink: 0 }} />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Profil ara..."
-                  autoFocus
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    outline: "none",
-                    color: "var(--m-text)",
-                    fontSize: "13px",
-                    width: "100%",
-                    fontFamily: "inherit",
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Profile List */}
-          <div
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              maxHeight: "260px",
-              overflowY: "auto",
-              padding: "6px",
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: 0, right: 0,
+              background: "var(--m-surface, #111)",
+              border: "1.5px solid rgba(255,255,255,0.1)",
+              borderRadius: "12px",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
+              zIndex: 50,
+              overflow: "hidden",
             }}
           >
-            {loading ? (
-              <div style={{ padding: "20px", textAlign: "center", color: "var(--m-text-muted)", fontSize: "13px" }}>
-                <Loader2 size={18} style={{ animation: "spin 1s linear infinite", marginBottom: "6px" }} />
-                <div>Profiller yükleniyor...</div>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div style={{ padding: "20px", textAlign: "center", color: "var(--m-text-muted)", fontSize: "13px" }}>
-                {profiles.length === 0 ? "Henüz stil profili yok" : "Sonuç bulunamadı"}
-              </div>
-            ) : (
-              filtered.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    onSelect(p.id);
-                    setOpen(false);
-                    setSearch("");
-                  }}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "10px 12px",
-                    background: selected === p.id ? "rgba(139, 92, 246, 0.1)" : "transparent",
-                    border: "none",
-                    borderRadius: "10px",
-                    cursor: "pointer",
-                    transition: "background 0.15s ease",
-                    fontFamily: "inherit",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selected !== p.id) e.currentTarget.style.background = "var(--m-hover)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = selected === p.id ? "rgba(139, 92, 246, 0.1)" : "transparent";
-                  }}
-                >
-                  <div
+            {/* Search */}
+            {profiles.length > 3 && (
+              <div style={{ padding: "8px 8px 4px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: "6px",
+                  padding: "6px 8px", background: "rgba(255,255,255,0.03)",
+                  borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)",
+                }}>
+                  <Search size={12} style={{ color: "var(--m-text-faint, #555)", flexShrink: 0 }} />
+                  <input
+                    type="text" value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Ara..." autoFocus
                     style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      overflow: "hidden",
-                      flexShrink: 0,
-                      background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      background: "transparent", border: "none", outline: "none",
+                      color: "var(--m-text, #fff)", fontSize: "12px",
+                      width: "100%", fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* List */}
+            <div style={{ maxHeight: "220px", overflowY: "auto", padding: "4px" }}>
+              {loading ? (
+                <div style={{ padding: "16px", textAlign: "center", color: "var(--m-text-muted, #888)", fontSize: "12px" }}>
+                  <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+                </div>
+              ) : filtered.length === 0 ? (
+                <div style={{ padding: "16px", textAlign: "center", color: "var(--m-text-muted, #888)", fontSize: "12px" }}>
+                  {profiles.length === 0 ? "Henüz profil yok" : "Sonuç yok"}
+                </div>
+              ) : (
+                filtered.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { onSelect(p.id); setOpen(false); setSearch(""); }}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: "10px",
+                      padding: "8px 10px", background: selected === p.id ? "rgba(139, 92, 246, 0.1)" : "transparent",
+                      border: "none", borderRadius: "8px", cursor: "pointer",
+                      fontFamily: "inherit", transition: "background 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selected !== p.id) e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = selected === p.id ? "rgba(139, 92, 246, 0.1)" : "transparent";
                     }}
                   >
-                    {p.avatar_url ? (
-                      <img
-                        src={p.avatar_url}
-                        alt=""
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <span style={{ color: "white", fontSize: "14px", fontWeight: "600" }}>
-                        {(p.display_name || p.name || "?")[0]}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, textAlign: "left" }}>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text)" }}>
-                      {p.display_name || p.name}
+                    <div style={{
+                      width: "30px", height: "30px", borderRadius: "50%",
+                      overflow: "hidden", flexShrink: 0,
+                      background: "linear-gradient(135deg, #7c3aed, #a78bfa)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={(e) => { e.target.style.display = "none"; }} />
+                      ) : (
+                        <span style={{ color: "white", fontSize: "12px", fontWeight: "600" }}>
+                          {(p.display_name || p.name || "?")[0]}
+                        </span>
+                      )}
                     </div>
-                    <div style={{ fontSize: "11px", color: "var(--m-text-muted)" }}>
-                      @{p.username} · {p.tweet_count} tweet
+                    <div style={{ flex: 1, textAlign: "left" }}>
+                      <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--m-text, #fff)" }}>
+                        {p.display_name || p.name}
+                      </div>
+                      <div style={{ fontSize: "10px", color: "var(--m-text-muted, #888)" }}>
+                        @{p.username} · {p.tweet_count} tweet
+                      </div>
                     </div>
-                  </div>
-                  {selected === p.id && (
-                    <Check size={16} style={{ color: "#8b5cf6", flexShrink: 0 }} />
-                  )}
-                </button>
-              ))
-            )}
-          </div>
+                    {selected === p.id && <Check size={14} style={{ color: "#8b5cf6", flexShrink: 0 }} />}
+                  </button>
+                ))
+              )}
+            </div>
 
-          {/* Add New */}
-          <div style={{ borderTop: "1px solid var(--m-border-light)", padding: "6px" }}>
-            <button
-              onClick={() => {
-                setOpen(false);
-                navigate("/style-lab");
-              }}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 12px",
-                background: "transparent",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                color: "#8b5cf6",
-                fontSize: "13px",
-                fontWeight: "500",
-                transition: "background 0.15s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-            >
-              <Plus size={16} />
-              <span>Yeni Profil Oluştur</span>
-              <ExternalLink size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Add new */}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "4px" }}>
+              <button
+                onClick={() => { setOpen(false); navigate("/style-lab"); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: "8px",
+                  padding: "8px 10px", background: "transparent", border: "none",
+                  borderRadius: "8px", cursor: "pointer", fontFamily: "inherit",
+                  color: "#8b5cf6", fontSize: "12px", fontWeight: "500",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139, 92, 246, 0.06)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <Plus size={14} />
+                Yeni Profil Oluştur
+                <ExternalLink size={10} style={{ marginLeft: "auto", opacity: 0.5 }} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// SOURCE TWEET PREVIEW
+// NODE 3: OUTPUT
 // ─────────────────────────────────────────────
-
-function SourceTweetPreview({ tweet, onClear }) {
-  return (
-    <div
-      style={{
-        background: "rgba(139, 92, 246, 0.04)",
-        border: "1px solid rgba(139, 92, 246, 0.15)",
-        borderRadius: "12px",
-        padding: "14px 16px",
-        position: "relative",
-        animation: "fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
-    >
-      {/* Clear button */}
-      <button
-        onClick={onClear}
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          width: "24px",
-          height: "24px",
-          borderRadius: "50%",
-          background: "var(--m-border-light)",
-          border: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          color: "var(--m-text-muted)",
-          transition: "all 0.15s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "#ef4444";
-          e.currentTarget.style.color = "white";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "var(--m-border-light)";
-          e.currentTarget.style.color = "var(--m-text-muted)";
-        }}
-      >
-        <X size={12} />
-      </button>
-
-      <div style={{ display: "flex", alignItems: "start", gap: "12px" }}>
-        {/* Author avatar */}
-        <div
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "var(--m-border-light)",
-            overflow: "hidden",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <img
-            src={`https://unavatar.io/x/${tweet.author_username}`}
-            alt=""
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => {
-              e.target.style.display = "none";
-              e.target.parentElement.innerHTML = `<span style="color:var(--m-text-muted);font-size:14px;font-weight:600">${(tweet.author_name || "?")[0]}</span>`;
-            }}
-          />
-        </div>
-
-        <div style={{ flex: 1, paddingRight: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--m-text)" }}>
-              {tweet.author_name}
-            </span>
-            <span style={{ fontSize: "12px", color: "var(--m-text-muted)" }}>
-              @{tweet.author_username}
-            </span>
-          </div>
-          <p
-            style={{
-              fontSize: "13px",
-              color: "var(--m-text-soft)",
-              lineHeight: "1.55",
-              whiteSpace: "pre-wrap",
-              margin: 0,
-            }}
-          >
-            {tweet.text}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// INPUT MODE INDICATOR
-// ─────────────────────────────────────────────
-
-function InputModeChip({ isUrl, isFetching }) {
-  if (isFetching) {
+function OutputNode({ jobs, onEvolve, generating }) {
+  if (generating) {
     return (
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: "4px 10px",
-          borderRadius: "20px",
-          background: "rgba(139, 92, 246, 0.1)",
-          fontSize: "11px",
-          color: "#8b5cf6",
-          fontWeight: "500",
-        }}
-      >
-        <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
-        Tweet yükleniyor...
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", gap: "10px", padding: "24px 0",
+        minHeight: "120px",
+      }}>
+        <div style={{
+          display: "flex", gap: "4px",
+        }}>
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              animate={{ opacity: [0.2, 1, 0.2], scale: [0.8, 1, 0.8] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+              style={{
+                width: "8px", height: "8px", borderRadius: "50%",
+                background: "#a78bfa",
+              }}
+            />
+          ))}
+        </div>
+        <span style={{ fontSize: "12px", color: "var(--m-text-muted, #888)" }}>
+          İçerik üretiliyor...
+        </span>
+      </div>
+    );
+  }
+
+  const completedJobs = jobs.filter((j) => j.status === "completed");
+
+  if (completedJobs.length === 0) {
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", gap: "8px", padding: "24px 0",
+        minHeight: "120px",
+      }}>
+        <Sparkles size={20} style={{ color: "rgba(255,255,255,0.1)" }} />
+        <span style={{ fontSize: "12px", color: "var(--m-text-faint, #555)" }}>
+          Sonuçlar burada görünecek
+        </span>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "5px",
-        padding: "4px 10px",
-        borderRadius: "20px",
-        background: isUrl ? "rgba(59, 130, 246, 0.08)" : "rgba(139, 92, 246, 0.06)",
-        fontSize: "11px",
-        color: isUrl ? "#3b82f6" : "var(--m-text-muted)",
-        fontWeight: "500",
-        transition: "all 0.2s ease",
-      }}
-    >
-      {isUrl ? (
-        <>
-          <LinkIcon size={11} />
-          Tweet URL algılandı
-        </>
-      ) : (
-        <>
-          <Type size={11} />
-          Serbest metin
-        </>
-      )}
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      {jobs.map((job) => (
+        <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
+      ))}
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// MAIN: StyleTransferMode
+// MAIN COMPONENT
 // ─────────────────────────────────────────────
-
 let stJobIdCounter = 0;
 
-export default function StyleTransferMode({ onBack, onEvolve }) {
+export default function StyleTransferMode({ onEvolve }) {
   const [profiles, setProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [selectedProfileId, setSelectedProfileId] = useState(null);
@@ -528,11 +743,18 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
   const [generating, setGenerating] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [mounted, setMounted] = useState(false);
-  const textareaRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Responsive
+  useEffect(() => {
+    setMounted(true);
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   // Load profiles
   useEffect(() => {
-    setMounted(true);
     (async () => {
       try {
         const res = await api.get(`${API}/style-transfer/profiles`);
@@ -552,19 +774,16 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
   useEffect(() => {
     const trimmed = inputValue.trim();
     if (!trimmed || fetching || fetchedTweet) return;
-
-    // Only auto-fetch if URL was just pasted (not typed char by char)
     if (isTwitterUrl(trimmed) && trimmed.length - prevInput.current.length > 10) {
       handleFetchTweet(trimmed);
     }
     prevInput.current = trimmed;
   }, [inputValue]);
 
-  // Fetch tweet from URL
+  // Fetch tweet
   const handleFetchTweet = async (url) => {
     if (!url) url = inputValue.trim();
     if (!isTwitterUrl(url)) return;
-
     setFetching(true);
     try {
       const res = await api.get(`${API}/tweet/fetch`, { params: { url } });
@@ -599,8 +818,6 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
       toast.error("Bir stil profili seç");
       return;
     }
-
-    // If user typed a URL but didn't fetch yet
     if (isTwitterUrl(text) && !fetchedTweet) {
       await handleFetchTweet(text);
       return;
@@ -617,7 +834,7 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
       startedAt: Date.now(),
       topic: fetchedTweet
         ? `@${fetchedTweet.author_username} → ${targetName}`
-        : `"${text.slice(0, 40)}${text.length > 40 ? "..." : ""}" → ${targetName}`,
+        : `"${text.slice(0, 40)}..." → ${targetName}`,
       persona: "ghost",
       personaLabel: targetName,
       toneLabel: "Style Transfer",
@@ -630,10 +847,7 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
     setGenerating(true);
 
     try {
-      const body = {
-        target_profile_id: selectedProfileId,
-        variant_count: 3,
-      };
+      const body = { target_profile_id: selectedProfileId, variant_count: 3 };
       if (fetchedTweet) {
         body.source_url = fetchedTweet.url;
         body.source_text = fetchedTweet.text;
@@ -647,16 +861,11 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
         setJobs((prev) =>
           prev.map((j) =>
             j.id === jobId
-              ? {
-                  ...j,
-                  status: "completed",
-                  variants: res.data.variants,
-                  generationId: res.data.generation_id,
-                }
+              ? { ...j, status: "completed", variants: res.data.variants, generationId: res.data.generation_id }
               : j
           )
         );
-        toast.success("İçerik oluşturuldu ✨");
+        toast.success("Tarz kopyalandı ✨");
       } else {
         setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "error" } : j)));
         toast.error("Bir hata oluştu");
@@ -669,421 +878,219 @@ export default function StyleTransferMode({ onBack, onEvolve }) {
     }
   }, [inputValue, fetchedTweet, selectedProfileId, profiles]);
 
-  // Clear all
+  // Reset
   const handleReset = () => {
     setInputValue("");
     setFetchedTweet(null);
     setJobs([]);
   };
 
-  const profile = profiles.find((p) => p.id === selectedProfileId);
-  const hasInput = !!(inputValue.trim() || fetchedTweet);
-  const canGenerate = hasInput && selectedProfileId && !generating;
-  const showUrlHint = isTwitterUrl(inputValue.trim()) && !fetchedTweet;
+  // State flags
+  const hasSource = !!(inputValue.trim() || fetchedTweet);
+  const hasPersona = !!selectedProfileId;
+  const hasOutput = jobs.some((j) => j.status === "completed");
+  const canGenerate = hasSource && hasPersona && !generating;
 
   return (
     <div
       style={{
         width: "100%",
-        maxWidth: "680px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0",
+        maxWidth: isMobile ? "400px" : "1100px",
         opacity: mounted ? 1 : 0,
-        transform: mounted ? "translateY(0)" : "translateY(16px)",
-        transition: "all 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        transition: "opacity 0.5s ease",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "28px",
-        }}
+      {/* Title */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{ textAlign: "center", marginBottom: isMobile ? "20px" : "32px" }}
       >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "10px",
-            padding: "8px 20px",
-            borderRadius: "100px",
-            background: "linear-gradient(135deg, rgba(139,92,246,0.12), rgba(168,85,247,0.08))",
-            border: "1px solid rgba(139,92,246,0.2)",
-            marginBottom: "14px",
-          }}
-        >
-          <Sparkles size={16} style={{ color: "#a78bfa" }} />
-          <span
-            style={{
-              fontSize: "13px",
-              fontWeight: "600",
-              background: "linear-gradient(135deg, #a78bfa, #c084fc)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: "0.3px",
-            }}
-          >
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "8px",
+          padding: "6px 16px", borderRadius: "100px",
+          background: "linear-gradient(135deg, rgba(139,92,246,0.1), rgba(168,85,247,0.06))",
+          border: "1px solid rgba(139,92,246,0.2)",
+          marginBottom: "10px",
+        }}>
+          <Zap size={14} style={{ color: "#a78bfa" }} />
+          <span style={{
+            fontSize: "12px", fontWeight: "600",
+            background: "linear-gradient(135deg, #a78bfa, #c084fc)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            letterSpacing: "0.3px",
+          }}>
             Tarzını Kopyala
           </span>
         </div>
-        <p
-          style={{
-            fontSize: "13px",
-            color: "var(--m-text-muted)",
-            maxWidth: "400px",
-            margin: "0 auto",
-            lineHeight: "1.5",
-          }}
-        >
-          Bir tweet veya metin yapıştır, hedef kişinin tarzıyla yeniden yazsın.
+        <p style={{
+          fontSize: "12px", color: "var(--m-text-muted, #888)",
+          maxWidth: "340px", margin: "0 auto", lineHeight: "1.5",
+        }}>
+          Metin veya tweet gir → Hedef kişiyi seç → Tarzıyla yeniden yazılsın
         </p>
-      </div>
+      </motion.div>
 
-      {/* ═══ FORM ═══ */}
+      {/* ═══ PIPELINE ═══ */}
       <div
         style={{
-          background: "var(--m-input-bg)",
-          border: "1px solid var(--m-input-border)",
-          borderRadius: "18px",
-          padding: "20px",
-          boxShadow: "var(--m-shadow)",
           display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          transition: "all 0.3s ease",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "0",
         }}
       >
-        {/* 1. Profile Selector */}
-        <div>
-          <div
-            style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--m-text-muted)",
-              marginBottom: "8px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-            }}
-          >
-            <User size={12} />
-            Hedef Stil
-          </div>
-          <ProfileSelector
+        {/* Node 1: Kaynak */}
+        <PipelineNode
+          title="Kaynak"
+          icon={FileText}
+          index={0}
+          active={hasSource || (!hasSource && !hasPersona)}
+          completed={hasSource}
+        >
+          <SourceNode
+            value={inputValue}
+            onChange={setInputValue}
+            fetchedTweet={fetchedTweet}
+            onClearTweet={() => setFetchedTweet(null)}
+            onFetchTweet={() => handleFetchTweet()}
+            fetching={fetching}
+          />
+        </PipelineNode>
+
+        {/* Connector 1→2 */}
+        <Connector
+          active={hasSource}
+          completed={hasSource && hasPersona}
+          vertical={isMobile}
+          generating={generating}
+        />
+
+        {/* Node 2: Persona */}
+        <PipelineNode
+          title="Persona"
+          icon={User}
+          index={1}
+          active={hasSource && !hasOutput}
+          completed={hasPersona}
+        >
+          <PersonaNode
             profiles={profiles}
             selected={selectedProfileId}
             onSelect={setSelectedProfileId}
             loading={profilesLoading}
+            generating={generating}
           />
-        </div>
+        </PipelineNode>
 
-        {/* Divider with arrow */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            padding: "0 4px",
-          }}
+        {/* Connector 2→3 */}
+        <Connector
+          active={hasSource && hasPersona}
+          completed={hasOutput}
+          vertical={isMobile}
+          generating={generating}
+        />
+
+        {/* Node 3: Çıktı */}
+        <PipelineNode
+          title="Çıktı"
+          icon={Sparkles}
+          index={2}
+          active={generating}
+          completed={hasOutput}
+          width={isMobile ? undefined : "420px"}
         >
-          <div style={{ flex: 1, height: "1px", background: "var(--m-border-light)" }} />
-          <div
-            style={{
-              width: "28px",
-              height: "28px",
-              borderRadius: "50%",
-              background: selectedProfileId ? "rgba(139, 92, 246, 0.1)" : "var(--m-border-light)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s ease",
-            }}
-          >
-            <ArrowRight
-              size={14}
-              style={{
-                color: selectedProfileId ? "#8b5cf6" : "var(--m-text-faint)",
-                transform: "rotate(90deg)",
-              }}
-            />
-          </div>
-          <div style={{ flex: 1, height: "1px", background: "var(--m-border-light)" }} />
-        </div>
-
-        {/* 2. Source Input */}
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "8px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--m-text-muted)",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              <Type size={12} />
-              Kaynak
-            </div>
-            {(inputValue.trim() || fetchedTweet) && (
-              <InputModeChip isUrl={showUrlHint} isFetching={fetching} />
-            )}
-          </div>
-
-          {/* Fetched Tweet Preview */}
-          {fetchedTweet && (
-            <div style={{ marginBottom: "12px" }}>
-              <SourceTweetPreview
-                tweet={fetchedTweet}
-                onClear={() => setFetchedTweet(null)}
-              />
-            </div>
-          )}
-
-          {/* Textarea */}
-          {!fetchedTweet && (
-            <div
-              style={{
-                position: "relative",
-              }}
-            >
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Tweet URL'si yapıştır veya dönüştürmek istediğin metni yaz..."
-                rows={4}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    if (showUrlHint) handleFetchTweet();
-                    else handleGenerate();
-                  }
-                }}
-                disabled={fetching}
-                style={{
-                  width: "100%",
-                  background: "var(--m-surface)",
-                  border: "1.5px solid var(--m-border-light)",
-                  borderRadius: "14px",
-                  padding: "14px 16px",
-                  color: "var(--m-text)",
-                  fontSize: "14px",
-                  lineHeight: "1.6",
-                  resize: "none",
-                  fontFamily: "inherit",
-                  outline: "none",
-                  transition: "border-color 0.2s ease",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "rgba(139, 92, 246, 0.4)")}
-                onBlur={(e) => (e.target.style.borderColor = "var(--m-border-light)")}
-              />
-
-              {/* Fetch URL button (if URL detected) */}
-              {showUrlHint && !fetching && (
-                <button
-                  onClick={() => handleFetchTweet()}
-                  style={{
-                    position: "absolute",
-                    bottom: "12px",
-                    right: "12px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 14px",
-                    borderRadius: "20px",
-                    background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-                    border: "none",
-                    color: "white",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    boxShadow: "0 2px 8px rgba(139, 92, 246, 0.35)",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                >
-                  <LinkIcon size={12} />
-                  Tweet Yükle
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* After fetched: optional direction */}
-          {fetchedTweet && (
-            <textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Yönlendirme ekle (opsiyonel): örn. 'daha kısa', 'farklı açıdan'..."
-              rows={2}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  handleGenerate();
-                }
-              }}
-              style={{
-                width: "100%",
-                background: "var(--m-surface)",
-                border: "1.5px solid var(--m-border-light)",
-                borderRadius: "12px",
-                padding: "12px 14px",
-                color: "var(--m-text)",
-                fontSize: "13px",
-                lineHeight: "1.5",
-                resize: "none",
-                fontFamily: "inherit",
-                outline: "none",
-                transition: "border-color 0.2s ease",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "rgba(139, 92, 246, 0.4)")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--m-border-light)")}
-            />
-          )}
-        </div>
-
-        {/* Generate Button */}
-        <button
-          onClick={handleGenerate}
-          disabled={!canGenerate}
-          style={{
-            width: "100%",
-            padding: "14px",
-            borderRadius: "14px",
-            border: "none",
-            background: canGenerate
-              ? "linear-gradient(135deg, #7c3aed, #a855f7)"
-              : "var(--m-border-light)",
-            color: canGenerate ? "white" : "var(--m-text-faint)",
-            fontSize: "14px",
-            fontWeight: "600",
-            fontFamily: "inherit",
-            cursor: canGenerate ? "pointer" : "not-allowed",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            boxShadow: canGenerate ? "0 4px 16px rgba(139, 92, 246, 0.3)" : "none",
-            transform: "translateY(0)",
-          }}
-          onMouseEnter={(e) => {
-            if (canGenerate) {
-              e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.boxShadow = "0 6px 24px rgba(139, 92, 246, 0.4)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = canGenerate ? "0 4px 16px rgba(139, 92, 246, 0.3)" : "none";
-          }}
-        >
-          {generating ? (
-            <>
-              <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
-              Tarz kopyalanıyor...
-            </>
-          ) : (
-            <>
-              <Sparkles size={16} />
-              Tarzını Kopyala
-            </>
-          )}
-        </button>
-
-        {/* Keyboard shortcut hint */}
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: "11px",
-            color: "var(--m-text-faint)",
-          }}
-        >
-          ⌘+Enter ile gönder
-        </div>
+          <OutputNode
+            jobs={jobs}
+            onEvolve={onEvolve}
+            generating={generating}
+          />
+        </PipelineNode>
       </div>
 
-      {/* ═══ RESULTS ═══ */}
-      {jobs.length > 0 && (
-        <div
-          style={{
-            marginTop: "24px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
-          {/* Reset button */}
-          {jobs.some((j) => j.status === "completed") && (
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <button
-                onClick={handleReset}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  background: "var(--m-surface)",
-                  border: "1px solid var(--m-border-light)",
-                  color: "var(--m-text-muted)",
-                  fontSize: "12px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.3)";
-                  e.currentTarget.style.color = "#8b5cf6";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--m-border-light)";
-                  e.currentTarget.style.color = "var(--m-text-muted)";
-                }}
-              >
-                <RotateCcw size={12} />
-                Yeni Dönüşüm
-              </button>
-            </div>
-          )}
+      {/* ═══ GENERATE BUTTON ═══ */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "10px",
+          marginTop: "24px",
+        }}
+      >
+        {hasOutput && (
+          <button
+            onClick={handleReset}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "10px 18px", borderRadius: "12px",
+              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--m-text-muted, #888)", fontSize: "13px",
+              fontWeight: "500", cursor: "pointer", fontFamily: "inherit",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.3)";
+              e.currentTarget.style.color = "#a78bfa";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.color = "var(--m-text-muted, #888)";
+            }}
+          >
+            <RotateCcw size={14} />
+            Yeni Dönüşüm
+          </button>
+        )}
 
-          {/* Job cards */}
-          {jobs.map((job) => (
-            <GenerationCard
-              key={job.id}
-              job={job}
-              onEvolve={onEvolve}
-            />
-          ))}
-        </div>
-      )}
+        {!hasOutput && (
+          <motion.button
+            whileHover={canGenerate ? { scale: 1.02, y: -1 } : {}}
+            whileTap={canGenerate ? { scale: 0.98 } : {}}
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              padding: "12px 32px", borderRadius: "12px", border: "none",
+              background: canGenerate
+                ? "linear-gradient(135deg, #7c3aed, #a855f7)"
+                : "rgba(255,255,255,0.04)",
+              color: canGenerate ? "white" : "var(--m-text-faint, #555)",
+              fontSize: "14px", fontWeight: "600", fontFamily: "inherit",
+              cursor: canGenerate ? "pointer" : "not-allowed",
+              boxShadow: canGenerate ? "0 4px 20px rgba(139, 92, 246, 0.25)" : "none",
+              transition: "background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease",
+              minWidth: "200px",
+            }}
+          >
+            {generating ? (
+              <>
+                <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+                Kopyalanıyor...
+              </>
+            ) : (
+              <>
+                <Sparkles size={16} />
+                Tarzını Kopyala
+              </>
+            )}
+          </motion.button>
+        )}
+      </motion.div>
 
-      {/* ═══ ANIMATION KEYFRAMES ═══ */}
+      {/* ═══ KEYFRAMES ═══ */}
       <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes flowDash {
+          from { stroke-dashoffset: 40; }
+          to { stroke-dashoffset: 0; }
         }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes pulseRing {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(1.5); opacity: 0; }
         }
         @keyframes spin {
           from { transform: rotate(0deg); }
