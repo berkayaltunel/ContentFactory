@@ -40,7 +40,6 @@ const NAV_ITEMS_CONFIG = [
   { path: "/dashboard/create?platform=tiktok", label: "TikTok", icon: (p) => <BI Icon={FaTiktok} {...p} /> },
   { path: "/dashboard/create?platform=linkedin", label: "LinkedIn", icon: (p) => <BI Icon={FaLinkedinIn} {...p} /> },
   { path: "/dashboard/create?platform=blog", label: "Blog", icon: (p) => <BI Icon={HiDocumentText} {...p} /> },
-  { path: "/dashboard/persona-lab", label: "Persona Lab", icon: Fingerprint },
 ];
 
 const MORE_ITEMS_CONFIG = [

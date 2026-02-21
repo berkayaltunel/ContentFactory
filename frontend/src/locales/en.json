@@ -276,7 +276,9 @@
       "accountAnalysis": "Account Analysis",
       "accountAnalysisDesc": "Deep-dive into your X account",
       "aiCoach": "AI Coach",
-      "aiCoachDesc": "Set strategy with your personal AI coach"
+      "aiCoachDesc": "Set strategy with your personal AI coach",
+      "personaLab": "Persona Lab",
+      "personaLabDesc": "Write in someone else's style"
     },
     "streak": "Streak",
     "thisWeek": "This week",

@@ -5,7 +5,7 @@ import {
   Heart, Copy, ArrowRight, Twitter, FileText, PenLine,
   MessageSquare, Quote, Search, Lightbulb, Dna,
   BarChart3, TrendingUp, ExternalLink, Zap, Flame,
-  ChevronRight, Rocket, Target, Compass, Brain,
+  ChevronRight, Rocket, Target, Compass, Brain, Fingerprint,
 } from "lucide-react";
 import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
 import { HiDocumentText } from "react-icons/hi2";
@@ -268,6 +268,7 @@ export default function DashboardHome() {
     { icon: TrendingUp,  label: t('dashboard.tools.trends'),       desc: t('dashboard.tools.trendsDesc'),         path: "/dashboard/trends",           gradient: "from-emerald-500 to-teal-600" },
     { icon: BarChart3,   label: t('dashboard.tools.accountAnalysis'),  desc: t('dashboard.tools.accountAnalysisDesc'),        path: "/dashboard/account-analysis", gradient: "from-sky-500 to-blue-600" },
     { icon: Brain,       label: t('dashboard.tools.aiCoach'),       desc: t('dashboard.tools.aiCoachDesc'),       path: "/dashboard/coach",            gradient: "from-amber-500 to-orange-600" },
+    { icon: Fingerprint,  label: t('dashboard.tools.personaLab'),    desc: t('dashboard.tools.personaLabDesc'),    path: "/dashboard/persona-lab",      gradient: "from-violet-500 to-purple-600" },
   ];
 
   const platforms = [

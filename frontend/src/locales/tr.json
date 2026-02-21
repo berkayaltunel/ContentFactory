@@ -276,7 +276,9 @@
       "accountAnalysis": "Hesap Analizi",
       "accountAnalysisDesc": "X hesabını derinlemesine analiz et",
       "aiCoach": "AI Coach",
-      "aiCoachDesc": "Kişisel AI koçunla strateji belirle"
+      "aiCoachDesc": "Kişisel AI koçunla strateji belirle",
+      "personaLab": "Persona Lab",
+      "personaLabDesc": "Başka birinin tarzıyla yaz"
     },
     "streak": "Streak",
     "thisWeek": "Bu hafta",
