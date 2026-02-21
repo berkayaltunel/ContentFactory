@@ -1231,6 +1231,7 @@ export default function XAIModule() {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { profiles, activeProfileId, activeProfile, setActiveProfile } = useProfile();
 
   const [settings, setSettings] = useState({
@@ -2032,6 +2033,10 @@ export default function XAIModule() {
                 <button
                   key={p.id}
                   onClick={() => {
+                    if (p.id === "style-transfer") {
+                      navigate("/dashboard/persona-lab");
+                      return;
+                    }
                     setActivePlatform(p.id);
                     if (PLATFORM_CONTENT_TYPES_DATA[p.id]) setActiveTab(PLATFORM_CONTENT_TYPES_DATA[p.id][0].id);
                     setFetched(false);
