@@ -620,7 +620,7 @@ export default function PersonaLabPage({ embedded = false }) {
     if (!window.confirm("Bu personayı silmek istediğine emin misin?")) return;
     setDeletingId(id);
     try {
-      await api.delete(`${API}/styles/profiles/${id}`);
+      await api.delete(`${API}/styles/${id}`);
       setPersonas((prev) => prev.filter((p) => p.id !== id));
       toast.success("Persona silindi");
     } catch (e) {
