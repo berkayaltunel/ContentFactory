@@ -257,6 +257,16 @@ class TwitterScraper:
             if tweet.get('retweetedTweet') or tweet.get('retweeted_status_result'):
                 continue
             
+            # Skip very short tweets (likely replies like teşekkürler, aynen)
+            text = tweet.get('text', '')
+            word_count = len(text.split())
+            if word_count < 4 and not tweet.get('media'):
+                continue
+            
+            # Skip tweets that are just links
+            if text.startswith('http') and word_count <= 2:
+                continue
+            
             tweets.append({
                 'tweet_id': tid,
                 'content': tweet.get('text', ''),

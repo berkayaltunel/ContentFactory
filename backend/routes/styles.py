@@ -89,7 +89,7 @@ async def create_from_handle(request: CreateFromHandleRequest, user=Depends(requ
     
     # 3. Fetch tweets
     logger.info(f"[StyleLab] Fetching tweets for @{username}")
-    tweets = await scraper.get_user_tweets_async(username, count=100)
+    tweets = await scraper.get_user_tweets_async(username, count=500)
     
     if not tweets:
         raise HTTPException(status_code=400, detail=f"@{username} için tweet bulunamadı")
@@ -332,7 +332,7 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
     
     # Re-fetch tweets
     logger.info(f"[StyleLab] Refreshing tweets for @{username}")
-    tweets = await scraper.get_user_tweets_async(username, count=100)
+    tweets = await scraper.get_user_tweets_async(username, count=500)
     
     all_tweets = []
     errors = []
