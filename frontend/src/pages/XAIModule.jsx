@@ -55,7 +55,6 @@ import EvolvePanel from "@/components/generation/EvolvePanel";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 import RepurposeModal from "@/components/RepurposeModal";
 import { useProfile } from "@/contexts/ProfileContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 // ══════════════════════════════════════════
 // DATA: Personas, Tones, Lengths, etc.
@@ -1206,8 +1205,6 @@ let jobIdCounter = 0;
 
 export default function XAIModule() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const [accountAvatarUrl, setAccountAvatarUrl] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState("tweet");
   const [activePlatform, setActivePlatform] = useState("twitter");
@@ -1224,15 +1221,12 @@ export default function XAIModule() {
   const [trendContext, setTrendContext] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [repurposeModal, setRepurposeModal] = useState({ open: false, content: "", mode: "video" });
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedVariants, setSelectedVariants] = useState([]);
-  const [mergeEvolveOpen, setMergeEvolveOpen] = useState(false);
   const [imagePrompts, setImagePrompts] = useState({}); // unused, kept for compat
   const [generating, setGenerating] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [expandedHistoryIds, setExpandedHistoryIds] = useState(new Set());
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1292,27 +1286,6 @@ export default function XAIModule() {
       setActiveCard((prev) => (prev + 1) % promoCards.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
-
-  // Fetch account avatar
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get(`${API}/accounts`);
-        const accounts = res.data || [];
-        const primary = accounts.find(a => a.is_primary) || accounts[0];
-        if (primary?.username) {
-          const platformAvatars = {
-            twitter: (u) => `https://unavatar.io/x/${u}`,
-            instagram: (u) => `${API}/accounts/avatar/instagram/${u}`,
-            youtube: (u) => `https://unavatar.io/youtube/${u}`,
-            tiktok: (u) => `https://unavatar.io/tiktok/${u}`,
-          };
-          const fn = platformAvatars[primary.platform];
-          if (fn) setAccountAvatarUrl(fn(primary.username));
-        }
-      } catch {}
-    })();
   }, []);
 
   // Fetch generation history
@@ -1631,17 +1604,7 @@ export default function XAIModule() {
     }
   };
 
-  const handleVariantSelect = (generationId, variantIndex) => {
-    setSelectedVariants(prev => {
-      const exists = prev.find(sv => sv.generationId === generationId && sv.variantIndex === variantIndex);
-      if (exists) {
-        return prev.filter(sv => !(sv.generationId === generationId && sv.variantIndex === variantIndex));
-      }
-      const job = jobs.find(j => j.generationId === generationId);
-      const content = job?.variants?.[variantIndex]?.content || "";
-      return [...prev, { generationId, variantIndex, content }];
-    });
-  };
+
 
   // Placeholder based on active tab
   const basePlaceholderKeys = PLATFORM_PLACEHOLDER_KEYS[activePlatform] || PLATFORM_PLACEHOLDER_KEYS.twitter;
@@ -2193,13 +2156,13 @@ export default function XAIModule() {
             marginBottom: "80px",
           }}
         >
+
           <div style={{ display: "flex", flexDirection: "column", gap: window.innerWidth < 640 ? "10px" : "16px" }}>
             {jobs.map((job) => (
               <GenerationCard
                 key={job.id}
                 job={job}
                 onEvolve={handleEvolve}
-                avatarUrl={accountAvatarUrl || user?.avatar_url || undefined}
               />
             ))}
           </div>
@@ -2215,7 +2178,6 @@ export default function XAIModule() {
         }}
       >
         {/* Collapsible Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button
           onClick={() => setHistoryOpen((p) => !p)}
           style={{
@@ -2241,48 +2203,6 @@ export default function XAIModule() {
             </span>
           )}
         </button>
-        {historyOpen && history.length > 0 && (() => {
-          const allExpanded = history.length > 0 && expandedHistoryIds.size >= history.length;
-          return (
-            <button
-              onClick={() => {
-                if (allExpanded) {
-                  setExpandedHistoryIds(new Set());
-                } else {
-                  setExpandedHistoryIds(new Set(history.map(g => g.id)));
-                }
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "4px 12px",
-                background: allExpanded ? "rgba(139, 92, 246, 0.15)" : "transparent",
-                border: allExpanded ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "8px",
-                cursor: "pointer",
-                color: allExpanded ? "rgb(167, 139, 250)" : "rgba(255,255,255,0.5)",
-                fontSize: "12px",
-                fontFamily: "inherit",
-                transition: "all 0.2s",
-                marginTop: "-4px",
-              }}
-            >
-              {allExpanded ? (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  Kapat
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 8 12 3 17 8"/><polyline points="17 16 12 21 7 16"/></svg>
-                  Aç
-                </>
-              )}
-            </button>
-          );
-        })()}
-        </div>
 
         {historyOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -2323,17 +2243,6 @@ export default function XAIModule() {
                 tweetContent={gen.tweet_content}
                 tweetUrl={gen.tweet_url}
                 initialFavorites={gen.favorited_variants}
-                compact={!expandedHistoryIds.has(gen.id)}
-                onExpand={() => setExpandedHistoryIds(prev => {
-                  const next = new Set(prev);
-                  if (next.has(gen.id)) {
-                    next.delete(gen.id);
-                  } else {
-                    next.add(gen.id);
-                  }
-                  return next;
-                })}
-                avatarUrl={accountAvatarUrl || user?.avatar_url || undefined}
               />
             ))}
           </div>
