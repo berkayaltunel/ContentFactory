@@ -733,10 +733,10 @@ function OutputNode({ jobs, onEvolve, generating }) {
 // ─────────────────────────────────────────────
 let stJobIdCounter = 0;
 
-export default function StyleTransferMode({ onEvolve }) {
+export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
   const [profiles, setProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
-  const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [selectedProfileId, setSelectedProfileId] = useState(preSelectedProfileId || null);
   const [inputValue, setInputValue] = useState("");
   const [fetchedTweet, setFetchedTweet] = useState(null);
   const [fetching, setFetching] = useState(false);

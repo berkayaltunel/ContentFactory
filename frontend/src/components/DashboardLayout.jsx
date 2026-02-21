@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sun, Moon, Settings, Layers, LogOut, User, History, Heart,
-  ChevronDown, Dna, TrendingUp, BarChart3, FileText, Compass,
+  ChevronDown, Dna, TrendingUp, BarChart3, FileText, Compass, Fingerprint,
   Home, MoreHorizontal, Search, Check, Star, Pencil, Trash2, X
 } from "lucide-react";
 import { FaXTwitter, FaYoutube, FaInstagram, FaTiktok, FaLinkedinIn } from "react-icons/fa6";
@@ -45,6 +45,7 @@ const NAV_ITEMS_CONFIG = [
 const MORE_ITEMS_CONFIG = [
   { path: "/dashboard/youtube-studio", labelKey: "nav.youtubeStudio", icon: (p) => <BI Icon={FaYoutube} {...p} /> },
   { path: "/dashboard/style-lab", labelKey: "nav.styleLab", icon: Dna },
+  { path: "/dashboard/persona-lab", labelKey: "nav.personaLab", icon: Fingerprint },
   { path: "/dashboard/trends", labelKey: "nav.trends", icon: TrendingUp },
   { path: "/dashboard/account-analysis", labelKey: "nav.accountAnalysis", icon: BarChart3 },
   { path: "/dashboard/coach", labelKey: "nav.aiCoach", icon: Compass },
@@ -664,7 +665,7 @@ export default function DashboardLayout() {
       {/* ── Main Content ── */}
       <main className="pt-14 md:pt-20 pb-24 md:pb-8 px-3 md:px-8">
         <div className="max-w-6xl mx-auto">
-          <Outlet context={{ primaryAvatarUrl }} />
+          <Outlet />
         </div>
       </main>
 

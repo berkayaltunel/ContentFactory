@@ -71,7 +71,8 @@
     "accountRemoved": "Hesap kaldırıldı",
     "accountRemoveError": "Silinemedi",
     "primaryChanged": "Ana hesap değiştirildi",
-    "primaryChangeError": "Değiştirilemedi"
+    "primaryChangeError": "Değiştirilemedi",
+    "personaLab": "Persona Lab"
   },
   "landing": {
     "navbar": {
@@ -849,37 +850,6 @@
       "goToModule": "Sayfada Yaz →",
       "regenerate": "Yeniden",
       "generateError": "İçerik üretme hatası"
-    },
-    "signal": {
-      "rss": "📰 RSS",
-      "twitter": "🐦 Twitter",
-      "merged": "🔀 Çoklu Sinyal",
-      "ai": "⚡ AI",
-      "signalCount": "+{{count}} sinyal",
-      "engagement": "❤️ {{count}}",
-      "fromTwitter": "@{{username}}",
-      "twitterSource": "🐦 {{count}} tweet",
-      "sourceTweets": "Kaynak Tweetler",
-      "noEngagement": "Engagement verisi yok"
-    },
-    "enrichment": {
-      "keyAngles": "🎯 İçerik Açıları",
-      "suggestedHooks": "🪝 Önerilen Hooklar",
-      "contentPillars": "İçerik Sütunları",
-      "insight": "💡 Insight",
-      "building": "🔨 Building",
-      "hot_take": "🔥 Hot Take",
-      "engagement": "💬 Engagement",
-      "insightDesc": "Bilgi ve değer odaklı",
-      "buildingDesc": "Yapım süreci, deneyim",
-      "hot_takeDesc": "Keskin görüş, tartışma",
-      "engagementDesc": "Etkileşim, soru, anket",
-      "useThisAngle": "Bu açıyı kullan",
-      "useThisHook": "Bu hook'u kullan",
-      "tweetSnippet": "Tweet",
-      "tier1": "Resmi",
-      "tier2": "Key Person",
-      "tier3": "Arama"
     }
   },
   "account": {
