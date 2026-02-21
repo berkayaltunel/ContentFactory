@@ -136,33 +136,43 @@ Son {len(tweets)} tweet (engagement verileriyle):
         analysis = json.loads(response.choices[0].message.content)
 
         # Veritabanına kaydet
+        now = datetime.now(timezone.utc).isoformat()
         record = {
-            "id": str(uuid.uuid4()),
             "user_id": user.id,
             "twitter_username": username,
             "display_name": user_info.get('name', ''),
+            "avatar_url": user_info.get('avatar_url') or f"https://unavatar.io/x/{username}",
             "bio": user_info.get('bio', ''),
             "followers_count": user_info.get('followers', 0),
             "following_count": user_info.get('following', 0),
             "tweet_count": len(tweets),
+            "overall_score": analysis.get("overall_score", 0),
             "analysis": analysis,
             "top_tweets": sorted(tweets, key=lambda t: t.get('likes', 0), reverse=True)[:5],
             "strengths": analysis.get("strengths", []),
             "weaknesses": analysis.get("weaknesses", []),
             "recommendations": analysis.get("recommendations", []),
             "posting_patterns": analysis.get("posting_patterns", {}),
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "updated_at": now,
         }
 
         try:
-            sb.table("account_analyses").insert(record).execute()
+            # Aynı kullanıcı + aynı hesap varsa güncelle (upsert)
+            existing = sb.table("account_analyses").select("id").eq("user_id", user.id).eq("twitter_username", username).limit(1).execute()
+            if existing.data:
+                sb.table("account_analyses").update(record).eq("id", existing.data[0]["id"]).execute()
+            else:
+                record["id"] = str(uuid.uuid4())
+                record["created_at"] = now
+                sb.table("account_analyses").insert(record).execute()
         except Exception as db_err:
-            logger.warning(f"DB insert failed (table may not exist): {db_err}")
+            logger.warning(f"DB upsert failed: {db_err}")
 
         return {
             "success": True,
             "username": username,
             "display_name": user_info.get('name', ''),
+            "avatar_url": user_info.get('avatar_url') or f"https://unavatar.io/x/{username}",
             "followers": user_info.get('followers', 0),
             "bio": user_info.get('bio', ''),
             "tweets_analyzed": len(tweets),
@@ -178,12 +188,47 @@ Son {len(tweets)} tweet (engagement verileriyle):
 
 
 @router.get("/history")
-async def get_analysis_history(limit: int = Query(20, le=100), user=Depends(require_auth)):
-    """Geçmiş analizleri getir"""
+async def get_analysis_history(limit: int = Query(20, le=100), offset: int = Query(0, ge=0), user=Depends(require_auth)):
+    """Geçmiş analizleri getir (meta veri, tam analiz hariç)"""
     try:
         sb = get_supabase()
-        result = sb.table("account_analyses").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit).execute()
-        return result.data
+        result = (
+            sb.table("account_analyses")
+            .select("id, twitter_username, display_name, avatar_url, overall_score, tweet_count, followers_count, bio, created_at, updated_at")
+            .eq("user_id", user.id)
+            .order("updated_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+        return {"analyses": result.data or [], "has_more": len(result.data or []) >= limit}
     except Exception as e:
         logger.error(f"Analysis history error: {e}")
-        return []
+        return {"analyses": [], "has_more": False}
+
+
+@router.get("/history/{analysis_id}")
+async def get_analysis_detail(analysis_id: str, user=Depends(require_auth)):
+    """Tek analiz detayı (tam veri)"""
+    try:
+        sb = get_supabase()
+        result = sb.table("account_analyses").select("*").eq("id", analysis_id).eq("user_id", user.id).limit(1).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Analiz bulunamadı")
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Analysis detail error: {e}")
+        raise HTTPException(status_code=500, detail="Bir hata oluştu")
+
+
+@router.delete("/history/{analysis_id}")
+async def delete_analysis(analysis_id: str, user=Depends(require_auth)):
+    """Analiz geçmişinden sil"""
+    try:
+        sb = get_supabase()
+        sb.table("account_analyses").delete().eq("id", analysis_id).eq("user_id", user.id).execute()
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Analysis delete error: {e}")
+        raise HTTPException(status_code=500, detail="Silinemedi")

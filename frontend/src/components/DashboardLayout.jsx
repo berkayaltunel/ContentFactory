@@ -664,7 +664,7 @@ export default function DashboardLayout() {
       {/* ── Main Content ── */}
       <main className="pt-14 md:pt-20 pb-24 md:pb-8 px-3 md:px-8">
         <div className="max-w-6xl mx-auto">
-          <Outlet />
+          <Outlet context={{ primaryAvatarUrl }} />
         </div>
       </main>
 

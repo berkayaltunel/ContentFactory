@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna, Check, Calendar, Trash2, Twitter } from "lucide-react";
+import { Loader2, Copy, Heart, Send, Video, X, Clock, Music, Hash, ImageIcon, Palette, Dna, Check, Calendar, Trash2, Twitter, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -366,7 +366,7 @@ function StyleScoreCard({ scores, isBest }) {
   );
 }
 
-export default function GenerationCard({ job, onEvolve, selectionMode, selectedVariants, onVariantSelect, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites }) {
+export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, compact, onExpand, avatarUrl }) {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState(() =>
     new Map(Object.entries(initialFavorites || {}).map(([k, v]) => [parseInt(k), v]))
@@ -377,6 +377,29 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
   const [imagePromptContent, setImagePromptContent] = useState("");
   const [evolveIndex, setEvolveIndex] = useState(null);
   const [evolveLoading, setEvolveLoading] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const [selectedForEvolve, setSelectedForEvolve] = useState(new Set());
+
+  const renderAvatar = (sizeClass = "h-8 w-8 sm:h-10 sm:w-10") => {
+    if (avatarUrl && !avatarError) {
+      return (
+        <img
+          src={avatarUrl}
+          alt=""
+          className={cn(sizeClass, "rounded-full object-cover shrink-0")}
+          onError={() => setAvatarError(true)}
+        />
+      );
+    }
+    return (
+      <div
+        className={cn(sizeClass, "rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs sm:text-sm")}
+        style={{ backgroundColor: color }}
+      >
+        {job.persona.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
   const color = PERSONA_COLORS[job.persona] || "#6B7280";
   const isGenerating = job.status === "generating";
 
@@ -421,6 +444,52 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
     setFavorites(next);
   };
 
+  // Compact mode: single-line preview card
+  if (compact && !isGenerating) {
+    const firstVariant = job.variants?.[0];
+    const previewText = firstVariant?.content?.split('\n')[0] || '';
+    return (
+      <Card className="bg-card border-border hover:border-primary/20 transition-colors cursor-pointer group" onClick={() => onExpand?.()}>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-start gap-2.5 sm:gap-3">
+            {/* Avatar */}
+            {renderAvatar()}
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium line-clamp-2">{job.topic}</p>
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{previewText}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-muted-foreground">
+                  {job.personaLabel}
+                  {job.toneLabel && job.toneLabel !== 'Natural' && job.toneLabel !== 'Doğal' && (
+                    <> · <span className="text-white/60 font-medium">{job.toneLabel}</span></>
+                  )}
+                </p>
+                {showDate && createdAt && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    · <Calendar className="h-3 w-3" />
+                    {new Date(createdAt).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-0.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+              {onDelete && (
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400" onClick={(e) => { e.stopPropagation(); if (window.confirm(t('history.deleteConfirm'))) onDelete(job.generationId); }}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card
       className={cn(
@@ -434,16 +503,11 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
         {/* Header: Avatar + Prompt + Tags */}
         <div className="flex items-start gap-2.5 sm:gap-3">
           {/* Avatar */}
-          <div
-            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs sm:text-sm"
-            style={{ backgroundColor: color }}
-          >
-            {isGenerating ? (
+          {isGenerating ? (
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center shrink-0 text-white font-bold text-xs sm:text-sm" style={{ backgroundColor: color }}>
               <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              job.persona.charAt(0).toUpperCase()
-            )}
-          </div>
+            </div>
+          ) : renderAvatar()}
 
           {/* Prompt + Tags */}
           <div className="flex-1 min-w-0">
@@ -495,6 +559,19 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+
+          {/* Collapse button */}
+          {onExpand && !isGenerating && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-white/70 shrink-0"
+              onClick={() => onExpand?.()}
+              title="Kapat"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Original tweet preview for quote/reply */}
@@ -526,26 +603,34 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
         ) : (
           <div className="space-y-3">
             {job.variants?.map((variant, index) => {
-              const isSelected = selectedVariants?.some(sv => sv.generationId === job.generationId && sv.variantIndex === index);
+              const isSelectedForEvolve = selectedForEvolve.has(index);
+              const hasMultipleVariants = (job.variants?.length || 0) > 1;
               return (
               <div
                 key={variant.id || index}
-                className="rounded-lg border border-border p-3 space-y-2 relative"
+                className={cn(
+                  "rounded-lg border p-3 space-y-2 relative transition-colors",
+                  isSelectedForEvolve ? "border-violet-500/50 bg-violet-500/5" : "border-border"
+                )}
               >
-                {selectionMode && (
+                {hasMultipleVariants && (
                   <button
-                    onClick={() => onVariantSelect?.(job.generationId, index)}
+                    onClick={() => setSelectedForEvolve(prev => {
+                      const next = new Set(prev);
+                      next.has(index) ? next.delete(index) : next.add(index);
+                      return next;
+                    })}
                     className={cn(
                       "absolute top-2 left-2 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all z-10",
-                      isSelected
+                      isSelectedForEvolve
                         ? "bg-violet-500 border-violet-500 text-white"
-                        : "border-white/30 hover:border-violet-400"
+                        : "border-white/20 hover:border-violet-400"
                     )}
                   >
-                    {isSelected && <Check className="w-3 h-3" />}
+                    {isSelectedForEvolve && <Check className="w-3 h-3" />}
                   </button>
                 )}
-                <p className="text-sm whitespace-pre-wrap">{variant.content}</p>
+                <p className={cn("text-sm whitespace-pre-wrap", hasMultipleVariants && "pl-6")}>{variant.content}</p>
                 <StyleScoreCard
                   scores={variant.style_scores || job.style_scores?.[index] || null}
                   isBest={bestIdx === index && bestIdx >= 0 && styleScores[bestIdx] > 0}
@@ -588,33 +673,36 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
                     <Button
                       variant="ghost"
                       size="sm"
+                      disabled={selectedForEvolve.size > 0}
                       onClick={() => {
                         setVideoContent(variant.content);
                         setVideoDialogOpen(true);
                       }}
-                      className="gap-1.5 text-pink-400 hover:text-pink-300"
-                      title={t('generation.videoScriptConvert')}
+                      className={cn("gap-1.5 text-pink-400 hover:text-pink-300", selectedForEvolve.size > 0 && "opacity-40 cursor-not-allowed hover:text-pink-400")}
+                      title={selectedForEvolve.size > 0 ? "Toplu işlem modunda tekil aksiyonlar kilitli" : t('generation.videoScriptConvert')}
                     >
                       <Video className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
+                      disabled={selectedForEvolve.size > 0}
                       onClick={() => {
                         setImagePromptContent(variant.content);
                         setImagePromptOpen(true);
                       }}
-                      className="gap-1.5 text-emerald-400 hover:text-emerald-300"
-                      title={t('generation.imagePromptCreate')}
+                      className={cn("gap-1.5 text-emerald-400 hover:text-emerald-300", selectedForEvolve.size > 0 && "opacity-40 cursor-not-allowed hover:text-emerald-400")}
+                      title={selectedForEvolve.size > 0 ? "Toplu işlem modunda tekil aksiyonlar kilitli" : t('generation.imagePromptCreate')}
                     >
                       <ImageIcon className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
+                      disabled={selectedForEvolve.size > 0}
                       onClick={() => setEvolveIndex(evolveIndex === index ? null : index)}
-                      className="gap-1.5 text-violet-400 hover:text-violet-300"
-                      title={t('evolve.evolveButton')}
+                      className={cn("gap-1.5 text-violet-400 hover:text-violet-300", selectedForEvolve.size > 0 && "opacity-40 cursor-not-allowed hover:text-violet-400")}
+                      title={selectedForEvolve.size > 0 ? "Toplu işlem modunda tekil aksiyonlar kilitli" : t('evolve.evolveButton')}
                     >
                       <Dna className="h-4 w-4" />
                       <span className="hidden sm:inline">{t('evolve.evolve')}</span>
@@ -622,8 +710,10 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
                     <Button
                       variant="default"
                       size="sm"
+                      disabled={selectedForEvolve.size > 0}
                       onClick={() => handleTweet(variant.content)}
-                      className="gap-1 bg-sky-500 hover:bg-sky-600 text-white min-h-[36px] min-w-[36px] sm:min-w-0"
+                      className={cn("gap-1 bg-sky-500 hover:bg-sky-600 text-white min-h-[36px] min-w-[36px] sm:min-w-0", selectedForEvolve.size > 0 && "opacity-40 cursor-not-allowed")}
+                      title={selectedForEvolve.size > 0 ? "Toplu işlem modunda tekil aksiyonlar kilitli" : undefined}
                     >
                       <Send className="h-4 w-4" />
                       <span className="hidden sm:inline">{t('common.tweetle')}</span>
@@ -657,6 +747,54 @@ export default function GenerationCard({ job, onEvolve, selectionMode, selectedV
               </div>
               );
             })}
+
+            {/* Toplu geliştir butonu */}
+            {selectedForEvolve.size >= 2 && (
+              <div className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                  onClick={() => {
+                    const indices = Array.from(selectedForEvolve).sort();
+                    setEvolveIndex(`multi-${indices.join('-')}`);
+                  }}
+                >
+                  <Dna className="h-4 w-4" />
+                  Seçilenleri Birlikte Geliştir ({selectedForEvolve.size})
+                </Button>
+              </div>
+            )}
+
+            {/* Multi-evolve panel */}
+            {typeof evolveIndex === 'string' && evolveIndex.startsWith('multi-') && (
+              <EvolvePanel
+                variants={Array.from(selectedForEvolve).map(i => ({
+                  content: job.variants?.[i]?.content || '',
+                  variantIndex: i,
+                }))}
+                onEvolve={async (feedback, quickTags, variantCount) => {
+                  setEvolveLoading(true);
+                  try {
+                    await onEvolve?.({
+                      parentGenerationId: job.generationId,
+                      selectedVariantIndices: Array.from(selectedForEvolve).sort(),
+                      feedback,
+                      quickTags,
+                      variantCount,
+                    });
+                    setEvolveIndex(null);
+                    setSelectedForEvolve(new Set());
+                  } catch (e) {
+                    toast.error(t('evolve.error'));
+                  } finally {
+                    setEvolveLoading(false);
+                  }
+                }}
+                isLoading={evolveLoading}
+                onClose={() => setEvolveIndex(null)}
+              />
+            )}
           </div>
         )}
       </CardContent>

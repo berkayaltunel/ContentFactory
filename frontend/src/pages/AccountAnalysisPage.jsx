@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
-import { User, Search, BarChart3, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, Clock } from "lucide-react";
+import { User, Search, BarChart3, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, Clock, MoreVertical, Trash2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -166,17 +166,64 @@ export default function AccountAnalysisPage() {
   const [loadingStep, setLoadingStep] = useState("");
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  const fetchHistory = useCallback(async (append = false) => {
+    if (!append) setHistoryLoading(true);
+    setHistoryError(false);
+    try {
+      const offset = append ? history.length : 0;
+      const res = await api.get(`${API}/analyze/history`, { params: { limit: 20, offset } });
+      const data = res.data.analyses || [];
+      setHistory(prev => append ? [...prev, ...data] : data);
+      setHasMore(res.data.has_more || false);
+    } catch (err) {
+      setHistoryError(true);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [history.length]);
 
   useEffect(() => {
     fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchHistory = async () => {
+  const handleDelete = async (id) => {
+    if (!window.confirm("Bu analizi geçmişten silmek istediğine emin misin?")) return;
     try {
-      const res = await api.get(`${API}/analyze/history`);
-      setHistory(res.data.analyses || []);
-    } catch (err) {
-      // ignore
+      await api.delete(`${API}/analyze/history/${id}`);
+      setHistory(prev => prev.filter(h => h.id !== id));
+      toast.success("Silindi");
+    } catch {
+      toast.error("Silinemedi");
+    }
+  };
+
+  const handleViewDetail = async (item) => {
+    try {
+      setLoading(true);
+      setLoadingStep("Rapor yükleniyor...");
+      const res = await api.get(`${API}/analyze/history/${item.id}`);
+      setResult({
+        success: true,
+        username: res.data.twitter_username,
+        display_name: res.data.display_name,
+        followers: res.data.followers_count,
+        bio: res.data.bio,
+        tweets_analyzed: res.data.tweet_count,
+        tweet_count_analyzed: res.data.tweet_count,
+        analysis: res.data.analysis,
+      });
+      setUsername(res.data.twitter_username);
+    } catch {
+      toast.error("Rapor yüklenemedi");
+    } finally {
+      setLoading(false);
+      setLoadingStep("");
     }
   };
 
@@ -385,28 +432,144 @@ export default function AccountAnalysisPage() {
       )}
 
       {/* History */}
-      {!loading && !result && history.length > 0 && (
+      {!loading && !result && (
         <div className="mt-8">
           <h3 className="font-semibold mb-4 text-muted-foreground">{t('account.previousAnalyses')}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {history.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setUsername(item.username);
-                }}
-                className="p-4 rounded-xl border border-border bg-card hover:border-blue-500/30 transition-all text-left"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">@{item.username}</span>
-                  <span className="text-sm font-bold text-blue-400">{item.overall_score}/100</span>
+
+          {/* Loading */}
+          {historyLoading && history.length === 0 && (
+            <div className="space-y-3">
+              {[1,2,3].map(i => (
+                <div key={i} className="p-4 rounded-xl border border-border bg-card animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-secondary" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 bg-secondary rounded" />
+                      <div className="h-3 w-48 bg-secondary rounded" />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {item.tweet_count} tweet · {new Date(item.created_at).toLocaleDateString("tr-TR")}
-                </p>
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error */}
+          {historyError && history.length === 0 && (
+            <div className="text-center py-12">
+              <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">Geçmiş yüklenemedi</p>
+              <Button variant="outline" size="sm" onClick={() => fetchHistory()}>
+                <RefreshCw className="h-4 w-4 mr-2" /> Tekrar Dene
+              </Button>
+            </div>
+          )}
+
+          {/* Empty */}
+          {!historyLoading && !historyError && history.length === 0 && (
+            <div className="text-center py-12">
+              <Search className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">Henüz bir hesap analiz edilmedi</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Yukarıdan bir kullanıcı adı girerek başla</p>
+            </div>
+          )}
+
+          {/* List */}
+          {history.length > 0 && (
+            <div className="space-y-2">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleViewDetail(item)}
+                  className="p-4 rounded-xl border border-border bg-card hover:border-blue-500/30 transition-all cursor-pointer group relative"
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Avatar */}
+                    <img
+                      src={item.avatar_url || `https://unavatar.io/x/${item.twitter_username}`}
+                      alt=""
+                      className="h-10 w-10 rounded-full object-cover shrink-0"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div
+                      className="h-10 w-10 rounded-full bg-blue-500/20 items-center justify-center shrink-0 text-blue-400 font-bold text-sm"
+                      style={{ display: 'none' }}
+                    >
+                      {(item.display_name || item.twitter_username || '?').charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">@{item.twitter_username}</span>
+                        {item.display_name && (
+                          <span className="text-xs text-muted-foreground truncate">{item.display_name}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.tweet_count} tweet
+                        {item.followers_count > 0 && ` · ${item.followers_count.toLocaleString()} takipçi`}
+                        {' · '}
+                        {new Date(item.updated_at || item.created_at).toLocaleDateString("tr-TR", {
+                          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+                        })}
+                      </p>
+                    </div>
+
+                    {/* Score */}
+                    <div className="text-right shrink-0">
+                      <span className={cn(
+                        "text-lg font-bold",
+                        (item.overall_score || 0) >= 70 ? "text-green-400" :
+                        (item.overall_score || 0) >= 50 ? "text-yellow-400" : "text-red-400"
+                      )}>
+                        {item.overall_score || 0}
+                      </span>
+                      <span className="text-xs text-muted-foreground">/100</span>
+                    </div>
+
+                    {/* Menu */}
+                    <div className="relative shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(openMenuId === item.id ? null : item.id);
+                        }}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-secondary transition-all"
+                      >
+                        <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      {openMenuId === item.id && (
+                        <div className="absolute right-0 top-9 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[140px]">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(item.id);
+                              setOpenMenuId(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Geçmişten sil
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Load More */}
+              {hasMore && (
+                <div className="text-center pt-2">
+                  <Button variant="outline" size="sm" onClick={() => fetchHistory(true)}>
+                    Daha fazla yükle
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,9 +54,26 @@ export default function HistoryPage() {
   const { isAuthenticated } = useAuth();
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [accountAvatarUrl, setAccountAvatarUrl] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get(`${API}/accounts`);
+        const accounts = res.data || [];
+        const primary = accounts.find(a => a.is_primary) || accounts[0];
+        if (primary?.username) {
+          const avatars = { twitter: u => `https://unavatar.io/x/${u}`, instagram: u => `${API}/accounts/avatar/instagram/${u}`, youtube: u => `https://unavatar.io/youtube/${u}`, tiktok: u => `https://unavatar.io/tiktok/${u}` };
+          const fn = avatars[primary.platform];
+          if (fn) setAccountAvatarUrl(fn(primary.username));
+        }
+      } catch {}
+    })();
+  }, []);
   const [filter, setFilter] = useState("all");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  // variant selection is now per-card (inside GenerationCard)
 
   useEffect(() => {
     if (isAuthenticated) fetchHistory();
@@ -162,29 +179,6 @@ export default function HistoryPage() {
         <p className="text-muted-foreground">
           {t('history.subtitle')}
         </p>
-        {generations.length > 0 && (
-          <div className="flex items-center gap-2 mt-4">
-            {!selectionMode ? (
-              <>
-                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
-                  <CheckSquare className="h-4 w-4 mr-1.5" /> {t('history.selectMode')}
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteAll}>
-                  <Trash2 className="h-4 w-4 mr-1.5" /> {t('history.deleteAll')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
-                  <X className="h-4 w-4 mr-1.5" /> {t('common.cancel')}
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={handleDeleteSelected} disabled={selectedIds.size === 0}>
-                  <Trash2 className="h-4 w-4 mr-1.5" /> {t('history.deleteSelected', { count: selectedIds.size })}
-                </Button>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       {generations.length === 0 ? (
@@ -199,7 +193,56 @@ export default function HistoryPage() {
         </Card>
       ) : (
         <>
-          {/* Filter tabs */}
+          {/* Selection mode bar */}
+          {selectionMode && (
+            <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-xl bg-white/5 border border-white/10 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (selectedIds.size === filteredGenerations.length) {
+                      setSelectedIds(new Set());
+                    } else {
+                      setSelectedIds(new Set(filteredGenerations.map(g => g.id)));
+                    }
+                  }}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {selectedIds.size === filteredGenerations.length && filteredGenerations.length > 0 ? (
+                    <CheckSquare className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Square className="h-4 w-4" />
+                  )}
+                  Tümünü Seç
+                </button>
+                <span className="text-sm text-muted-foreground">
+                  {selectedIds.size > 0 ? `${selectedIds.size} öğe seçildi` : 'Öğe seçin'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}
+                >
+                  İptal
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={selectedIds.size === 0}
+                  onClick={handleDeleteSelected}
+                  className="gap-1.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Sil
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Variant selection is now per-card (inside GenerationCard) */}
+
+          {/* Filter tabs + actions */}
           <div className="flex items-center gap-2 mb-6 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <button
@@ -230,25 +273,35 @@ export default function HistoryPage() {
                 </button>
               );
             })}
+
+            {/* Actions - sağ uca yapışık */}
+            {!selectionMode && (
+              <div className="flex items-center gap-1.5 ml-auto">
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); }}>
+                  <CheckSquare className="h-3.5 w-3.5 mr-1" /> Düzenle
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Generation list */}
           <div className="space-y-4">
             {filteredGenerations.map((gen) => (
-              <div key={gen.id} className="relative">
+              <div
+                key={gen.id}
+                className={cn("relative flex items-start gap-0 transition-all duration-200", selectionMode && "cursor-pointer")}
+                onClick={() => selectionMode && toggleSelect(gen.id)}
+              >
                 {selectionMode && (
-                  <button
-                    onClick={() => toggleSelect(gen.id)}
-                    className="absolute top-3 left-3 z-10"
-                  >
+                  <div className="flex items-start pt-4 pr-2 animate-in fade-in slide-in-from-left-2 duration-200">
                     {selectedIds.has(gen.id) ? (
-                      <CheckSquare className="h-5 w-5 text-primary" />
+                      <CheckSquare className="h-5 w-5 text-primary shrink-0" />
                     ) : (
-                      <Square className="h-5 w-5 text-muted-foreground" />
+                      <Square className="h-5 w-5 text-muted-foreground shrink-0" />
                     )}
-                  </button>
+                  </div>
                 )}
-                <div className={cn(selectionMode && "pl-8", selectedIds.has(gen.id) && "ring-1 ring-primary/40 rounded-lg")}>
+                <div className={cn("flex-1 min-w-0 transition-all duration-200", selectedIds.has(gen.id) && "ring-1 ring-primary/40 rounded-lg")}>
                   <GenerationCard
                     job={mapGenToJob(gen)}
                     onDelete={selectionMode ? undefined : handleDelete}
@@ -258,6 +311,7 @@ export default function HistoryPage() {
                     tweetUrl={gen.tweet_url}
                     initialFavorites={gen.favorited_variants}
                     onEvolve={handleEvolve}
+                    avatarUrl={accountAvatarUrl || undefined}
                   />
                 </div>
               </div>
@@ -265,6 +319,8 @@ export default function HistoryPage() {
           </div>
         </>
       )}
+
+      {/* Variant evolve is now per-card (inside GenerationCard) */}
     </div>
   );
 }

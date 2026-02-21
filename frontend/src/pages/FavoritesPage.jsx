@@ -44,6 +44,22 @@ export default function FavoritesPage() {
   const [favorites, setFavorites] = useState([]);
   const [trash, setTrash] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [accountAvatarUrl, setAccountAvatarUrl] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get(`${API}/accounts`);
+        const accounts = res.data || [];
+        const primary = accounts.find(a => a.is_primary) || accounts[0];
+        if (primary?.username) {
+          const avatars = { twitter: u => `https://unavatar.io/x/${u}`, instagram: u => `${API}/accounts/avatar/instagram/${u}`, youtube: u => `https://unavatar.io/youtube/${u}`, tiktok: u => `https://unavatar.io/tiktok/${u}` };
+          const fn = avatars[primary.platform];
+          if (fn) setAccountAvatarUrl(fn(primary.username));
+        }
+      } catch {}
+    })();
+  }, []);
   const [trashLoading, setTrashLoading] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -298,6 +314,9 @@ export default function FavoritesPage() {
                             <button onClick={() => toggleSelect(fav.id)} className="mr-1">
                               {selectedIds.has(fav.id) ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground" />}
                             </button>
+                          )}
+                          {accountAvatarUrl && (
+                            <img src={accountAvatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
                           )}
                           <Badge className={typeConfig.color}>{t(typeConfig.labelKey)}</Badge>
                           {fav.variant_index != null && fav.variant_index > 0 && (

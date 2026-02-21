@@ -55,6 +55,7 @@ import EvolvePanel from "@/components/generation/EvolvePanel";
 import FloatingQueue from "@/components/generation/FloatingQueue";
 import RepurposeModal from "@/components/RepurposeModal";
 import { useProfile } from "@/contexts/ProfileContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ══════════════════════════════════════════
 // DATA: Personas, Tones, Lengths, etc.
@@ -1205,6 +1206,8 @@ let jobIdCounter = 0;
 
 export default function XAIModule() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const [accountAvatarUrl, setAccountAvatarUrl] = useState(null);
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState("tweet");
   const [activePlatform, setActivePlatform] = useState("twitter");
@@ -1229,7 +1232,7 @@ export default function XAIModule() {
   const [historyOpen, setHistoryOpen] = useState(true);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+  const [expandedHistoryIds, setExpandedHistoryIds] = useState(new Set());
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1289,6 +1292,27 @@ export default function XAIModule() {
       setActiveCard((prev) => (prev + 1) % promoCards.length);
     }, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Fetch account avatar
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get(`${API}/accounts`);
+        const accounts = res.data || [];
+        const primary = accounts.find(a => a.is_primary) || accounts[0];
+        if (primary?.username) {
+          const platformAvatars = {
+            twitter: (u) => `https://unavatar.io/x/${u}`,
+            instagram: (u) => `${API}/accounts/avatar/instagram/${u}`,
+            youtube: (u) => `https://unavatar.io/youtube/${u}`,
+            tiktok: (u) => `https://unavatar.io/tiktok/${u}`,
+          };
+          const fn = platformAvatars[primary.platform];
+          if (fn) setAccountAvatarUrl(fn(primary.username));
+        }
+      } catch {}
+    })();
   }, []);
 
   // Fetch generation history
@@ -2169,84 +2193,15 @@ export default function XAIModule() {
             marginBottom: "80px",
           }}
         >
-          {/* Selection mode toggle */}
-          {jobs.length > 0 && jobs.some(j => j.variants?.length > 1) && (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
-              <button
-                onClick={() => {
-                  setSelectionMode(!selectionMode);
-                  if (selectionMode) setSelectedVariants([]);
-                }}
-                className={cn(
-                  "text-xs px-3 py-1.5 rounded-full transition-all",
-                  selectionMode
-                    ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
-                    : "text-white/40 hover:text-white/60 border border-white/10 hover:border-white/20"
-                )}
-              >
-                {selectionMode ? t('evolve.exitSelection') : t('evolve.selectMode')}
-              </button>
-            </div>
-          )}
           <div style={{ display: "flex", flexDirection: "column", gap: window.innerWidth < 640 ? "10px" : "16px" }}>
             {jobs.map((job) => (
               <GenerationCard
                 key={job.id}
                 job={job}
                 onEvolve={handleEvolve}
-                selectionMode={selectionMode}
-                selectedVariants={selectedVariants}
-                onVariantSelect={handleVariantSelect}
+                avatarUrl={accountAvatarUrl || user?.avatar_url || undefined}
               />
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Floating merge toolbar */}
-      {selectedVariants.length >= 2 && (
-        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#1A1A1A]/95 backdrop-blur-xl border border-violet-500/30 shadow-2xl shadow-violet-500/10">
-          <span className="text-sm text-white/70">
-            {t('evolve.nSelected', { count: selectedVariants.length })}
-          </span>
-          <button
-            onClick={() => setMergeEvolveOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            <Dna className="w-4 h-4" />
-            {t('evolve.merge')}
-          </button>
-          <button
-            onClick={() => { setSelectedVariants([]); setSelectionMode(false); }}
-            className="p-2 rounded-full text-white/40 hover:text-white/70 hover:bg-white/10 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Merge evolve dialog */}
-      {mergeEvolveOpen && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-lg mx-4 mb-4 md:mb-0 rounded-2xl bg-[#1A1A1A] border border-white/10 p-4">
-            <EvolvePanel
-              variants={selectedVariants}
-              onEvolve={async (feedback, quickTags, variantCount) => {
-                await handleEvolve({
-                  parentGenerationId: selectedVariants[0].generationId,
-                  selectedVariantIndices: selectedVariants.map(sv => sv.variantIndex),
-                  feedback,
-                  quickTags,
-                  variantCount,
-                });
-                setMergeEvolveOpen(false);
-                setSelectedVariants([]);
-                setSelectionMode(false);
-              }}
-              isLoading={false}
-              onClose={() => setMergeEvolveOpen(false)}
-              isMerge={true}
-            />
           </div>
         </div>
       )}
@@ -2260,6 +2215,7 @@ export default function XAIModule() {
         }}
       >
         {/* Collapsible Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button
           onClick={() => setHistoryOpen((p) => !p)}
           style={{
@@ -2285,6 +2241,48 @@ export default function XAIModule() {
             </span>
           )}
         </button>
+        {historyOpen && history.length > 0 && (() => {
+          const allExpanded = history.length > 0 && expandedHistoryIds.size >= history.length;
+          return (
+            <button
+              onClick={() => {
+                if (allExpanded) {
+                  setExpandedHistoryIds(new Set());
+                } else {
+                  setExpandedHistoryIds(new Set(history.map(g => g.id)));
+                }
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "4px 12px",
+                background: allExpanded ? "rgba(139, 92, 246, 0.15)" : "transparent",
+                border: allExpanded ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                color: allExpanded ? "rgb(167, 139, 250)" : "rgba(255,255,255,0.5)",
+                fontSize: "12px",
+                fontFamily: "inherit",
+                transition: "all 0.2s",
+                marginTop: "-4px",
+              }}
+            >
+              {allExpanded ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Kapat
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="7 8 12 3 17 8"/><polyline points="17 16 12 21 7 16"/></svg>
+                  Aç
+                </>
+              )}
+            </button>
+          );
+        })()}
+        </div>
 
         {historyOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -2325,6 +2323,17 @@ export default function XAIModule() {
                 tweetContent={gen.tweet_content}
                 tweetUrl={gen.tweet_url}
                 initialFavorites={gen.favorited_variants}
+                compact={!expandedHistoryIds.has(gen.id)}
+                onExpand={() => setExpandedHistoryIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(gen.id)) {
+                    next.delete(gen.id);
+                  } else {
+                    next.add(gen.id);
+                  }
+                  return next;
+                })}
+                avatarUrl={accountAvatarUrl || user?.avatar_url || undefined}
               />
             ))}
           </div>
