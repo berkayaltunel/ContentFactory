@@ -40,6 +40,7 @@ const resultCard = {
 export default function EvolveSlideOver({
   open, onClose, originalContent, variantIndex,
   parentGenerationId, onEvolve, onApply,
+  mergeVariantIndices,  // number[] — merge mode when multiple variants selected
 }) {
   const { t } = useTranslation();
   const panelRef = useRef(null);
@@ -72,9 +73,8 @@ export default function EvolveSlideOver({
   }, [open, hasUnsavedResults]);
 
   const handleClose = useCallback(() => {
-    if (hasUnsavedResults && !window.confirm("Sonuçlar henüz uygulanmadı. Çıkmak istiyor musun?")) return;
     onClose();
-  }, [hasUnsavedResults, onClose]);
+  }, [onClose]);
 
   // Auto-scroll to results
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function EvolveSlideOver({
     try {
       const result = await onEvolve?.({
         parentGenerationId,
-        selectedVariantIndices: [variantIndex],
+        selectedVariantIndices: mergeVariantIndices || [variantIndex],
         feedback, quickTags, variantCount,
       });
       if (result?.variants) {
@@ -175,7 +175,11 @@ export default function EvolveSlideOver({
                   </motion.div>
                   <div>
                     <h3 className="text-sm font-bold text-white tracking-tight">Geliştirme Stüdyosu</h3>
-                    <p className="text-[11px] text-white/30">İnce ayar yap, karşılaştır, uygula</p>
+                    <p className="text-[11px] text-white/30">
+                      {mergeVariantIndices?.length > 1
+                        ? `${mergeVariantIndices.length} varyant birleştiriliyor`
+                        : "İnce ayar yap, karşılaştır, uygula"}
+                    </p>
                   </div>
                 </div>
                 <motion.button
@@ -396,15 +400,15 @@ export default function EvolveSlideOver({
                     onClick={handleRetry}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium text-white/50 hover:text-white/80 bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.06] transition-all"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" /> Tekrar Dene
+                    <RotateCcw className="h-3.5 w-3.5" /> Tekrar Dne
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.01, boxShadow: "0 0 30px rgba(139,92,246,0.3)" }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={handleApply}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 transition-all shadow-lg shadow-violet-500/20"
+                    onClick={() => { setHasUnsavedResults(false); onClose(); }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] transition-all"
                   >
-                    <Check className="h-4 w-4" /> Değiştir
+                    <X className="h-4 w-4" /> Kapat
                   </motion.button>
                 </div>
               ) : (

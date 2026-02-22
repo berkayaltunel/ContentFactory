@@ -751,7 +751,11 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                     {t('common.cancel')}
                   </button>
                   <button
-                    onClick={() => setMergeEvolveOpen(!mergeEvolveOpen)}
+                    onClick={() => {
+                      const indices = Array.from(selectedForEvolve);
+                      const contents = indices.map(i => activeVariants?.[i]?.content || "").join("\n\n---\n\n");
+                      setSlideOverOpen({ variantIndex: indices[0], originalContent: contents, mergeIndices: indices });
+                    }}
                     className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
                   >
                     <Dna className="w-3.5 h-3.5" />
@@ -760,54 +764,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                 </div>
               </div>
 
-              {mergeEvolveOpen && (
-                <EvolvePanel
-                  variants={Array.from(selectedForEvolve).map(idx => ({
-                    generationId: job.generationId,
-                    variantIndex: idx,
-                    content: job.variants[idx]?.content || "",
-                  }))}
-                  onEvolve={async (feedback, quickTags, variantCount) => {
-                    setMergeEvolveOpen(false);
-                    setSelectedForEvolve(new Set());
-                    setEvolveLoading(true);
-                    try {
-                      const result = await onEvolve?.({
-                        parentGenerationId: job.generationId,
-                        selectedVariantIndices: Array.from(selectedForEvolve),
-                        feedback,
-                        quickTags,
-                        variantCount,
-                      });
-                      if (result?.variants) {
-                        setEvolveTransition(true);
-                        setTimeout(() => {
-                          const newVersion = {
-                            variants: result.variants.map((v, i) => ({
-                              ...v,
-                              character_count: v.character_count || v.content?.length || 0,
-                              variant_index: i,
-                            })),
-                            quickTags,
-                            depth: result.evolution_depth || 1,
-                            generationId: result.generation_id,
-                          };
-                          setVersionStack(prev => [...prev, newVersion]);
-                          setCurrentVersionIdx(versionStack.length);
-                          setEvolveTransition(false);
-                        }, 150);
-                      }
-                    } catch (e) {
-                      toast.error(t('evolve.error'));
-                    } finally {
-                      setEvolveLoading(false);
-                    }
-                  }}
-                  isLoading={evolveLoading}
-                  onClose={() => setMergeEvolveOpen(false)}
-                  isMerge={true}
-                />
-              )}
+              {/* Merge evolve now uses slide-over */}
             </div>
           )}
           </>
@@ -831,20 +788,12 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
       {/* Evolve Slide-Over Studio */}
       <EvolveSlideOver
         open={!!slideOverOpen}
-        onClose={() => setSlideOverOpen(null)}
+        onClose={() => { setSlideOverOpen(null); setSelectedForEvolve(new Set()); }}
         originalContent={slideOverOpen?.originalContent}
         variantIndex={slideOverOpen?.variantIndex ?? 0}
         parentGenerationId={job.generationId}
         onEvolve={onEvolve}
-        onApply={(variants, quickTags) => {
-          setEvolveTransition(true);
-          setTimeout(() => {
-            const newVersion = { variants, quickTags, depth: versionStack.length + 1 };
-            setVersionStack(prev => [...prev, newVersion]);
-            setCurrentVersionIdx(versionStack.length);
-            setEvolveTransition(false);
-          }, 150);
-        }}
+        mergeVariantIndices={slideOverOpen?.mergeIndices}
       />
     </Card>
   );
