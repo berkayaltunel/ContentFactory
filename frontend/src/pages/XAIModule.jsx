@@ -2239,6 +2239,7 @@ export default function XAIModule() {
                 tweetContent={gen.tweet_content}
                 tweetUrl={gen.tweet_url}
                 initialFavorites={gen.favorited_variants}
+                avatarUrl={gen.metadata?.avatar_url || activeProfile?.avatar_url}
               />
             ))}
           </div>
