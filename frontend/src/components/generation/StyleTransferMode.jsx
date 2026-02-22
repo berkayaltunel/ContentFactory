@@ -803,7 +803,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 2: Connector 1→2 */}
-          <div style={{ display: "flex", alignItems: "center", alignSelf: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "center", margin: "0 -4px" }}>
             <Connector active={hasSource} completed={hasSource && hasPersona} vertical={false} generating={generating} />
           </div>
 
@@ -815,7 +815,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 4: Connector 2→3 */}
-          <div style={{ display: "flex", alignItems: "center", alignSelf: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "center", margin: "0 -4px" }}>
             <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={false} generating={generating} />
           </div>
 
