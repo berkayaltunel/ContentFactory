@@ -160,15 +160,37 @@ function PipelineNode({ title, icon: Icon, index, active, completed, children, w
         border: `1.5px solid ${borderColor}`,
         borderRadius: "16px",
         overflow: "hidden",
-        transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+        transition: "border-color 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease",
         boxShadow: completed
           ? "0 0 30px rgba(139, 92, 246, 0.08)"
           : active
           ? "0 0 20px rgba(139, 92, 246, 0.05)"
           : "none",
         flexShrink: 0,
+        opacity: (!active && !completed) ? 0.45 : 1,
+        position: "relative",
       }}
     >
+      {/* Left port */}
+      {index > 0 && (
+        <div style={{
+          position: "absolute", left: "-6px", top: "50%", transform: "translateY(-50%)",
+          width: "10px", height: "10px", borderRadius: "50%",
+          background: completed ? "rgba(139,92,246,0.5)" : active ? "rgba(139,92,246,0.3)" : "#1a1a1a",
+          border: `1.5px solid ${completed ? "rgba(139,92,246,0.7)" : active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.1)"}`,
+          transition: "all 0.4s ease", zIndex: 2,
+        }} />
+      )}
+      {/* Right port */}
+      {index < 2 && (
+        <div style={{
+          position: "absolute", right: "-6px", top: "50%", transform: "translateY(-50%)",
+          width: "10px", height: "10px", borderRadius: "50%",
+          background: completed ? "rgba(139,92,246,0.5)" : active ? "rgba(139,92,246,0.3)" : "#1a1a1a",
+          border: `1.5px solid ${completed ? "rgba(139,92,246,0.7)" : active ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.1)"}`,
+          transition: "all 0.4s ease", zIndex: 2,
+        }} />
+      )}
       {/* Header */}
       <div
         style={{
@@ -672,7 +694,7 @@ function PersonaNode({ profiles, selected, onSelect, loading, generating }) {
 // ─────────────────────────────────────────────
 // NODE 3: OUTPUT
 // ─────────────────────────────────────────────
-function OutputNode({ jobs, onEvolve, generating }) {
+function OutputNode({ jobs, onEvolve, generating, onRetry }) {
   if (generating) {
     return (
       <div style={{
@@ -724,6 +746,24 @@ function OutputNode({ jobs, onEvolve, generating }) {
       {jobs.map((job) => (
         <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
       ))}
+      {completedJobs.length > 0 && onRetry && (
+        <button
+          onClick={onRetry}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+            padding: "8px 0", borderRadius: "8px", width: "100%",
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+            color: "var(--m-text-muted, #888)", fontSize: "12px", fontWeight: "500",
+            cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s ease",
+            marginTop: "4px",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.3)"; e.currentTarget.style.color = "#a78bfa"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--m-text-muted, #888)"; }}
+        >
+          <RotateCcw size={12} />
+          Tekrar Dene
+        </button>
+      )}
     </div>
   );
 }
@@ -1006,6 +1046,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
             jobs={jobs}
             onEvolve={onEvolve}
             generating={generating}
+            onRetry={handleGenerate}
           />
         </PipelineNode>
       </div>
