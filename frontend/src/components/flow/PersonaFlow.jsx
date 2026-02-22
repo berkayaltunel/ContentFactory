@@ -25,6 +25,7 @@ import api, { API } from "@/lib/api";
 import SourceNode from "./SourceNode";
 import PersonaNode from "./PersonaNode";
 import OutputNode from "./OutputNode";
+import StyleTransferMode from "@/components/generation/StyleTransferMode";
 
 // ─── Custom animated edge (dotted style) ───
 function AnimatedEdge(props) {
@@ -370,7 +371,7 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
   const handleEdgesDelete = useCallback(() => {}, []);
 
   return (
-    <div className="w-full h-full relative">
+    <div style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 140px)", position: "relative" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -491,8 +492,6 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
 
 // ─── Mobile fallback ──────────────────────
 function MobileFallback({ preSelectedProfileId, onEvolve }) {
-  // Import existing StyleTransferMode for mobile
-  const StyleTransferMode = require("@/components/generation/StyleTransferMode").default;
   return <StyleTransferMode preSelectedProfileId={preSelectedProfileId} onEvolve={onEvolve} />;
 }
 

@@ -732,7 +732,7 @@ export default function PersonaLabPage({ embedded = false }) {
         </div>
 
         {/* React Flow Canvas */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minHeight: 0 }}>
           <PersonaFlow
             preSelectedProfileId={activePersona.id}
             onEvolve={() => {}}
