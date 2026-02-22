@@ -1581,23 +1581,8 @@ export default function XAIModule() {
       });
 
       if (res.data.success) {
-        const newJob = {
-          id: res.data.generation_id,
-          generationId: res.data.generation_id,
-          topic: "🧬 Geliştirme",
-          status: "completed",
-          variants: res.data.variants,
-          evolutionDepth: res.data.evolution_depth,
-          evolutionChainId: res.data.evolution_chain_id,
-          persona: "",
-          personaLabel: t('evolve.round', { round: res.data.evolution_depth }),
-          toneLabel: "",
-          lengthLabel: "",
-          type: "tweet",
-          variantCount: res.data.variants.length,
-        };
-        setJobs(prev => [newJob, ...prev]);
         toast.success(t('evolve.evolve') + ' ✨');
+        return res.data; // Return to caller (GenerationCard) for inline threading
       }
     } catch (e) {
       const detail = e.response?.data?.detail || t('evolve.error');

@@ -379,6 +379,9 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
   const [evolveLoading, setEvolveLoading] = useState(false);
   const [selectedForEvolve, setSelectedForEvolve] = useState(new Set());
   const [mergeEvolveOpen, setMergeEvolveOpen] = useState(false);
+  // Inline evolution threads: { [variantIndex]: [{ variants, quickTags, depth }] }
+  const [childEvolutions, setChildEvolutions] = useState({});
+  const [evolveLoadingIndex, setEvolveLoadingIndex] = useState(null);
   const hasMultipleVariants = job.variants?.length > 1;
   const hasSelection = selectedForEvolve.size > 0;
 
@@ -675,25 +678,84 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                     variant={variant}
                     onEvolve={async (feedback, quickTags, variantCount) => {
                       setEvolveLoading(true);
+                      setEvolveIndex(null);
+                      setEvolveLoadingIndex(index);
                       try {
-                        await onEvolve?.({
+                        const result = await onEvolve?.({
                           parentGenerationId: job.generationId,
                           selectedVariantIndices: [index],
                           feedback,
                           quickTags,
                           variantCount,
                         });
-                        setEvolveIndex(null);
+                        if (result?.variants) {
+                          setChildEvolutions(prev => ({
+                            ...prev,
+                            [index]: [...(prev[index] || []), {
+                              variants: result.variants,
+                              quickTags,
+                              depth: result.evolution_depth || 1,
+                              generationId: result.generation_id,
+                            }],
+                          }));
+                        }
                       } catch (e) {
                         toast.error(t('evolve.error'));
                       } finally {
                         setEvolveLoading(false);
+                        setEvolveLoadingIndex(null);
                       }
                     }}
                     isLoading={evolveLoading}
                     onClose={() => setEvolveIndex(null)}
                   />
                 )}
+
+                {/* Inline evolution loading */}
+                {evolveLoadingIndex === index && (
+                  <div className="ml-4 mt-2 pl-3 border-l-2 border-violet-500/30">
+                    <div className="flex items-center gap-2 py-3 px-3 rounded-lg bg-violet-500/5 animate-pulse">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                      <span className="text-xs text-violet-400">✨ Yeni varyantlar işleniyor...</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Inline evolution thread */}
+                {childEvolutions[index]?.map((evo, evoIdx) => (
+                  <div key={evoIdx} className="ml-4 mt-2 pl-3 border-l-2 border-violet-500/30 space-y-2">
+                    {/* Tags badge */}
+                    {evo.quickTags?.length > 0 && (
+                      <div className="flex items-center gap-1 pt-1">
+                        <span className="text-[10px] text-violet-400/60">🧬</span>
+                        {evo.quickTags.map((tag, ti) => (
+                          <span key={ti} className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400/70 border border-violet-500/20">
+                            {t(`evolve.tags.${tag}`, tag)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {evo.variants.map((ev, evi) => (
+                      <div key={evi} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2 hover:border-violet-500/20 transition-colors">
+                        <p className="text-sm whitespace-pre-wrap">{ev.content}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                            {ev.content?.length || 0} karakter
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                            Varyant {evi + 1}
+                          </span>
+                          <button
+                            onClick={() => handleCopy(ev.content)}
+                            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
+                            <Copy className="h-3 w-3" /> Kopyala
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
               );
             })}
