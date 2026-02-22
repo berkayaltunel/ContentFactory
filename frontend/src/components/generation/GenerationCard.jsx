@@ -710,11 +710,12 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                       variant="ghost"
                       size="sm"
                       onClick={() => setSlideOverOpen(slideOverOpen?.variantIndex === index ? null : { variantIndex: index, originalContent: variant.content })}
-                      className="gap-1.5 text-violet-400 hover:text-violet-300"
+                      className="gap-1.5 relative overflow-hidden group/evolve"
                       title={t('evolve.evolveButton')}
                       disabled={hasSelection}
+                      style={{ color: "transparent", backgroundImage: "linear-gradient(90deg, #a78bfa, #c084fc, #a78bfa)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", backgroundClip: "text", animation: "shimmer 3s infinite linear" }}
                     >
-                      <Dna className="h-4 w-4" />
+                      <Dna className="h-4 w-4" style={{ color: "#a78bfa" }} />
                       <span className="hidden sm:inline">{t('evolve.evolve')}</span>
                     </Button>
                     <Button
