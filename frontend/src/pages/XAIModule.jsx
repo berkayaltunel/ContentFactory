@@ -2159,6 +2159,10 @@ export default function XAIModule() {
                 key={job.id}
                 job={job}
                 onEvolve={handleEvolve}
+                avatarUrl={(() => {
+                  const fp = activeProfile?.style_fingerprint || profiles[0]?.style_fingerprint;
+                  return fp?.avatar_url || (fp?.twitter_username ? `https://unavatar.io/x/${fp.twitter_username}` : undefined);
+                })()}
               />
             ))}
           </div>
@@ -2239,7 +2243,10 @@ export default function XAIModule() {
                 tweetContent={gen.tweet_content}
                 tweetUrl={gen.tweet_url}
                 initialFavorites={gen.favorited_variants}
-                avatarUrl={gen.metadata?.avatar_url || activeProfile?.avatar_url}
+                avatarUrl={(() => {
+                  const fp = activeProfile?.style_fingerprint || profiles[0]?.style_fingerprint;
+                  return fp?.avatar_url || (fp?.twitter_username ? `https://unavatar.io/x/${fp.twitter_username}` : undefined);
+                })()}
               />
             ))}
           </div>
