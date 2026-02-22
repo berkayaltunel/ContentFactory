@@ -225,7 +225,7 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
       </div>
 
       {/* Body */}
-      <div style={{ padding: "14px" }}>{children}</div>
+      <div style={{ padding: "14px", overflow: "hidden" }}>{children}</div>
     </motion.div>
   );
 }
@@ -635,7 +635,7 @@ function OutputNode({ jobs, onEvolve, generating, onRetry }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "400px", overflowY: "auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "400px", overflowY: "auto", overflowX: "hidden", wordBreak: "break-word" }}>
       {jobs.map((job) => (
         <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
       ))}
@@ -763,7 +763,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
   const canGenerate = hasSource && hasPersona && !generating;
 
   return (
-    <div style={{ width: "100%", maxWidth: isMobile ? "400px" : "1100px", opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease" }}>
+    <div style={{ width: "100%", maxWidth: isMobile ? "400px" : "1100px", opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease", overflowX: "hidden" }}>
       {/* Title */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         style={{ textAlign: "center", marginBottom: isMobile ? "20px" : "32px" }}>
