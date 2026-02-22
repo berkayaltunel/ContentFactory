@@ -379,10 +379,19 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
   const [evolveLoading, setEvolveLoading] = useState(false);
   const [selectedForEvolve, setSelectedForEvolve] = useState(new Set());
   const [mergeEvolveOpen, setMergeEvolveOpen] = useState(false);
-  // Inline evolution threads: { [variantIndex]: [{ variants, quickTags, depth }] }
-  const [childEvolutions, setChildEvolutions] = useState({});
-  const [evolveLoadingIndex, setEvolveLoadingIndex] = useState(null);
+  // Replace + Undo: version history stack
+  const [versionStack, setVersionStack] = useState([]); // [{ variants, quickTags }]
+  const [currentVersionIdx, setCurrentVersionIdx] = useState(-1); // -1 = original
+  const [evolveTransition, setEvolveTransition] = useState(false); // fade animation
   const hasMultipleVariants = job.variants?.length > 1;
+
+  // Active variants: either from version stack or original job
+  const activeVariants = currentVersionIdx >= 0
+    ? versionStack[currentVersionIdx]?.variants || job.variants
+    : job.variants;
+  const activeQuickTags = currentVersionIdx >= 0
+    ? versionStack[currentVersionIdx]?.quickTags || []
+    : [];
   const hasSelection = selectedForEvolve.size > 0;
 
   const toggleEvolveSelect = (index) => {
@@ -550,6 +559,59 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
         )}
 
         {/* Content: Skeleton rows (generating) or real content (completed) */}
+        {/* Version navigation banner */}
+        {versionStack.length > 0 && !isGenerating && (
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-violet-500/8 border border-violet-500/20">
+            <div className="flex items-center gap-2">
+              <Dna className="h-3.5 w-3.5 text-violet-400" />
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { setEvolveTransition(true); setTimeout(() => { setCurrentVersionIdx(-1); setEvolveTransition(false); }, 150); }}
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[11px] font-medium transition-all",
+                    currentVersionIdx === -1
+                      ? "bg-violet-500/20 text-violet-300"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Orijinal
+                </button>
+                {versionStack.map((v, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setEvolveTransition(true); setTimeout(() => { setCurrentVersionIdx(i); setEvolveTransition(false); }, 150); }}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[11px] font-medium transition-all",
+                      currentVersionIdx === i
+                        ? "bg-violet-500/20 text-violet-300"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    v{i + 2}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {currentVersionIdx >= 0 && activeQuickTags.length > 0 && (
+              <div className="flex items-center gap-1">
+                {activeQuickTags.map((tag, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400/70 border border-violet-500/20">
+                    {t(`evolve.tags.${tag}`, tag)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Evolve loading state */}
+        {evolveLoading && (
+          <div className="flex items-center gap-2 py-3 px-3 rounded-lg bg-violet-500/5 animate-pulse">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+            <span className="text-xs text-violet-400">✨ Yeni varyantlar üretiliyor...</span>
+          </div>
+        )}
+
         {isGenerating ? (
           <div className="space-y-2">
             {Array.from({ length: job.variantCount }).map((_, i) => (
@@ -558,8 +620,8 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
           </div>
         ) : (
           <>
-          <div className="space-y-3">
-            {job.variants?.map((variant, index) => {
+          <div className={cn("space-y-3 transition-opacity duration-150", evolveTransition ? "opacity-0" : "opacity-100")}>
+            {activeVariants?.map((variant, index) => {
               const isEvolveSelected = selectedForEvolve.has(index);
               return (
               <div
@@ -677,9 +739,8 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                   <EvolvePanel
                     variant={variant}
                     onEvolve={async (feedback, quickTags, variantCount) => {
-                      setEvolveLoading(true);
                       setEvolveIndex(null);
-                      setEvolveLoadingIndex(index);
+                      setEvolveLoading(true);
                       try {
                         const result = await onEvolve?.({
                           parentGenerationId: job.generationId,
@@ -689,73 +750,34 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                           variantCount,
                         });
                         if (result?.variants) {
-                          setChildEvolutions(prev => ({
-                            ...prev,
-                            [index]: [...(prev[index] || []), {
-                              variants: result.variants,
+                          // Fade out → replace → fade in
+                          setEvolveTransition(true);
+                          setTimeout(() => {
+                            const newVersion = {
+                              variants: result.variants.map((v, i) => ({
+                                ...v,
+                                character_count: v.character_count || v.content?.length || 0,
+                                variant_index: i,
+                              })),
                               quickTags,
                               depth: result.evolution_depth || 1,
                               generationId: result.generation_id,
-                            }],
-                          }));
+                            };
+                            setVersionStack(prev => [...prev, newVersion]);
+                            setCurrentVersionIdx(prev => prev + 1 < 0 ? 0 : versionStack.length);
+                            setEvolveTransition(false);
+                          }, 150);
                         }
                       } catch (e) {
                         toast.error(t('evolve.error'));
                       } finally {
                         setEvolveLoading(false);
-                        setEvolveLoadingIndex(null);
                       }
                     }}
                     isLoading={evolveLoading}
                     onClose={() => setEvolveIndex(null)}
                   />
                 )}
-
-                {/* Inline evolution loading */}
-                {evolveLoadingIndex === index && (
-                  <div className="ml-4 mt-2 pl-3 border-l-2 border-violet-500/30">
-                    <div className="flex items-center gap-2 py-3 px-3 rounded-lg bg-violet-500/5 animate-pulse">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
-                      <span className="text-xs text-violet-400">✨ Yeni varyantlar işleniyor...</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Inline evolution thread */}
-                {childEvolutions[index]?.map((evo, evoIdx) => (
-                  <div key={evoIdx} className="ml-4 mt-2 pl-3 border-l-2 border-violet-500/30 space-y-2">
-                    {/* Tags badge */}
-                    {evo.quickTags?.length > 0 && (
-                      <div className="flex items-center gap-1 pt-1">
-                        <span className="text-[10px] text-violet-400/60">🧬</span>
-                        {evo.quickTags.map((tag, ti) => (
-                          <span key={ti} className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400/70 border border-violet-500/20">
-                            {t(`evolve.tags.${tag}`, tag)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {evo.variants.map((ev, evi) => (
-                      <div key={evi} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3 space-y-2 hover:border-violet-500/20 transition-colors">
-                        <p className="text-sm whitespace-pre-wrap">{ev.content}</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                            {ev.content?.length || 0} karakter
-                          </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                            Varyant {evi + 1}
-                          </span>
-                          <button
-                            onClick={() => handleCopy(ev.content)}
-                            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                          >
-                            <Copy className="h-3 w-3" /> Kopyala
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
               </div>
               );
             })}
@@ -793,17 +815,35 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                     content: job.variants[idx]?.content || "",
                   }))}
                   onEvolve={async (feedback, quickTags, variantCount) => {
+                    setMergeEvolveOpen(false);
+                    setSelectedForEvolve(new Set());
                     setEvolveLoading(true);
                     try {
-                      await onEvolve?.({
+                      const result = await onEvolve?.({
                         parentGenerationId: job.generationId,
                         selectedVariantIndices: Array.from(selectedForEvolve),
                         feedback,
                         quickTags,
                         variantCount,
                       });
-                      setSelectedForEvolve(new Set());
-                      setMergeEvolveOpen(false);
+                      if (result?.variants) {
+                        setEvolveTransition(true);
+                        setTimeout(() => {
+                          const newVersion = {
+                            variants: result.variants.map((v, i) => ({
+                              ...v,
+                              character_count: v.character_count || v.content?.length || 0,
+                              variant_index: i,
+                            })),
+                            quickTags,
+                            depth: result.evolution_depth || 1,
+                            generationId: result.generation_id,
+                          };
+                          setVersionStack(prev => [...prev, newVersion]);
+                          setCurrentVersionIdx(versionStack.length);
+                          setEvolveTransition(false);
+                        }, 150);
+                      }
                     } catch (e) {
                       toast.error(t('evolve.error'));
                     } finally {
