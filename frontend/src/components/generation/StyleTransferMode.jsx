@@ -65,10 +65,6 @@ function Connector({ active, completed, vertical, generating }) {
 
   const glowColor = "rgba(139, 92, 246, 0.8)";
 
-  // Port noktaları
-  const startDot = vertical ? { cx: 20, cy: 2 } : { cx: 2, cy: 20 };
-  const endDot = vertical ? { cx: 20, cy: length + 5 } : { cx: length + 15, cy: 20 };
-
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: "visible" }}>
@@ -126,11 +122,6 @@ function Connector({ active, completed, vertical, generating }) {
           </circle>
         )}
 
-        {/* Port dots */}
-        <circle cx={vertical ? startDot.cx : 10} cy={vertical ? 5 : startDot.cy} r="4"
-          fill="#111" stroke={baseColor} strokeWidth="1.5" style={{ transition: "stroke 0.4s" }} />
-        <circle cx={vertical ? endDot.cx : length + 10} cy={vertical ? length + 5 : endDot.cy} r="4"
-          fill="#111" stroke={baseColor} strokeWidth="1.5" style={{ transition: "stroke 0.4s" }} />
       </svg>
     </div>
   );
@@ -140,8 +131,6 @@ function Connector({ active, completed, vertical, generating }) {
 // NODE WRAPPER (hover + focus + opacity states)
 // ─────────────────────────────────────────────
 function PipelineNode({ title, icon: Icon, index, active, completed, focused, children, width }) {
-  const [hovered, setHovered] = useState(false);
-
   const borderColor = focused
     ? "rgba(139, 92, 246, 0.6)"
     : completed
@@ -160,15 +149,9 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.96 }}
-      animate={{
-        opacity: isInactive ? 0.45 : 1,
-        y: hovered ? -3 : 0,
-        scale: 1,
-      }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: isInactive ? 0.45 : 1, y: 0 }}
       transition={{ delay: index * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       style={{
         width: width || "100%",
         maxWidth: "360px",
@@ -177,11 +160,9 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
         border: `1.5px solid ${borderColor}`,
         borderRadius: "16px",
         overflow: "hidden",
-        transition: "border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.4s ease, transform 0.2s ease",
+        transition: "border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.4s ease",
         boxShadow: focused
           ? "0 0 35px rgba(139, 92, 246, 0.12)"
-          : hovered
-          ? "0 8px 30px rgba(0,0,0,0.3), 0 0 20px rgba(139, 92, 246, 0.06)"
           : completed
           ? "0 0 30px rgba(139, 92, 246, 0.08)"
           : active
@@ -800,36 +781,8 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           <PersonaNode profiles={profiles} selected={selectedProfileId} onOpenModal={() => setModalOpen(true)} loading={profilesLoading} generating={generating} />
         </PipelineNode>
 
-        {/* Connector 2→3 with embedded action button */}
-        <div style={{
-          display: "flex", flexDirection: isMobile ? "column" : "row",
-          alignItems: "center", gap: "0", position: "relative",
-        }}>
-          <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={isMobile} generating={generating} />
-
-          {/* Inline action button */}
-          {!hasOutput && (
-            <motion.button
-              whileHover={canGenerate ? { scale: 1.05 } : {}}
-              whileTap={canGenerate ? { scale: 0.95 } : {}}
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                width: "40px", height: "40px", borderRadius: "50%", border: "none",
-                background: canGenerate ? "linear-gradient(135deg, #7c3aed, #a855f7)" : "rgba(255,255,255,0.04)",
-                color: canGenerate ? "white" : "var(--m-text-faint, #444)",
-                cursor: canGenerate ? "pointer" : "not-allowed",
-                boxShadow: canGenerate ? "0 0 20px rgba(139,92,246,0.3)" : "none",
-                transition: "all 0.3s ease", flexShrink: 0,
-              }}
-            >
-              {generating ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <ArrowRight size={16} />}
-            </motion.button>
-          )}
-
-          <Connector active={hasOutput} completed={hasOutput} vertical={isMobile} generating={false} />
-        </div>
+        {/* Connector 2→3 */}
+        <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={isMobile} generating={generating} />
 
         <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput} width={isMobile ? undefined : "420px"}>
           <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
@@ -837,8 +790,10 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
       </div>
 
       {/* ═══ BOTTOM ACTIONS ═══ */}
-      {hasOutput && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: "flex", justifyContent: "center", marginTop: "24px" }}>
+      {/* ═══ BOTTOM ACTIONS ═══ */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+        style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "24px" }}>
+        {hasOutput && (
           <button onClick={handleReset} style={{
             display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "12px",
             background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
@@ -850,8 +805,32 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           >
             <RotateCcw size={14} /> Yeni Dönüşüm
           </button>
-        </motion.div>
-      )}
+        )}
+        {!hasOutput && (
+          <motion.button
+            whileHover={canGenerate ? { scale: 1.02, y: -1 } : {}}
+            whileTap={canGenerate ? { scale: 0.98 } : {}}
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              padding: "12px 32px", borderRadius: "12px", border: "none",
+              background: canGenerate ? "linear-gradient(135deg, #7c3aed, #a855f7)" : "rgba(255,255,255,0.04)",
+              color: canGenerate ? "white" : "var(--m-text-faint, #555)",
+              fontSize: "14px", fontWeight: "600", fontFamily: "inherit",
+              cursor: canGenerate ? "pointer" : "not-allowed",
+              boxShadow: canGenerate ? "0 4px 20px rgba(139, 92, 246, 0.25)" : "none",
+              transition: "all 0.3s ease", minWidth: "200px",
+            }}
+          >
+            {generating ? (
+              <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Kopyalanıyor...</>
+            ) : (
+              <><Sparkles size={16} /> Tarzını Kopyala</>
+            )}
+          </motion.button>
+        )}
+      </motion.div>
 
       {/* Persona Modal */}
       <PersonaModal
