@@ -6,7 +6,7 @@
  *   2. Stüdyo: Seçilen persona ile pipeline workflow (StyleTransferMode)
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense, lazy, Component } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -28,7 +28,30 @@ import { FaXTwitter } from "react-icons/fa6";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import PersonaFlow from "@/components/flow/PersonaFlow";
+const PersonaFlow = lazy(() => import("@/components/flow/PersonaFlow"));
+
+// Error boundary for React Flow
+class FlowErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "40px", textAlign: "center", color: "#ef4444" }}>
+          <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "8px" }}>Canvas yüklenemedi</p>
+          <p style={{ fontSize: "12px", color: "#a1a1aa" }}>{this.state.error?.message}</p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{ marginTop: "16px", padding: "8px 16px", borderRadius: "8px", background: "#7c3aed", color: "white", border: "none", cursor: "pointer" }}
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─────────────────────────────────────────────
 // ANALYSIS PROGRESS OVERLAY
@@ -649,19 +672,17 @@ export default function PersonaLabPage({ embedded = false }) {
           background: "#0A0A0A",
           display: "flex",
           flexDirection: "column",
-          position: "relative",
         }}
       >
-        {/* Floating back bar */}
+        {/* Back bar — NOT absolute, always visible */}
         <div
           style={{
-            position: "absolute",
-            top: "16px",
-            left: "16px",
-            zIndex: 10,
+            padding: "12px 16px",
             display: "flex",
             alignItems: "center",
             gap: "10px",
+            flexShrink: 0,
+            zIndex: 10,
           }}
         >
           <button
@@ -732,11 +753,19 @@ export default function PersonaLabPage({ embedded = false }) {
         </div>
 
         {/* React Flow Canvas */}
-        <div style={{ flex: 1, minHeight: 0, height: "calc(100vh - 64px)" }}>
-          <PersonaFlow
-            preSelectedProfileId={activePersona.id}
-            onEvolve={() => {}}
-          />
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <FlowErrorBoundary>
+            <Suspense fallback={
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#71717a" }}>
+                Canvas yükleniyor...
+              </div>
+            }>
+              <PersonaFlow
+                preSelectedProfileId={activePersona.id}
+                onEvolve={() => {}}
+              />
+            </Suspense>
+          </FlowErrorBoundary>
         </div>
       </div>
     );
