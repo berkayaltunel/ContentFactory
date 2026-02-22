@@ -41,7 +41,7 @@ function PersonaNode({ data }) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-violet-500 !border-2 !border-zinc-900"
+        className="!w-3.5 !h-3.5 !bg-zinc-800 !border-[1.5px] !border-zinc-500 hover:!border-violet-400 !transition-colors"
       />
 
       {/* Header */}
@@ -231,7 +231,7 @@ function PersonaNode({ data }) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-violet-500 !border-2 !border-zinc-900"
+        className="!w-3.5 !h-3.5 !bg-zinc-800 !border-[1.5px] !border-zinc-500 hover:!border-violet-400 !transition-colors"
       />
 
       <style>{`

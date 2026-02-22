@@ -8,18 +8,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
-  Controls,
   useNodesState,
   useEdgesState,
   useReactFlow,
   ReactFlowProvider,
-  BezierEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { motion } from "framer-motion";
 import {
-  Loader2, Sparkles, RotateCcw,
+  Loader2, Sparkles, RotateCcw, Plus, Minus, Maximize2, Map,
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
@@ -28,33 +26,42 @@ import SourceNode from "./SourceNode";
 import PersonaNode from "./PersonaNode";
 import OutputNode from "./OutputNode";
 
-// ─── Custom animated edge ──────────────────
+// ─── Custom animated edge (dotted style) ───
 function AnimatedEdge(props) {
-  const { sourceX, sourceY, targetX, targetY, style = {}, data } = props;
+  const { sourceX, sourceY, targetX, targetY, data } = props;
   const isAnimated = data?.animated;
   const isCompleted = data?.completed;
 
-  const edgePath = `M ${sourceX} ${sourceY} C ${sourceX + 80} ${sourceY}, ${targetX - 80} ${targetY}, ${targetX} ${targetY}`;
+  const edgePath = `M ${sourceX} ${sourceY} C ${sourceX + 100} ${sourceY}, ${targetX - 100} ${targetY}, ${targetX} ${targetY}`;
+
+  const baseColor = isCompleted
+    ? "rgba(139,92,246,0.5)"
+    : isAnimated
+    ? "rgba(139,92,246,0.35)"
+    : "rgba(255,255,255,0.08)";
 
   return (
     <>
-      {/* Base path */}
+      {/* Dotted base path */}
       <path
         d={edgePath}
         fill="none"
-        stroke={isCompleted ? "rgba(139,92,246,0.6)" : isAnimated ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.08)"}
-        strokeWidth={2}
+        stroke={baseColor}
+        strokeWidth={1.5}
+        strokeDasharray="4 6"
+        strokeLinecap="round"
         style={{ transition: "stroke 0.4s ease" }}
       />
-      {/* Animated dashes */}
+      {/* Animated flowing dash overlay */}
       {isAnimated && (
         <path
           d={edgePath}
           fill="none"
-          stroke="rgba(139,92,246,0.8)"
+          stroke="rgba(139,92,246,0.7)"
           strokeWidth={2}
-          strokeDasharray="8 12"
-          style={{ animation: "flowDash 0.8s linear infinite" }}
+          strokeDasharray="6 14"
+          strokeLinecap="round"
+          style={{ animation: "flowDash 1s linear infinite" }}
         />
       )}
       {/* Completed glow */}
@@ -62,17 +69,22 @@ function AnimatedEdge(props) {
         <path
           d={edgePath}
           fill="none"
-          stroke="rgba(139,92,246,0.8)"
-          strokeWidth={3}
-          style={{ filter: "blur(3px)", opacity: 0.4 }}
+          stroke="rgba(139,92,246,0.6)"
+          strokeWidth={2.5}
+          strokeDasharray="4 6"
+          strokeLinecap="round"
+          style={{ filter: "blur(4px)", opacity: 0.35 }}
         />
       )}
-      {/* Flowing dot */}
+      {/* Flowing dot particle */}
       {isAnimated && (
-        <circle r="4" fill="#a78bfa" style={{ filter: "blur(1px)" }}>
-          <animateMotion dur="1s" repeatCount="indefinite" path={edgePath} />
+        <circle r="3.5" fill="#a78bfa" opacity="0.9">
+          <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} />
         </circle>
       )}
+      {/* Handle endpoint circles */}
+      <circle cx={sourceX} cy={sourceY} r="4" fill="#18181b" stroke={baseColor} strokeWidth="1.5" />
+      <circle cx={targetX} cy={targetY} r="4" fill="#18181b" stroke={baseColor} strokeWidth="1.5" />
     </>
   );
 }
@@ -134,9 +146,38 @@ const INITIAL_EDGES = [
 const isTwitterUrl = (text) => /(?:x|twitter)\.com\/.+\/status\/\d+/.test(text);
 let stJobIdCounter = 0;
 
+// ─── Toolbar button ────────────────────────
+function ToolbarButton({ onClick, title, children }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer"
+      style={{ border: "none", background: "transparent", fontFamily: "inherit" }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Zoom display ─────────────────────────
+function ZoomDisplay() {
+  const { getZoom } = useReactFlow();
+  const [zoom, setZoom] = useState(85);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try { setZoom(Math.round(getZoom() * 100)); } catch {}
+    }, 300);
+    return () => clearInterval(interval);
+  }, [getZoom]);
+
+  return <span>{zoom}%</span>;
+}
+
 // ─── Inner Flow (needs ReactFlowProvider) ──
 function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
-  const { fitView } = useReactFlow();
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
 
   // State
   const [profiles, setProfiles] = useState([]);
@@ -351,12 +392,44 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
         proOptions={{ hideAttribution: true }}
         style={{ background: "#0A0A0A" }}
       >
-        <Background variant="dots" gap={20} size={1} color="rgba(255,255,255,0.05)" />
-        <Controls
-          showInteractive={false}
-          className="!bg-zinc-900 !border-zinc-800 !rounded-xl !shadow-xl [&>button]:!bg-zinc-800 [&>button]:!border-zinc-700 [&>button]:!text-zinc-400 [&>button:hover]:!bg-zinc-700"
-        />
+        <Background variant="dots" gap={20} size={1} color="rgba(255,255,255,0.04)" />
       </ReactFlow>
+
+      {/* Custom toolbar — left bottom (referans görseldeki gibi) */}
+      <div
+        className="absolute bottom-6 left-4 z-10 flex items-center gap-0 rounded-xl overflow-hidden"
+        style={{
+          background: "rgba(24,24,27,0.92)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+        }}
+      >
+        <ToolbarButton onClick={() => zoomIn({ duration: 200 })} title="Zoom In">
+          <Plus size={15} />
+        </ToolbarButton>
+        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.06)" }} />
+        <ToolbarButton onClick={() => zoomOut({ duration: 200 })} title="Zoom Out">
+          <Minus size={15} />
+        </ToolbarButton>
+        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.06)" }} />
+        <ToolbarButton onClick={() => fitView({ padding: 0.2, duration: 400 })} title="Fit View">
+          <Maximize2 size={14} />
+        </ToolbarButton>
+      </div>
+
+      {/* Zoom percentage — right bottom */}
+      <div
+        className="absolute bottom-6 right-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] text-zinc-500 font-medium"
+        style={{
+          background: "rgba(24,24,27,0.85)",
+          border: "1px solid rgba(255,255,255,0.05)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <Map size={11} className="opacity-50" />
+        <ZoomDisplay />
+      </div>
 
       {/* Generate / Reset button overlay */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
