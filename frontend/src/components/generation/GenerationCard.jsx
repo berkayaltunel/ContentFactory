@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import SkeletonTweetRow from "./SkeletonTweetRow";
 import EvolvePanel from "./EvolvePanel";
+import EvolveSlideOver from "./EvolveSlideOver";
 
 
 const PERSONA_COLORS = {
@@ -383,6 +384,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
   const [versionStack, setVersionStack] = useState([]); // [{ variants, quickTags }]
   const [currentVersionIdx, setCurrentVersionIdx] = useState(-1); // -1 = original
   const [evolveTransition, setEvolveTransition] = useState(false); // fade animation
+  const [slideOverData, setSlideOverData] = useState(null); // { originalContent, variants, quickTags }
   const hasMultipleVariants = job.variants?.length > 1;
 
   // Active variants: either from version stack or original job
@@ -750,21 +752,28 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                           variantCount,
                         });
                         if (result?.variants) {
-                          // Fade out → replace → fade in
+                          const mappedVariants = result.variants.map((v, i) => ({
+                            ...v,
+                            character_count: v.character_count || v.content?.length || 0,
+                            variant_index: i,
+                          }));
+                          // Open slide-over with results
+                          setSlideOverData({
+                            originalContent: variant.content,
+                            variants: mappedVariants,
+                            quickTags,
+                          });
+                          // Also push to version stack for breadcrumb nav
                           setEvolveTransition(true);
                           setTimeout(() => {
                             const newVersion = {
-                              variants: result.variants.map((v, i) => ({
-                                ...v,
-                                character_count: v.character_count || v.content?.length || 0,
-                                variant_index: i,
-                              })),
+                              variants: mappedVariants,
                               quickTags,
                               depth: result.evolution_depth || 1,
                               generationId: result.generation_id,
                             };
                             setVersionStack(prev => [...prev, newVersion]);
-                            setCurrentVersionIdx(prev => prev + 1 < 0 ? 0 : versionStack.length);
+                            setCurrentVersionIdx(versionStack.length);
                             setEvolveTransition(false);
                           }, 150);
                         }
@@ -873,6 +882,16 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
         open={imagePromptOpen}
         onOpenChange={setImagePromptOpen}
         content={imagePromptContent}
+      />
+
+      {/* Evolve Slide-Over */}
+      <EvolveSlideOver
+        open={!!slideOverData}
+        onClose={() => setSlideOverData(null)}
+        originalContent={slideOverData?.originalContent}
+        variants={slideOverData?.variants}
+        quickTags={slideOverData?.quickTags}
+        onCopy={handleCopy}
       />
     </Card>
   );
