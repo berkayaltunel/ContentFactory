@@ -154,6 +154,9 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
       transition={{ delay: index * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       style={{
         width: "100%",
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
         background: "var(--m-surface, #111111)",
         border: `1.5px solid ${borderColor}`,
         borderRadius: "16px",
@@ -203,8 +206,8 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
         )}
       </div>
 
-      {/* Body */}
-      <div style={{ padding: "14px", overflow: "hidden" }}>{children}</div>
+      {/* Body — scrollable when content overflows */}
+      <div style={{ padding: "14px", overflow: "hidden", flex: 1, overflowY: "auto" }} className="scrollbar-hide">{children}</div>
     </motion.div>
   );
 }
@@ -614,7 +617,7 @@ function OutputNode({ jobs, onEvolve, generating, onRetry }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "400px", overflowY: "auto", overflowX: "hidden", wordBreak: "break-word" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px", overflowX: "hidden", wordBreak: "break-word" }}>
       {jobs.map((job) => (
         <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
       ))}
@@ -784,17 +787,17 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </PipelineNode>
         </div>
       ) : (
-        /* Desktop: rigid 3-column CSS Grid */
+        /* Desktop: rigid 3-column CSS Grid, equal height */
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr auto 1fr",
-          alignItems: "start",
+          alignItems: "stretch",
           width: "100%",
           maxWidth: "1100px",
           margin: "0 auto",
         }}>
           {/* Col 1: Kaynak */}
-          <div style={{ width: "100%", maxWidth: "340px" }}>
+          <div style={{ width: "100%", maxWidth: "340px", display: "flex", flexDirection: "column" }}>
             <PipelineNode title="Kaynak" icon={FileText} index={0} active={hasSource || (!hasSource && !hasPersona)} completed={hasSource} focused={sourceFocused}>
               <SourceNode value={inputValue} onChange={setInputValue} fetchedTweet={fetchedTweet}
                 onClearTweet={() => setFetchedTweet(null)} onFetchTweet={() => handleFetchTweet()} fetching={fetching}
@@ -808,7 +811,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 3: Persona */}
-          <div style={{ width: "100%", maxWidth: "320px", justifySelf: "center" }}>
+          <div style={{ width: "100%", maxWidth: "320px", justifySelf: "center", display: "flex", flexDirection: "column" }}>
             <PipelineNode title="Persona" icon={User} index={1} active={hasSource && !hasOutput} completed={hasPersona} focused={modalOpen}>
               <PersonaNode profiles={profiles} selected={selectedProfileId} onOpenModal={() => setModalOpen(true)} loading={profilesLoading} generating={generating} />
             </PipelineNode>
@@ -820,7 +823,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 5: Çıktı */}
-          <div style={{ width: "100%", maxWidth: "380px" }}>
+          <div style={{ width: "100%", maxWidth: "380px", display: "flex", flexDirection: "column" }}>
             <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput}>
               <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
             </PipelineNode>
@@ -881,6 +884,8 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
       {/* ═══ KEYFRAMES ═══ */}
       <style>{`
         @keyframes flowDash { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes pulseRing { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.5); opacity: 0; } }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
