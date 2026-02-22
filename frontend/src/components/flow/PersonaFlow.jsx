@@ -1,10 +1,7 @@
 /**
  * PersonaFlow — React Flow canvas wrapper for Persona Lab
- * 
- * 3 undeletable nodes: Source → Persona → Output
- * Bezier edges with animated particles during generation
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -17,7 +14,7 @@ import "@xyflow/react/dist/style.css";
 
 import { motion } from "framer-motion";
 import {
-  Loader2, Sparkles, RotateCcw, Plus, Minus, Maximize2, Map,
+  Loader2, Sparkles, RotateCcw, Plus, Minus, Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
@@ -42,8 +39,7 @@ function AnimatedEdge(props) {
     : "rgba(255,255,255,0.08)";
 
   return (
-    <>
-      {/* Dotted base path */}
+    <g>
       <path
         d={edgePath}
         fill="none"
@@ -53,7 +49,6 @@ function AnimatedEdge(props) {
         strokeLinecap="round"
         style={{ transition: "stroke 0.4s ease" }}
       />
-      {/* Animated flowing dash overlay */}
       {isAnimated && (
         <path
           d={edgePath}
@@ -65,7 +60,6 @@ function AnimatedEdge(props) {
           style={{ animation: "flowDash 1s linear infinite" }}
         />
       )}
-      {/* Completed glow */}
       {isCompleted && (
         <path
           d={edgePath}
@@ -77,20 +71,18 @@ function AnimatedEdge(props) {
           style={{ filter: "blur(4px)", opacity: 0.35 }}
         />
       )}
-      {/* Flowing dot particle */}
       {isAnimated && (
         <circle r="3.5" fill="#a78bfa" opacity="0.9">
           <animateMotion dur="1.2s" repeatCount="indefinite" path={edgePath} />
         </circle>
       )}
-      {/* Handle endpoint circles */}
       <circle cx={sourceX} cy={sourceY} r="4" fill="#18181b" stroke={baseColor} strokeWidth="1.5" />
       <circle cx={targetX} cy={targetY} r="4" fill="#18181b" stroke={baseColor} strokeWidth="1.5" />
-    </>
+    </g>
   );
 }
 
-// ─── Node types ────────────────────────────
+// ─── Node & Edge types (MUST be outside component) ───
 const nodeTypes = {
   source: SourceNode,
   persona: PersonaNode,
@@ -101,86 +93,67 @@ const edgeTypes = {
   animated: AnimatedEdge,
 };
 
-// ─── Initial positions ────────────────────
-const INITIAL_NODES = [
-  {
-    id: "source",
-    type: "source",
-    position: { x: 0, y: 0 },
-    deletable: false,
-    data: {},
-  },
-  {
-    id: "persona",
-    type: "persona",
-    position: { x: 480, y: 20 },
-    deletable: false,
-    data: {},
-  },
-  {
-    id: "output",
-    type: "output",
-    position: { x: 880, y: -20 },
-    deletable: false,
-    data: {},
-  },
-];
-
-const INITIAL_EDGES = [
-  {
-    id: "e-source-persona",
-    source: "source",
-    target: "persona",
-    type: "animated",
-    data: { animated: false, completed: false },
-  },
-  {
-    id: "e-persona-output",
-    source: "persona",
-    target: "output",
-    type: "animated",
-    data: { animated: false, completed: false },
-  },
-];
-
 // ─── Helpers ──────────────────────────────
 const isTwitterUrl = (text) => /(?:x|twitter)\.com\/.+\/status\/\d+/.test(text);
 let stJobIdCounter = 0;
 
-// ─── Toolbar button ────────────────────────
-function ToolbarButton({ onClick, title, children }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className="flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer"
-      style={{ border: "none", background: "transparent", fontFamily: "inherit" }}
-    >
-      {children}
-    </button>
-  );
-}
-
-// ─── Zoom display ─────────────────────────
-function ZoomDisplay() {
-  const { getZoom } = useReactFlow();
+// ─── Toolbar ──────────────────────────────
+function Toolbar() {
+  const { zoomIn, zoomOut, fitView, getZoom } = useReactFlow();
   const [zoom, setZoom] = useState(85);
 
   useEffect(() => {
     const interval = setInterval(() => {
       try { setZoom(Math.round(getZoom() * 100)); } catch {}
-    }, 300);
+    }, 500);
     return () => clearInterval(interval);
   }, [getZoom]);
 
-  return <span>{zoom}%</span>;
+  const btnStyle = {
+    display: "flex", alignItems: "center", justifyContent: "center",
+    width: "36px", height: "36px", border: "none", background: "transparent",
+    color: "#a1a1aa", cursor: "pointer", transition: "color 0.15s",
+  };
+
+  return (
+    <>
+      {/* Left bottom toolbar */}
+      <div style={{
+        position: "absolute", bottom: "24px", left: "16px", zIndex: 10,
+        display: "flex", alignItems: "center", borderRadius: "12px", overflow: "hidden",
+        background: "rgba(24,24,27,0.92)", border: "1px solid rgba(255,255,255,0.06)",
+        backdropFilter: "blur(12px)", boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+      }}>
+        <button style={btnStyle} onClick={() => zoomIn({ duration: 200 })} title="Zoom In">
+          <Plus size={15} />
+        </button>
+        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.06)" }} />
+        <button style={btnStyle} onClick={() => zoomOut({ duration: 200 })} title="Zoom Out">
+          <Minus size={15} />
+        </button>
+        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.06)" }} />
+        <button style={btnStyle} onClick={() => fitView({ padding: 0.2, duration: 400 })} title="Fit View">
+          <Maximize2 size={14} />
+        </button>
+      </div>
+
+      {/* Right bottom zoom display */}
+      <div style={{
+        position: "absolute", bottom: "24px", right: "16px", zIndex: 10,
+        padding: "6px 12px", borderRadius: "8px",
+        background: "rgba(24,24,27,0.85)", border: "1px solid rgba(255,255,255,0.05)",
+        backdropFilter: "blur(12px)", fontSize: "11px", color: "#71717a", fontWeight: "500",
+      }}>
+        {zoom}%
+      </div>
+    </>
+  );
 }
 
-// ─── Inner Flow (needs ReactFlowProvider) ──
+// ─── Inner Flow ───────────────────────────
 function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
-  const { fitView, zoomIn, zoomOut } = useReactFlow();
+  const { fitView } = useReactFlow();
 
-  // State
   const [profiles, setProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [selectedProfileId, setSelectedProfileId] = useState(preSelectedProfileId || null);
@@ -190,8 +163,19 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
   const [generating, setGenerating] = useState(false);
   const [jobs, setJobs] = useState([]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
+  const initialNodes = [
+    { id: "source", type: "source", position: { x: 0, y: 0 }, deletable: false, data: {} },
+    { id: "persona", type: "persona", position: { x: 480, y: 20 }, deletable: false, data: {} },
+    { id: "output", type: "output", position: { x: 880, y: -20 }, deletable: false, data: {} },
+  ];
+
+  const initialEdges = [
+    { id: "e1", source: "source", target: "persona", type: "animated", data: { animated: false, completed: false } },
+    { id: "e2", source: "persona", target: "output", type: "animated", data: { animated: false, completed: false } },
+  ];
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const prevInput = useRef("");
 
@@ -227,7 +211,6 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
     prevInput.current = trimmed;
   }, [inputValue]);
 
-  // Fetch tweet
   const handleFetchTweet = async (url) => {
     if (!url) url = inputValue.trim();
     if (!isTwitterUrl(url)) return;
@@ -236,27 +219,17 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
       const res = await api.get(`${API}/tweet/fetch`, { params: { url } });
       if (res.data.success) {
         const t = res.data.tweet;
-        setFetchedTweet({
-          text: t.text,
-          author_name: t.author?.name || "",
-          author_username: t.author?.username || "",
-          url,
-        });
+        setFetchedTweet({ text: t.text, author_name: t.author?.name || "", author_username: t.author?.username || "", url });
         setInputValue("");
         toast.success("Tweet yüklendi");
       }
-    } catch (e) {
-      toast.error("Tweet yüklenemedi");
-    } finally {
-      setFetching(false);
-    }
+    } catch (e) { toast.error("Tweet yüklenemedi"); }
+    finally { setFetching(false); }
   };
 
-  // Generate
   const handleGenerate = useCallback(async () => {
     const text = inputValue.trim();
     const sourceText = fetchedTweet?.text || text;
-
     if (!sourceText) { toast.error("Kaynak metin veya tweet URL'si gerekli"); return; }
     if (!selectedProfileId) { toast.error("Bir stil profili seç"); return; }
     if (isTwitterUrl(text) && !fetchedTweet) { await handleFetchTweet(text); return; }
@@ -286,7 +259,6 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
           j.id === jobId ? { ...j, status: "completed", variants: res.data.variants, generationId: res.data.generation_id } : j
         ));
         toast.success("Tarz kopyalandı ✨");
-        // Pan to output node
         setTimeout(() => fitView({ padding: 0.2, duration: 600 }), 200);
       } else {
         setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "error" } : j)));
@@ -295,90 +267,50 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
     } catch (e) {
       setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: "error" } : j)));
       toast.error(e.response?.data?.detail || "Bir hata oluştu");
-    } finally {
-      setGenerating(false);
-    }
+    } finally { setGenerating(false); }
   }, [inputValue, fetchedTweet, selectedProfileId, profiles, fitView]);
 
-  // Reset
-  const handleReset = () => {
-    setInputValue(""); setFetchedTweet(null); setJobs([]);
-  };
+  const handleReset = () => { setInputValue(""); setFetchedTweet(null); setJobs([]); };
 
-  // Derived state
   const hasSource = !!(inputValue.trim() || fetchedTweet);
   const hasPersona = !!selectedProfileId;
   const hasOutput = jobs.some((j) => j.status === "completed");
   const canGenerate = hasSource && hasPersona && !generating;
 
-  // Update node data when state changes
+  // Sync node data
   useEffect(() => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === "source") {
-          return {
-            ...node,
-            data: {
-              value: inputValue,
-              onChange: setInputValue,
-              fetchedTweet,
-              onClearTweet: () => setFetchedTweet(null),
-              onFetchTweet: () => handleFetchTweet(),
-              fetching,
-            },
-          };
-        }
-        if (node.id === "persona") {
-          return {
-            ...node,
-            data: {
-              profiles,
-              selected: selectedProfileId,
-              onSelect: setSelectedProfileId,
-              loading: profilesLoading,
-              generating,
-            },
-          };
-        }
-        if (node.id === "output") {
-          return {
-            ...node,
-            data: { jobs, onEvolve, generating },
-          };
-        }
-        return node;
-      })
-    );
+    setNodes((nds) => nds.map((node) => {
+      if (node.id === "source") {
+        return { ...node, data: { value: inputValue, onChange: setInputValue, fetchedTweet, onClearTweet: () => setFetchedTweet(null), onFetchTweet: () => handleFetchTweet(), fetching } };
+      }
+      if (node.id === "persona") {
+        return { ...node, data: { profiles, selected: selectedProfileId, onSelect: setSelectedProfileId, loading: profilesLoading, generating } };
+      }
+      if (node.id === "output") {
+        return { ...node, data: { jobs, onEvolve, generating } };
+      }
+      return node;
+    }));
   }, [inputValue, fetchedTweet, fetching, profiles, selectedProfileId, profilesLoading, generating, jobs]);
 
-  // Update edge animation
+  // Sync edge animation
   useEffect(() => {
-    setEdges((eds) =>
-      eds.map((edge) => {
-        if (edge.id === "e-source-persona") {
-          return { ...edge, data: { animated: generating, completed: hasSource && hasPersona } };
-        }
-        if (edge.id === "e-persona-output") {
-          return { ...edge, data: { animated: generating, completed: hasOutput } };
-        }
-        return edge;
-      })
-    );
+    setEdges((eds) => eds.map((edge) => {
+      if (edge.id === "e1") return { ...edge, data: { animated: generating, completed: hasSource && hasPersona } };
+      if (edge.id === "e2") return { ...edge, data: { animated: generating, completed: hasOutput } };
+      return edge;
+    }));
   }, [generating, hasSource, hasPersona, hasOutput]);
 
-  // Prevent node deletion and edge creation
-  const handleNodesDelete = useCallback(() => {}, []);
-  const handleEdgesDelete = useCallback(() => {}, []);
-
   return (
-    <div style={{ width: "100%", height: "100%", minHeight: "calc(100vh - 140px)", position: "relative" }}>
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodesDelete={handleNodesDelete}
-        onEdgesDelete={handleEdgesDelete}
+        onNodesDelete={useCallback(() => {}, [])}
+        onEdgesDelete={useCallback(() => {}, [])}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodesDeletable={false}
@@ -389,59 +321,25 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.3}
         maxZoom={1.5}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
         proOptions={{ hideAttribution: true }}
         style={{ background: "#0A0A0A" }}
       >
         <Background variant="dots" gap={20} size={1} color="rgba(255,255,255,0.04)" />
       </ReactFlow>
 
-      {/* Custom toolbar — left bottom (referans görseldeki gibi) */}
-      <div
-        className="absolute bottom-6 left-4 z-10 flex items-center gap-0 rounded-xl overflow-hidden"
-        style={{
-          background: "rgba(24,24,27,0.92)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-        }}
-      >
-        <ToolbarButton onClick={() => zoomIn({ duration: 200 })} title="Zoom In">
-          <Plus size={15} />
-        </ToolbarButton>
-        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.06)" }} />
-        <ToolbarButton onClick={() => zoomOut({ duration: 200 })} title="Zoom Out">
-          <Minus size={15} />
-        </ToolbarButton>
-        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.06)" }} />
-        <ToolbarButton onClick={() => fitView({ padding: 0.2, duration: 400 })} title="Fit View">
-          <Maximize2 size={14} />
-        </ToolbarButton>
-      </div>
+      <Toolbar />
 
-      {/* Zoom percentage — right bottom */}
-      <div
-        className="absolute bottom-6 right-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] text-zinc-500 font-medium"
-        style={{
-          background: "rgba(24,24,27,0.85)",
-          border: "1px solid rgba(255,255,255,0.05)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
-        <Map size={11} className="opacity-50" />
-        <ZoomDisplay />
-      </div>
-
-      {/* Generate / Reset button overlay */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+      {/* Generate / Reset button */}
+      <div style={{ position: "absolute", bottom: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 10 }}>
         {hasOutput ? (
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-zinc-400 text-[13px] font-medium cursor-pointer font-[inherit] transition-all duration-200 hover:text-violet-400 hover:border-violet-500/30"
             style={{
-              background: "rgba(24,24,27,0.9)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "10px 20px", borderRadius: "12px",
+              background: "rgba(24,24,27,0.9)", border: "1px solid rgba(255,255,255,0.08)",
+              color: "#a1a1aa", fontSize: "13px", fontWeight: "500",
+              cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(12px)",
             }}
           >
             <RotateCcw size={14} />
@@ -453,51 +351,36 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
             whileTap={canGenerate ? { scale: 0.98 } : {}}
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl border-none text-[14px] font-semibold font-[inherit] min-w-[200px] transition-all duration-300"
             style={{
-              background: canGenerate
-                ? "linear-gradient(135deg, #7c3aed, #a855f7)"
-                : "rgba(24,24,27,0.9)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              padding: "12px 32px", borderRadius: "12px", border: "none",
+              background: canGenerate ? "linear-gradient(135deg, #7c3aed, #a855f7)" : "rgba(24,24,27,0.9)",
               color: canGenerate ? "white" : "#555",
+              fontSize: "14px", fontWeight: "600", fontFamily: "inherit",
               cursor: canGenerate ? "pointer" : "not-allowed",
               boxShadow: canGenerate ? "0 4px 24px rgba(139,92,246,0.3)" : "none",
-              backdropFilter: "blur(12px)",
+              backdropFilter: "blur(12px)", minWidth: "200px",
             }}
           >
             {generating ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Kopyalanıyor...
-              </>
+              <><Loader2 size={16} className="animate-spin" /> Kopyalanıyor...</>
             ) : (
-              <>
-                <Sparkles size={16} />
-                Tarzını Kopyala
-              </>
+              <><Sparkles size={16} /> Tarzını Kopyala</>
             )}
           </motion.button>
         )}
       </div>
 
-      {/* Keyframes */}
       <style>{`
-        @keyframes flowDash {
-          from { stroke-dashoffset: 40; }
-          to { stroke-dashoffset: 0; }
-        }
+        @keyframes flowDash { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
       `}</style>
     </div>
   );
 }
 
-// ─── Mobile fallback ──────────────────────
-function MobileFallback({ preSelectedProfileId, onEvolve }) {
-  return <StyleTransferMode preSelectedProfileId={preSelectedProfileId} onEvolve={onEvolve} />;
-}
-
 // ─── Export ───────────────────────────────
 export default function PersonaFlow({ preSelectedProfileId, onEvolve }) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -506,7 +389,7 @@ export default function PersonaFlow({ preSelectedProfileId, onEvolve }) {
   }, []);
 
   if (isMobile) {
-    return <MobileFallback preSelectedProfileId={preSelectedProfileId} onEvolve={onEvolve} />;
+    return <StyleTransferMode preSelectedProfileId={preSelectedProfileId} onEvolve={onEvolve} />;
   }
 
   return (
