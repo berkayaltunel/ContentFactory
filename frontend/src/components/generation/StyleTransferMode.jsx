@@ -130,7 +130,7 @@ function Connector({ active, completed, vertical, generating }) {
 // ─────────────────────────────────────────────
 // NODE WRAPPER (hover + focus + opacity states)
 // ─────────────────────────────────────────────
-function PipelineNode({ title, icon: Icon, index, active, completed, focused, children, width }) {
+function PipelineNode({ title, icon: Icon, index, active, completed, focused, children }) {
   const borderColor = focused
     ? "rgba(139, 92, 246, 0.6)"
     : completed
@@ -153,9 +153,7 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
       animate={{ opacity: isInactive ? 0.45 : 1, y: 0 }}
       transition={{ delay: index * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        width: width || "100%",
-        maxWidth: "360px",
-        minWidth: "260px",
+        width: "100%",
         background: "var(--m-surface, #111111)",
         border: `1.5px solid ${borderColor}`,
         borderRadius: "16px",
@@ -768,26 +766,67 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
       </motion.div>
 
       {/* ═══ PIPELINE ═══ */}
-      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "center" : "flex-start", justifyContent: "center", gap: "0" }}>
-        <PipelineNode title="Kaynak" icon={FileText} index={0} active={hasSource || (!hasSource && !hasPersona)} completed={hasSource} focused={sourceFocused}>
-          <SourceNode value={inputValue} onChange={setInputValue} fetchedTweet={fetchedTweet}
-            onClearTweet={() => setFetchedTweet(null)} onFetchTweet={() => handleFetchTweet()} fetching={fetching}
-            onFocus={() => setSourceFocused(true)} onBlur={() => setSourceFocused(false)} />
-        </PipelineNode>
+      {isMobile ? (
+        /* Mobile: vertical stack */
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0" }}>
+          <PipelineNode title="Kaynak" icon={FileText} index={0} active={hasSource || (!hasSource && !hasPersona)} completed={hasSource} focused={sourceFocused}>
+            <SourceNode value={inputValue} onChange={setInputValue} fetchedTweet={fetchedTweet}
+              onClearTweet={() => setFetchedTweet(null)} onFetchTweet={() => handleFetchTweet()} fetching={fetching}
+              onFocus={() => setSourceFocused(true)} onBlur={() => setSourceFocused(false)} />
+          </PipelineNode>
+          <Connector active={hasSource} completed={hasSource && hasPersona} vertical generating={generating} />
+          <PipelineNode title="Persona" icon={User} index={1} active={hasSource && !hasOutput} completed={hasPersona} focused={modalOpen}>
+            <PersonaNode profiles={profiles} selected={selectedProfileId} onOpenModal={() => setModalOpen(true)} loading={profilesLoading} generating={generating} />
+          </PipelineNode>
+          <Connector active={hasSource && hasPersona} completed={hasOutput} vertical generating={generating} />
+          <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput}>
+            <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
+          </PipelineNode>
+        </div>
+      ) : (
+        /* Desktop: rigid 3-column CSS Grid */
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr auto 1fr",
+          alignItems: "start",
+          width: "100%",
+          maxWidth: "1100px",
+          margin: "0 auto",
+        }}>
+          {/* Col 1: Kaynak */}
+          <div style={{ width: "100%", maxWidth: "340px" }}>
+            <PipelineNode title="Kaynak" icon={FileText} index={0} active={hasSource || (!hasSource && !hasPersona)} completed={hasSource} focused={sourceFocused}>
+              <SourceNode value={inputValue} onChange={setInputValue} fetchedTweet={fetchedTweet}
+                onClearTweet={() => setFetchedTweet(null)} onFetchTweet={() => handleFetchTweet()} fetching={fetching}
+                onFocus={() => setSourceFocused(true)} onBlur={() => setSourceFocused(false)} />
+            </PipelineNode>
+          </div>
 
-        <Connector active={hasSource} completed={hasSource && hasPersona} vertical={isMobile} generating={generating} />
+          {/* Col 2: Connector 1→2 */}
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "center" }}>
+            <Connector active={hasSource} completed={hasSource && hasPersona} vertical={false} generating={generating} />
+          </div>
 
-        <PipelineNode title="Persona" icon={User} index={1} active={hasSource && !hasOutput} completed={hasPersona} focused={modalOpen}>
-          <PersonaNode profiles={profiles} selected={selectedProfileId} onOpenModal={() => setModalOpen(true)} loading={profilesLoading} generating={generating} />
-        </PipelineNode>
+          {/* Col 3: Persona */}
+          <div style={{ width: "100%", maxWidth: "320px", justifySelf: "center" }}>
+            <PipelineNode title="Persona" icon={User} index={1} active={hasSource && !hasOutput} completed={hasPersona} focused={modalOpen}>
+              <PersonaNode profiles={profiles} selected={selectedProfileId} onOpenModal={() => setModalOpen(true)} loading={profilesLoading} generating={generating} />
+            </PipelineNode>
+          </div>
 
-        {/* Connector 2→3 */}
-        <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={isMobile} generating={generating} />
+          {/* Col 4: Connector 2→3 */}
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "center" }}>
+            <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={false} generating={generating} />
+          </div>
 
-        <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput} width={isMobile ? undefined : "420px"}>
-          <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
-        </PipelineNode>
-      </div>
+          {/* Col 5: Çıktı */}
+          <div style={{ width: "100%", maxWidth: "380px" }}>
+            <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput}>
+              <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
+            </PipelineNode>
+          </div>
+        </div>
+      )}
 
       {/* ═══ BOTTOM ACTIONS ═══ */}
       {/* ═══ BOTTOM ACTIONS ═══ */}
