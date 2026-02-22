@@ -26,6 +26,7 @@ const TYPE_CONFIG = {
   quote: { labelKey: "create.contentTypes.quote", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
   reply: { labelKey: "create.contentTypes.reply", color: "bg-green-500/10 text-green-400 border-green-500/20" },
   article: { labelKey: "create.contentTypes.article", color: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+  "style-transfer": { label: "✨ Style Transfer", color: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
 };
 
 function mapGenToJob(gen) {
@@ -269,7 +270,7 @@ export default function HistoryPage() {
                       : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                   )}
                 >
-                  {cfg.labelKey ? t(cfg.labelKey) : type} ({count})
+                  {cfg.labelKey ? t(cfg.labelKey) : cfg.label || type} ({count})
                 </button>
               );
             })}

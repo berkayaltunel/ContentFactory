@@ -130,7 +130,7 @@ function Connector({ active, completed, vertical, generating }) {
 // ─────────────────────────────────────────────
 // NODE WRAPPER (hover + focus + opacity states)
 // ─────────────────────────────────────────────
-function PipelineNode({ title, icon: Icon, index, active, completed, focused, children }) {
+function PipelineNode({ title, icon: Icon, index, active, completed, focused, noPadding, children }) {
   const borderColor = focused
     ? "rgba(139, 92, 246, 0.6)"
     : completed
@@ -208,7 +208,7 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
       </div>
 
       {/* Body — scrollable when content overflows */}
-      <div style={{ padding: "14px", overflow: "hidden", flex: 1, overflowY: "auto" }} className="scrollbar-hide">{children}</div>
+      <div style={{ padding: noPadding ? "0" : "14px", overflow: "hidden", flex: 1, overflowY: "auto" }} className="scrollbar-hide">{children}</div>
     </motion.div>
   );
 }
@@ -620,9 +620,12 @@ function OutputNode({ jobs, onEvolve, generating, onRetry }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowX: "hidden", wordBreak: "break-word" }}>
       {/* Scrollable variant list */}
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }} className="scrollbar-hide">
-        {jobs.map((job) => (
-          <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }} className="scrollbar-hide">
+        {jobs.map((job, idx) => (
+          <div key={job.id}>
+            {idx > 0 && <div style={{ height: "1px", background: "rgba(255,255,255,0.08)", margin: "0" }} />}
+            <GenerationCard job={job} onEvolve={onEvolve} compact />
+          </div>
         ))}
       </div>
       {/* Sticky bottom button */}
@@ -742,6 +745,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
     } finally { setGenerating(false); }
   }, [inputValue, fetchedTweet, selectedProfileId, profiles]);
 
+  const handleRetry = useCallback(() => { setJobs([]); setTimeout(() => handleGenerate(), 50); }, [handleGenerate]);
   const handleReset = () => { setInputValue(""); setFetchedTweet(null); setJobs([]); };
 
   const hasSource = !!(inputValue.trim() || fetchedTweet);
@@ -787,8 +791,8 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
             <PersonaNode profiles={profiles} selected={selectedProfileId} onOpenModal={() => setModalOpen(true)} loading={profilesLoading} generating={generating} />
           </PipelineNode>
           <Connector active={hasSource && hasPersona} completed={hasOutput} vertical generating={generating} />
-          <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput}>
-            <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
+          <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput} noPadding={hasOutput}>
+            <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleRetry} />
           </PipelineNode>
         </div>
       ) : (
@@ -829,8 +833,8 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
 
           {/* Col 5: Çıktı */}
           <div style={{ width: "100%", maxWidth: "380px", display: "flex", flexDirection: "column" }}>
-            <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput}>
-              <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleGenerate} />
+            <PipelineNode title="Çıktı" icon={Sparkles} index={2} active={generating} completed={hasOutput} noPadding={hasOutput}>
+              <OutputNode jobs={jobs} onEvolve={onEvolve} generating={generating} onRetry={handleRetry} />
             </PipelineNode>
           </div>
         </div>

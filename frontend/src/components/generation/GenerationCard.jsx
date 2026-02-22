@@ -366,7 +366,7 @@ function StyleScoreCard({ scores, isBest }) {
   );
 }
 
-export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, avatarUrl }) {
+export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, avatarUrl, compact }) {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState(() =>
     new Map(Object.entries(initialFavorites || {}).map(([k, v]) => [parseInt(k), v]))
@@ -451,13 +451,13 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
   return (
     <Card
       className={cn(
-        "bg-card transition-colors",
-        isGenerating
-          ? "border-orange-500/20"
-          : "border-border hover:border-primary/20"
+        "transition-colors",
+        compact
+          ? "bg-transparent border-0 shadow-none rounded-none"
+          : cn("bg-card", isGenerating ? "border-orange-500/20" : "border-border hover:border-primary/20")
       )}
     >
-      <CardContent className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+      <CardContent className={cn(compact ? "p-2 space-y-2" : "p-3 sm:p-4 space-y-2.5 sm:space-y-3")}>
         {/* Header: Avatar + Prompt + Tags */}
         <div className="flex items-start gap-2.5 sm:gap-3">
           {/* Avatar */}
