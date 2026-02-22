@@ -295,9 +295,15 @@ async def get_style_prompt(profile_id: str, user=Depends(require_auth), supabase
     }
 
 
+# System profiles that cannot be deleted
+PROTECTED_PROFILE_IDS = {"dd1a9608-1441-4b72-bf28-83e11d4c5a60"}  # BeatstoBytes shitpost
+
+
 @router.delete("/{profile_id}")
 async def delete_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
     """Delete a style profile"""
+    if profile_id in PROTECTED_PROFILE_IDS:
+        raise HTTPException(status_code=403, detail="Bu profil sistem tarafından korunuyor ve silinemez")
     result = supabase.table("style_profiles").delete().eq("id", profile_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Profil bulunamadı")

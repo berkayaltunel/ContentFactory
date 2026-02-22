@@ -263,8 +263,11 @@ async def list_transfer_profiles(user=Depends(require_auth)):
         .order("updated_at", desc=True) \
         .execute()
 
+    HIDDEN_IDS = {"dd1a9608-1441-4b72-bf28-83e11d4c5a60", "f3935ab1-3728-4b79-9fa9-fb895a2b4903"}
     result = []
     for p in (profiles.data or []):
+        if p.get("id") in HIDDEN_IDS:
+            continue
         fp = p.get("style_fingerprint", {})
         result.append({
             "id": p["id"],
