@@ -28,6 +28,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
+import { useProfile } from "@/contexts/ProfileContext";
 import StyleTransferMode from "@/components/generation/StyleTransferMode";
 
 // ─────────────────────────────────────────────
@@ -592,6 +593,7 @@ function CreatePersonaDialog({ open, onClose, onCreated }) {
 // MAIN: PersonaLabPage
 // ─────────────────────────────────────────────
 export default function PersonaLabPage({ embedded = false }) {
+  const { refreshProfiles } = useProfile();
   const [personas, setPersonas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePersona, setActivePersona] = useState(null);
@@ -622,6 +624,7 @@ export default function PersonaLabPage({ embedded = false }) {
     try {
       await api.delete(`${API}/styles/${id}`);
       setPersonas((prev) => prev.filter((p) => p.id !== id));
+      refreshProfiles(); // Global profil listesini güncelle
       toast.success("Persona silindi");
     } catch (e) {
       toast.error("Silinemedi");
@@ -632,6 +635,7 @@ export default function PersonaLabPage({ embedded = false }) {
 
   const handleCreated = (newProfile) => {
     loadPersonas();
+    refreshProfiles(); // Global profil listesini güncelle (XAIModule dropdown)
   };
 
   const filtered = personas.filter(
