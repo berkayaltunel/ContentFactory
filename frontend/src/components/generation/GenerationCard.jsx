@@ -384,7 +384,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
   const [versionStack, setVersionStack] = useState([]); // [{ variants, quickTags }]
   const [currentVersionIdx, setCurrentVersionIdx] = useState(-1); // -1 = original
   const [evolveTransition, setEvolveTransition] = useState(false); // fade animation
-  const [slideOverData, setSlideOverData] = useState(null); // { originalContent, variants, quickTags }
+  const [slideOverOpen, setSlideOverOpen] = useState(null); // { variantIndex, originalContent } or null
   const hasMultipleVariants = job.variants?.length > 1;
 
   // Active variants: either from version stack or original job
@@ -606,14 +606,6 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
           </div>
         )}
 
-        {/* Evolve loading state */}
-        {evolveLoading && (
-          <div className="flex items-center gap-2 py-3 px-3 rounded-lg bg-violet-500/5 animate-pulse">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
-            <span className="text-xs text-violet-400">✨ Yeni varyantlar üretiliyor...</span>
-          </div>
-        )}
-
         {isGenerating ? (
           <div className="space-y-2">
             {Array.from({ length: job.variantCount }).map((_, i) => (
@@ -717,7 +709,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setEvolveIndex(evolveIndex === index ? null : index)}
+                      onClick={() => setSlideOverOpen(slideOverOpen?.variantIndex === index ? null : { variantIndex: index, originalContent: variant.content })}
                       className="gap-1.5 text-violet-400 hover:text-violet-300"
                       title={t('evolve.evolveButton')}
                       disabled={hasSelection}
@@ -737,56 +729,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                     </Button>
                   </div>
                 </div>
-                {evolveIndex === index && (
-                  <EvolvePanel
-                    variant={variant}
-                    onEvolve={async (feedback, quickTags, variantCount) => {
-                      setEvolveIndex(null);
-                      setEvolveLoading(true);
-                      try {
-                        const result = await onEvolve?.({
-                          parentGenerationId: job.generationId,
-                          selectedVariantIndices: [index],
-                          feedback,
-                          quickTags,
-                          variantCount,
-                        });
-                        if (result?.variants) {
-                          const mappedVariants = result.variants.map((v, i) => ({
-                            ...v,
-                            character_count: v.character_count || v.content?.length || 0,
-                            variant_index: i,
-                          }));
-                          // Open slide-over with results
-                          setSlideOverData({
-                            originalContent: variant.content,
-                            variants: mappedVariants,
-                            quickTags,
-                          });
-                          // Also push to version stack for breadcrumb nav
-                          setEvolveTransition(true);
-                          setTimeout(() => {
-                            const newVersion = {
-                              variants: mappedVariants,
-                              quickTags,
-                              depth: result.evolution_depth || 1,
-                              generationId: result.generation_id,
-                            };
-                            setVersionStack(prev => [...prev, newVersion]);
-                            setCurrentVersionIdx(versionStack.length);
-                            setEvolveTransition(false);
-                          }, 150);
-                        }
-                      } catch (e) {
-                        toast.error(t('evolve.error'));
-                      } finally {
-                        setEvolveLoading(false);
-                      }
-                    }}
-                    isLoading={evolveLoading}
-                    onClose={() => setEvolveIndex(null)}
-                  />
-                )}
+                {/* EvolvePanel removed — slide-over handles everything */}
               </div>
               );
             })}
@@ -884,14 +827,23 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
         content={imagePromptContent}
       />
 
-      {/* Evolve Slide-Over */}
+      {/* Evolve Slide-Over Studio */}
       <EvolveSlideOver
-        open={!!slideOverData}
-        onClose={() => setSlideOverData(null)}
-        originalContent={slideOverData?.originalContent}
-        variants={slideOverData?.variants}
-        quickTags={slideOverData?.quickTags}
-        onCopy={handleCopy}
+        open={!!slideOverOpen}
+        onClose={() => setSlideOverOpen(null)}
+        originalContent={slideOverOpen?.originalContent}
+        variantIndex={slideOverOpen?.variantIndex ?? 0}
+        parentGenerationId={job.generationId}
+        onEvolve={onEvolve}
+        onApply={(variants, quickTags) => {
+          setEvolveTransition(true);
+          setTimeout(() => {
+            const newVersion = { variants, quickTags, depth: versionStack.length + 1 };
+            setVersionStack(prev => [...prev, newVersion]);
+            setCurrentVersionIdx(versionStack.length);
+            setEvolveTransition(false);
+          }, 150);
+        }}
       />
     </Card>
   );
