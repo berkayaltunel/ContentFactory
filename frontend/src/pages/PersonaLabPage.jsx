@@ -392,8 +392,8 @@ function CreatePersonaDialog({ open, onClose, onCreated }) {
 
     try {
       const res = await api.post(
-        `${API}/styles/analyze`,
-        { username: clean },
+        `${API}/styles/create-from-handle`,
+        { twitter_username: clean },
         { signal: controller.signal }
       );
 
