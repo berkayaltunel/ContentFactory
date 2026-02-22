@@ -69,7 +69,7 @@ export default function EvolvePanel({ variant, variants, onEvolve, isLoading, on
         value={feedback}
         onChange={(e) => setFeedback(e.target.value)}
         placeholder={isMerge ? t('evolve.feedbackPlaceholderMerge') : t('evolve.feedbackPlaceholder')}
-        className="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/50 placeholder:text-muted-foreground/50"
+        className="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/50 placeholder:text-muted-foreground/50 transition-all"
         rows={2}
       />
 
@@ -77,7 +77,7 @@ export default function EvolvePanel({ variant, variants, onEvolve, isLoading, on
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">{t('evolve.variantCount')}:</span>
         <div className="flex gap-1.5">
-          {[3, 4, 5].map((n) => (
+          {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               onClick={() => setVariantCount(n)}
