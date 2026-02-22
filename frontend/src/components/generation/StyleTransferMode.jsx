@@ -156,6 +156,7 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
         width: "100%",
         display: "flex",
         flexDirection: "column",
+        height: "480px",
         maxHeight: "480px",
         background: "var(--m-surface, #111111)",
         border: `1.5px solid ${borderColor}`,
@@ -795,7 +796,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr auto 1fr",
-          alignItems: "start",
+          alignItems: "center",
           width: "100%",
           maxWidth: "1100px",
           margin: "0 auto",
@@ -810,7 +811,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 2: Connector 1→2 */}
-          <div style={{ display: "flex", alignItems: "center", alignSelf: "stretch", justifyContent: "center", margin: "0 -4px" }}>
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "center", margin: "0 -4px" }}>
             <Connector active={hasSource} completed={hasSource && hasPersona} vertical={false} generating={generating} />
           </div>
 
@@ -822,7 +823,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 4: Connector 2→3 */}
-          <div style={{ display: "flex", alignItems: "center", alignSelf: "stretch", justifyContent: "center", margin: "0 -4px" }}>
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "center", margin: "0 -4px" }}>
             <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={false} generating={generating} />
           </div>
 
