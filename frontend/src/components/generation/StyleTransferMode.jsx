@@ -154,9 +154,9 @@ function PipelineNode({ title, icon: Icon, index, active, completed, focused, ch
       transition={{ delay: index * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       style={{
         width: "100%",
-        flex: 1,
         display: "flex",
         flexDirection: "column",
+        maxHeight: "480px",
         background: "var(--m-surface, #111111)",
         border: `1.5px solid ${borderColor}`,
         borderRadius: "16px",
@@ -617,17 +617,21 @@ function OutputNode({ jobs, onEvolve, generating, onRetry }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px", overflowX: "hidden", wordBreak: "break-word" }}>
-      {jobs.map((job) => (
-        <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
-      ))}
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowX: "hidden", wordBreak: "break-word" }}>
+      {/* Scrollable variant list */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }} className="scrollbar-hide">
+        {jobs.map((job) => (
+          <GenerationCard key={job.id} job={job} onEvolve={onEvolve} />
+        ))}
+      </div>
+      {/* Sticky bottom button */}
       {completedJobs.length > 0 && onRetry && (
         <button onClick={onRetry} style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-          padding: "8px 0", borderRadius: "8px", width: "100%",
+          padding: "8px 0", borderRadius: "8px", width: "100%", flexShrink: 0,
           background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
           color: "var(--m-text-muted, #888)", fontSize: "12px", fontWeight: "500",
-          cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s ease", marginTop: "4px",
+          cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s ease", marginTop: "8px",
         }}
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.3)"; e.currentTarget.style.color = "#a78bfa"; }}
           onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--m-text-muted, #888)"; }}
@@ -791,7 +795,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr auto 1fr",
-          alignItems: "stretch",
+          alignItems: "start",
           width: "100%",
           maxWidth: "1100px",
           margin: "0 auto",
@@ -806,7 +810,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 2: Connector 1→2 */}
-          <div style={{ display: "flex", alignItems: "center", alignSelf: "center", margin: "0 -4px" }}>
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "stretch", justifyContent: "center", margin: "0 -4px" }}>
             <Connector active={hasSource} completed={hasSource && hasPersona} vertical={false} generating={generating} />
           </div>
 
@@ -818,7 +822,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
           </div>
 
           {/* Col 4: Connector 2→3 */}
-          <div style={{ display: "flex", alignItems: "center", alignSelf: "center", margin: "0 -4px" }}>
+          <div style={{ display: "flex", alignItems: "center", alignSelf: "stretch", justifyContent: "center", margin: "0 -4px" }}>
             <Connector active={hasSource && hasPersona} completed={hasOutput} vertical={false} generating={generating} />
           </div>
 
