@@ -8,7 +8,7 @@ import { Sparkles } from "lucide-react";
 import GenerationCard from "@/components/generation/GenerationCard";
 
 function OutputNode({ data }) {
-  const { jobs, onEvolve, generating } = data;
+  const { jobs = [], onEvolve, generating } = data || {};
 
   const completedJobs = (jobs || []).filter((j) => j.status === "completed");
 

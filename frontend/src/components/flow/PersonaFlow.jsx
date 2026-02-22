@@ -164,9 +164,9 @@ function PersonaFlowInner({ preSelectedProfileId, onEvolve }) {
   const [jobs, setJobs] = useState([]);
 
   const initialNodes = [
-    { id: "source", type: "source", position: { x: 0, y: 0 }, deletable: false, data: {} },
-    { id: "persona", type: "persona", position: { x: 480, y: 20 }, deletable: false, data: {} },
-    { id: "output", type: "output", position: { x: 880, y: -20 }, deletable: false, data: {} },
+    { id: "source", type: "source", position: { x: 0, y: 0 }, deletable: false, data: { value: "", onChange: () => {}, fetchedTweet: null, onClearTweet: () => {}, onFetchTweet: () => {}, fetching: false } },
+    { id: "persona", type: "persona", position: { x: 480, y: 20 }, deletable: false, data: { profiles: [], selected: null, onSelect: () => {}, loading: true, generating: false } },
+    { id: "output", type: "output", position: { x: 880, y: -20 }, deletable: false, data: { jobs: [], onEvolve: () => {}, generating: false } },
   ];
 
   const initialEdges = [

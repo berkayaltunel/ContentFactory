@@ -12,8 +12,8 @@ const isTwitterUrl = (text) => /(?:x|twitter)\.com\/.+\/status\/\d+/.test(text);
 
 function SourceNode({ data }) {
   const {
-    value, onChange, fetchedTweet, onClearTweet, onFetchTweet, fetching,
-  } = data;
+    value = "", onChange = () => {}, fetchedTweet, onClearTweet = () => {}, onFetchTweet = () => {}, fetching,
+  } = data || {};
 
   const showUrlHint = isTwitterUrl((value || "").trim()) && !fetchedTweet;
 

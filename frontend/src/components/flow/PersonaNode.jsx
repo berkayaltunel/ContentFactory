@@ -11,8 +11,8 @@ import {
 
 function PersonaNode({ data }) {
   const {
-    profiles, selected, onSelect, loading, generating,
-  } = data;
+    profiles = [], selected, onSelect = () => {}, loading, generating,
+  } = data || {};
 
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
