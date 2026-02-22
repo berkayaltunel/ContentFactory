@@ -587,7 +587,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                   isBest={bestIdx === index && bestIdx >= 0 && styleScores[bestIdx] > 0}
                 />
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary">
                       {t('common.nCharacters', { count: variant.character_count })}
                     </Badge>
@@ -595,7 +595,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
                       <Badge variant="outline">{t('common.variant')} {index + 1}</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-0.5 sm:gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
                     <Button
                       variant="ghost"
                       size="sm"
