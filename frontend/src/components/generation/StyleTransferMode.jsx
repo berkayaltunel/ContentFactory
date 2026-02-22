@@ -768,7 +768,7 @@ export default function StyleTransferMode({ onEvolve, preSelectedProfileId }) {
       </motion.div>
 
       {/* ═══ PIPELINE ═══ */}
-      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", justifyContent: "center", gap: "0" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "center" : "flex-start", justifyContent: "center", gap: "0" }}>
         <PipelineNode title="Kaynak" icon={FileText} index={0} active={hasSource || (!hasSource && !hasPersona)} completed={hasSource} focused={sourceFocused}>
           <SourceNode value={inputValue} onChange={setInputValue} fetchedTweet={fetchedTweet}
             onClearTweet={() => setFetchedTweet(null)} onFetchTweet={() => handleFetchTweet()} fetching={fetching}
