@@ -28,7 +28,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
-import StyleTransferMode from "@/components/generation/StyleTransferMode";
+import PersonaFlow from "@/components/flow/PersonaFlow";
 
 // ─────────────────────────────────────────────
 // ANALYSIS PROGRESS OVERLAY
@@ -640,28 +640,28 @@ export default function PersonaLabPage({ embedded = false }) {
       (p.username || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // ═══ STUDIO MODE ═══
+  // ═══ STUDIO MODE — React Flow Canvas ═══
   if (activePersona) {
     return (
       <div
         style={{
-          minHeight: "calc(100vh - 80px)",
-          background: "var(--m-bg, #0a0a0a)",
-          padding: window.innerWidth < 640 ? "12px" : "24px 16px",
+          height: "calc(100vh - 64px)",
+          background: "#0A0A0A",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
+          position: "relative",
         }}
       >
-        {/* Back bar */}
+        {/* Floating back bar */}
         <div
           style={{
-            width: "100%",
-            maxWidth: "1100px",
+            position: "absolute",
+            top: "16px",
+            left: "16px",
+            zIndex: 10,
             display: "flex",
             alignItems: "center",
-            gap: "12px",
-            marginBottom: "20px",
+            gap: "10px",
           }}
         >
           <button
@@ -672,13 +672,14 @@ export default function PersonaLabPage({ embedded = false }) {
               gap: "6px",
               padding: "8px 14px",
               borderRadius: "10px",
-              background: "rgba(255,255,255,0.04)",
+              background: "rgba(24,24,27,0.9)",
               border: "1px solid rgba(255,255,255,0.08)",
-              color: "var(--m-text-muted, #888)",
+              color: "#888",
               fontSize: "13px",
               fontWeight: "500",
               cursor: "pointer",
               fontFamily: "inherit",
+              backdropFilter: "blur(12px)",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
@@ -687,7 +688,7 @@ export default function PersonaLabPage({ embedded = false }) {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-              e.currentTarget.style.color = "var(--m-text-muted, #888)";
+              e.currentTarget.style.color = "#888";
             }}
           >
             <ArrowLeft size={14} />
@@ -704,6 +705,7 @@ export default function PersonaLabPage({ embedded = false }) {
               borderRadius: "100px",
               background: "rgba(139, 92, 246, 0.08)",
               border: "1px solid rgba(139, 92, 246, 0.2)",
+              backdropFilter: "blur(12px)",
             }}
           >
             <div
@@ -729,11 +731,13 @@ export default function PersonaLabPage({ embedded = false }) {
           </div>
         </div>
 
-        {/* Pipeline workflow — pre-select this persona */}
-        <StyleTransferMode
-          preSelectedProfileId={activePersona.id}
-          onEvolve={() => {}}
-        />
+        {/* React Flow Canvas */}
+        <div style={{ flex: 1 }}>
+          <PersonaFlow
+            preSelectedProfileId={activePersona.id}
+            onEvolve={() => {}}
+          />
+        </div>
       </div>
     );
   }
