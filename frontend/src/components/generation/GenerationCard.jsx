@@ -405,7 +405,7 @@ function AccountBadge({ accountInfo }) {
   );
 }
 
-export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, avatarUrl, accountInfo, compact }) {
+export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, avatarUrl, accountInfo, sourceAccountId, compact }) {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState(() =>
     new Map(Object.entries(initialFavorites || {}).map(([k, v]) => [parseInt(k), v]))
@@ -464,6 +464,11 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
     toast.success(t('generation.twitterOpening'));
   };
 
+  // Account-scoped API config (History scope=all'da her kart farklı hesaba ait)
+  const scopedConfig = sourceAccountId
+    ? { headers: { "X-Active-Account-Id": sourceAccountId } }
+    : {};
+
   const handleFavorite = async (index, variant) => {
     const next = new Map(favorites);
     try {
@@ -472,7 +477,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
         type: job.type || "tweet",
         generation_id: job.generationId || null,
         variant_index: index,
-      });
+      }, scopedConfig);
       if (res.data.action === "added") {
         next.set(index, res.data.favorite_id);
         toast.success(t('generation.favoriteAdded'));
@@ -583,7 +588,7 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
               className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 shrink-0"
               onClick={() => {
                 if (window.confirm(t('history.deleteConfirm'))) {
-                  onDelete(job.generationId);
+                  onDelete(job.generationId, sourceAccountId);
                 }
               }}
             >
@@ -843,7 +848,10 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
         originalContent={slideOverOpen?.originalContent}
         variantIndex={slideOverOpen?.variantIndex ?? 0}
         parentGenerationId={job.generationId}
-        onEvolve={onEvolve}
+        onEvolve={sourceAccountId
+          ? (params) => onEvolve?.({ ...params, sourceAccountId })
+          : onEvolve
+        }
         mergeVariantIndices={slideOverOpen?.mergeIndices}
       />
     </Card>

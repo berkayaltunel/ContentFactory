@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
 import { useAuth } from "@/contexts/AuthContext";
+import { useAccount, getAccountAvatar } from "@/contexts/AccountContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,21 @@ import {
   CheckSquare,
   Square,
   X,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import GenerationCard from "@/components/generation/GenerationCard";
+
+/**
+ * Account-scoped API helper: request header'ına doğru account_id enjekte eder.
+ * History scope=all'da her kart farklı hesaba ait olabilir; global context'e
+ * güvenmek yerine her API call kendi hesabının ID'sini taşır.
+ */
+function accountHeaders(accountId) {
+  return accountId ? { headers: { "X-Active-Account-Id": accountId } } : {};
+}
 
 
 const TYPE_CONFIG = {
@@ -53,21 +64,30 @@ function mapGenToJob(gen) {
 export default function HistoryPage() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const { accounts } = useAccount();
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
-  // scope=all: avatar artık her kartın kendi accountInfo'sundan geliyor
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("all");             // content type filter
+  const [accountFilter, setAccountFilter] = useState(null); // null = tümü, string = account_id
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  // variant selection is now per-card (inside GenerationCard)
+
+  // Generation'dan account_id lookup (silme/evolve/bulk işlemleri için)
+  const accountIdMap = useMemo(() => {
+    const m = {};
+    generations.forEach((g) => { if (g.account_id) m[g.id] = g.account_id; });
+    return m;
+  }, [generations]);
 
   useEffect(() => {
     if (isAuthenticated) fetchHistory();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, accountFilter]);
 
-  const handleDelete = async (id) => {
+  // ── Account-scoped delete: doğru hesabın header'ını gönderir ──
+  const handleDelete = async (id, sourceAccountId) => {
+    const accId = sourceAccountId || accountIdMap[id];
     try {
-      await api.delete(`${API}/generations/${id}`);
+      await api.delete(`${API}/generations/${id}`, accountHeaders(accId));
       setGenerations((prev) => prev.filter((g) => g.id !== id));
       toast.success(t("history.deleted"));
     } catch {
@@ -91,7 +111,10 @@ export default function HistoryPage() {
     if (!window.confirm(t('history.bulkDeleteConfirm', { count: selectedIds.size }))) return;
     try {
       const ids = Array.from(selectedIds);
-      await api.delete(`${API}/generations/bulk`, { data: { ids } });
+      // Her generation kendi hesabıyla silinmeli: tekli delete loop
+      await Promise.all(ids.map((id) =>
+        api.delete(`${API}/generations/${id}`, accountHeaders(accountIdMap[id]))
+      ));
       setGenerations((prev) => prev.filter((g) => !selectedIds.has(g.id)));
       toast.success(t('history.allDeleted', { count: ids.length }));
       setSelectedIds(new Set());
@@ -110,17 +133,20 @@ export default function HistoryPage() {
     });
   };
 
-  const handleEvolve = async ({ parentGenerationId, selectedVariantIndices, feedback, quickTags, variantCount }) => {
+  // ── Account-scoped evolve ──
+  const handleEvolve = async ({ parentGenerationId, selectedVariantIndices, feedback, quickTags, variantCount, sourceAccountId }) => {
+    const accId = sourceAccountId || accountIdMap[parentGenerationId];
     try {
-      await api.post(`${API}/evolve`, {
+      const res = await api.post(`${API}/evolve`, {
         parent_generation_id: parentGenerationId,
         selected_variant_indices: selectedVariantIndices,
         feedback,
         quick_tags: quickTags,
         variant_count: variantCount,
-      });
+      }, accountHeaders(accId));
       toast.success(t('evolve.success'));
       fetchHistory();
+      return res.data;
     } catch (e) {
       toast.error(t('evolve.error'));
       throw e;
@@ -129,7 +155,9 @@ export default function HistoryPage() {
 
   const fetchHistory = async () => {
     try {
-      const response = await api.get(`${API}/generations/history?limit=50&scope=all`);
+      let url = `${API}/generations/history?limit=50&scope=all`;
+      if (accountFilter) url += `&filter_account_id=${accountFilter}`;
+      const response = await api.get(url);
       setGenerations(response.data || []);
     } catch (error) {
       console.error("History fetch error:", error);
@@ -137,6 +165,16 @@ export default function HistoryPage() {
       setLoading(false);
     }
   };
+
+  // ── Hesap bazlı sayıları hesapla (tab badge) ──
+  const accountCounts = useMemo(() => {
+    const m = {};
+    generations.forEach((g) => {
+      const aid = g.account_id;
+      if (aid) m[aid] = (m[aid] || 0) + 1;
+    });
+    return m;
+  }, [generations]);
 
   const filteredGenerations = filter === "all"
     ? generations
@@ -166,6 +204,49 @@ export default function HistoryPage() {
           {t('history.subtitle')}
         </p>
       </div>
+
+      {/* ── Hesap Filtresi (Tab Bar) ── */}
+      {accounts.length > 1 && (
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+          <button
+            onClick={() => setAccountFilter(null)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
+              !accountFilter
+                ? "bg-white/10 text-foreground border-white/20"
+                : "bg-transparent text-muted-foreground border-transparent hover:bg-white/5"
+            )}
+          >
+            Tümü
+          </button>
+          {accounts.filter(a => a.platform !== "default").map((acc) => {
+            const isActive = accountFilter === acc.id;
+            const count = accountCounts[acc.id] || 0;
+            const avatarUrl = getAccountAvatar(acc);
+            return (
+              <button
+                key={acc.id}
+                onClick={() => setAccountFilter(isActive ? null : acc.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all border",
+                  isActive
+                    ? "bg-white/10 text-foreground border-white/20"
+                    : "bg-transparent text-muted-foreground border-transparent hover:bg-white/5"
+                )}
+              >
+                {avatarUrl && (
+                  <img src={avatarUrl} alt="" className="w-4 h-4 rounded-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+                )}
+                <span className="truncate max-w-[120px]">@{acc.username}</span>
+                {count > 0 && (
+                  <span className="text-[11px] text-muted-foreground">({count})</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {generations.length === 0 ? (
         <Card className="bg-card border-border">
@@ -298,6 +379,7 @@ export default function HistoryPage() {
                     initialFavorites={gen.favorited_variants}
                     onEvolve={handleEvolve}
                     accountInfo={gen.account_info}
+                    sourceAccountId={gen.account_id}
                   />
                 </div>
               </div>
