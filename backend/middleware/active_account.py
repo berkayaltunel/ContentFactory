@@ -53,8 +53,9 @@ async def get_active_account(
         if ownership.data:
             return x_active_account_id
         else:
-            logger.warning(f"IDOR attempt: user {user.id} tried account {x_active_account_id}")
-            # Header'daki ID bu user'a ait değil, fallback'e düş
+            # Stale localStorage veya IDOR: uyarı seviyesi yeter (deleted/başkasına ait)
+            logger.info(f"Active account miss (stale/deleted/IDOR): user {user.id}, account {x_active_account_id}")
+            # Fallback'e düş
 
     # 2. user_settings'ten (fallback)
     try:

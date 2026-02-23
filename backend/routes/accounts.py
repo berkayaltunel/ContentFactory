@@ -152,13 +152,36 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
 
     now = datetime.now(timezone.utc).isoformat()
 
-    # Mevcut AYNI hesap var mı? (platform + username bazlı, multi-account safe)
+    # ── Provider ID çek (Twitter: değişmez numeric ID) ──
+    provider_id = None
+    if platform == "twitter":
+        try:
+            from services.twitter_scraper import scraper
+            user_info = await scraper.get_user_info_async(username)
+            if user_info and user_info.get("user_id"):
+                provider_id = str(user_info["user_id"])
+        except Exception as e:
+            logger.warning(f"Provider ID fetch failed for @{username}: {e}")
+
+    # ── 1. Username bazlı eşleşme (aktif hesap güncelleme) ──
     existing = supabase.table("connected_accounts") \
-        .select("id, deleted_at, status") \
+        .select("id, deleted_at, status, provider_id") \
         .eq("user_id", user.id) \
         .eq("platform", platform) \
         .eq("username", username) \
         .execute()
+
+    # ── 2. Provider ID bazlı eşleşme (username değişmiş olabilir) ──
+    if not existing.data and provider_id:
+        existing = supabase.table("connected_accounts") \
+            .select("id, deleted_at, status, provider_id, username") \
+            .eq("user_id", user.id) \
+            .eq("platform", platform) \
+            .eq("provider_id", provider_id) \
+            .execute()
+        if existing.data:
+            old_username = existing.data[0].get("username", "?")
+            logger.info(f"Provider ID match: @{old_username} → @{username} (provider_id={provider_id})")
 
     if existing.data:
         record = existing.data[0]
@@ -174,6 +197,7 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
                     "deleted_at": None,
                     "broken_reason": None,
                     "broken_at": None,
+                    "provider_id": provider_id or record.get("provider_id"),
                     "updated_at": now,
                 }) \
                 .eq("id", restored_id) \
@@ -181,9 +205,11 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
             logger.info(f"Account restored: {platform}/{username} (id={restored_id}) for user {user.id}")
             return {"success": True, "id": restored_id, "restored": True}
 
-        # ── Normal güncelleme (aynı username, label değişikliği vs.) ──
-        update_data = {"updated_at": now, "status": "active",
+        # ── Normal güncelleme ──
+        update_data = {"username": username, "updated_at": now, "status": "active",
                        "broken_reason": None, "broken_at": None}
+        if provider_id and not record.get("provider_id"):
+            update_data["provider_id"] = provider_id  # Retroaktif provider_id doldur
         if body.label is not None:
             update_data["label"] = body.label
         result = supabase.table("connected_accounts") \
@@ -238,6 +264,7 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
         "user_id": user.id,
         "platform": platform,
         "username": username,
+        "provider_id": provider_id,
         "is_primary": is_first,
         "label": body.label,
         "status": "active",
