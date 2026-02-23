@@ -367,7 +367,45 @@ function StyleScoreCard({ scores, isBest }) {
   );
 }
 
-export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, avatarUrl, compact }) {
+const PLATFORM_AVATAR_FN = {
+  twitter: (u) => `https://unavatar.io/twitter/${u}`,
+  tiktok: (u) => `https://unavatar.io/tiktok/${u}`,
+  youtube: (u) => `https://unavatar.io/youtube/${u}`,
+  linkedin: (u) => `https://unavatar.io/linkedin/${u}`,
+  instagram: (u) => `https://unavatar.io/instagram/${u}`,
+};
+
+const PLATFORM_COLORS = {
+  twitter: "bg-sky-500/10 text-sky-400 border-sky-500/20",
+  tiktok: "bg-pink-500/10 text-pink-400 border-pink-500/20",
+  youtube: "bg-red-500/10 text-red-400 border-red-500/20",
+  linkedin: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  instagram: "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20",
+};
+
+function AccountBadge({ accountInfo }) {
+  if (!accountInfo) return null;
+  const { platform, username } = accountInfo;
+  const avatarFn = PLATFORM_AVATAR_FN[platform];
+  const avatarUrl = avatarFn ? avatarFn(username) : null;
+  const colors = PLATFORM_COLORS[platform] || "bg-white/5 text-white/50 border-white/10";
+
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium shrink-0", colors)}>
+      {avatarUrl && (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="w-4 h-4 rounded-full object-cover"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+      )}
+      <span className="truncate max-w-[100px]">@{username}</span>
+    </span>
+  );
+}
+
+export default function GenerationCard({ job, onEvolve, onDelete, showDate, createdAt, tweetContent, tweetUrl, initialFavorites, avatarUrl, accountInfo, compact }) {
   const { t } = useTranslation();
   const [favorites, setFavorites] = useState(() =>
     new Map(Object.entries(initialFavorites || {}).map(([k, v]) => [parseInt(k), v]))
@@ -448,11 +486,21 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
     setFavorites(next);
   };
 
+  // Avatar: accountInfo > avatarUrl prop > fallback letter
+  const resolvedAvatarUrl = (() => {
+    if (avatarUrl) return avatarUrl;
+    if (accountInfo?.username && accountInfo?.platform) {
+      const fn = PLATFORM_AVATAR_FN[accountInfo.platform];
+      return fn ? fn(accountInfo.username) : null;
+    }
+    return null;
+  })();
+
   const renderAvatar = () => {
-    if (avatarUrl) {
+    if (resolvedAvatarUrl) {
       return (
         <img
-          src={avatarUrl}
+          src={resolvedAvatarUrl}
           alt=""
           className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover shrink-0"
           onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
@@ -504,18 +552,21 @@ export default function GenerationCard({ job, onEvolve, onDelete, showDate, crea
             </div>
           </div>
 
-          {/* Date badge */}
-          {showDate && createdAt && (
-            <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {new Date(createdAt).toLocaleDateString("tr-TR", {
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
+          {/* Account badge + Date */}
+          <div className="flex items-center gap-2 shrink-0">
+            {accountInfo && <AccountBadge accountInfo={accountInfo} />}
+            {showDate && createdAt && (
+              <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(createdAt).toLocaleDateString("tr-TR", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
 
           {/* Status */}
           {isGenerating && (

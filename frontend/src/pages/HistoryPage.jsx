@@ -55,22 +55,7 @@ export default function HistoryPage() {
   const { isAuthenticated } = useAuth();
   const [generations, setGenerations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [accountAvatarUrl, setAccountAvatarUrl] = useState(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get(`${API}/accounts`);
-        const accounts = res.data || [];
-        const primary = accounts.find(a => a.is_primary) || accounts[0];
-        if (primary?.username) {
-          const avatars = { twitter: u => `https://unavatar.io/x/${u}`, instagram: u => `${API}/accounts/avatar/instagram/${u}`, youtube: u => `https://unavatar.io/youtube/${u}`, tiktok: u => `https://unavatar.io/tiktok/${u}` };
-          const fn = avatars[primary.platform];
-          if (fn) setAccountAvatarUrl(fn(primary.username));
-        }
-      } catch {}
-    })();
-  }, []);
+  // scope=all: avatar artık her kartın kendi accountInfo'sundan geliyor
   const [filter, setFilter] = useState("all");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -144,7 +129,7 @@ export default function HistoryPage() {
 
   const fetchHistory = async () => {
     try {
-      const response = await api.get(`${API}/generations/history?limit=50`);
+      const response = await api.get(`${API}/generations/history?limit=50&scope=all`);
       setGenerations(response.data || []);
     } catch (error) {
       console.error("History fetch error:", error);
@@ -312,7 +297,7 @@ export default function HistoryPage() {
                     tweetUrl={gen.tweet_url}
                     initialFavorites={gen.favorited_variants}
                     onEvolve={handleEvolve}
-                    avatarUrl={accountAvatarUrl || undefined}
+                    accountInfo={gen.account_info}
                   />
                 </div>
               </div>

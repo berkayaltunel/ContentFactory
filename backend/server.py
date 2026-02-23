@@ -939,9 +939,31 @@ async def get_generation_calendar(year: int = None, month: int = None, user=Depe
     }
 
 @api_router.get("/generations/history")
-async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
-    """Get generation history with favorite status"""
-    query = supabase.table("generations").select("*").eq("user_id", user.id).eq("account_id", account_id).order("created_at", desc=True).limit(limit)
+async def get_generation_history(
+    limit: int = 50,
+    content_type: Optional[str] = None,
+    scope: str = "account",
+    filter_account_id: Optional[str] = None,
+    user=Depends(require_auth),
+    account_id: str = Depends(get_active_account),
+):
+    """Get generation history with favorite status.
+    scope=all: tüm hesaplar karışık, scope=account: sadece aktif hesap.
+    filter_account_id: belirli bir hesaba filtrele (scope=all ile birlikte).
+    """
+    query = supabase.table("generations").select("*").eq("user_id", user.id)
+
+    if scope == "all":
+        # Opsiyonel: belirli bir hesaba filtrele (ownership check)
+        if filter_account_id:
+            own = supabase.table("connected_accounts").select("id").eq("id", filter_account_id).eq("user_id", user.id).limit(1).execute()
+            if own.data:
+                query = query.eq("account_id", filter_account_id)
+        # else: tüm hesapların verisini getir
+    else:
+        query = query.eq("account_id", account_id)
+
+    query = query.order("created_at", desc=True).limit(limit)
     if content_type:
         query = query.eq("type", content_type)
     result = query.execute()
@@ -950,9 +972,12 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
     if not generations:
         return []
 
-    # Fetch all active favorites for this user that have a generation_id (exclude soft-deleted)
-    fav_result = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).eq("account_id", account_id).not_.is_("generation_id", "null").is_("deleted_at", "null").execute()
-    
+    # Fetch favorites (scope=all ise tüm hesapların favorileri)
+    fav_query = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).not_.is_("generation_id", "null").is_("deleted_at", "null")
+    if scope != "all":
+        fav_query = fav_query.eq("account_id", account_id)
+    fav_result = fav_query.execute()
+
     # Build lookup: generation_id -> {variant_index: favorite_id}
     fav_map = {}
     for fav in (fav_result.data or []):
@@ -961,9 +986,22 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
             fav_map[gid] = {}
         fav_map[gid][fav["variant_index"]] = fav["id"]
 
-    # Attach favorite info to each generation
+    # scope=all: hesap bilgilerini ekle
+    account_map = {}
+    if scope == "all":
+        acc_result = supabase.table("connected_accounts").select("id, platform, username, display_name").eq("user_id", user.id).execute()
+        for acc in (acc_result.data or []):
+            account_map[acc["id"]] = {
+                "platform": acc["platform"],
+                "username": acc["username"],
+                "display_name": acc.get("display_name"),
+            }
+
+    # Attach favorite + account info to each generation
     for gen in generations:
         gen["favorited_variants"] = fav_map.get(gen["id"], {})
+        if scope == "all" and gen.get("account_id"):
+            gen["account_info"] = account_map.get(gen["account_id"])
 
     return generations
 
