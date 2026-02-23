@@ -280,6 +280,25 @@ export default function DashboardLayout() {
     refreshAccounts,
   } = useAccount();
 
+  // Context-aware platform detection: URL'den aktif platformu oku
+  const currentPlatform = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    if (location.pathname.includes('/create')) return params.get('platform') || 'twitter';
+    if (location.pathname.includes('/coach')) return 'twitter';
+    if (location.pathname.includes('/account-analysis')) return 'twitter';
+    if (location.pathname.includes('/youtube-studio')) return 'youtube';
+    return null; // generic pages → tüm hesapları göster
+  }, [location.pathname, location.search]);
+
+  // Platform context varsa filtrele, yoksa hepsini göster
+  const switcherAccounts = currentPlatform
+    ? connectedAccounts.filter(a => a.platform === currentPlatform)
+    : connectedAccounts;
+
+  const currentPlatformLabel = currentPlatform
+    ? (PLATFORMS.find(p => p.id === currentPlatform)?.label || currentPlatform)
+    : null;
+
   const activeAvatarUrl = activeAccount ? getAccountAvatar(activeAccount) : null;
   const activeDisplayName = activeAccount
     ? `@${activeAccount.username}`
@@ -466,13 +485,13 @@ export default function DashboardLayout() {
                   <p className="text-xs text-white/50 truncate">{user.email}</p>
                 </div>
 
-                {/* ── Account Switcher ── */}
-                {connectedAccounts.length > 0 && (
+                {/* ── Workspace Switcher (sadece Twitter) ── */}
+                {switcherAccounts.length > 0 && (
                   <div className="py-1.5 border-b border-white/10">
                     <p className="px-3 py-1 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
                       Hesaplar
                     </p>
-                    {connectedAccounts.map((acc) => {
+                    {switcherAccounts.map((acc) => {
                       const isActiveAcc = acc.id === activeAccountId;
                       const accAvatar = getAccountAvatar(acc);
                       const hasIssue = acc.status && acc.status !== "active";
@@ -507,16 +526,32 @@ export default function DashboardLayout() {
                         </DropdownMenuItem>
                       );
                     })}
+                    {/* Hesap yönetimi → Ayarlar */}
+                    <button
+                      onClick={() => setSettingsOpen(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 mt-1 w-full text-[11px] text-white/30 hover:text-white/50 transition-colors"
+                    >
+                      <Settings className="h-3 w-3" />
+                      <span>Hesapları Yönet</span>
+                    </button>
                   </div>
                 )}
 
-                {/* Connected Accounts Management */}
-                <ConnectedAccountsSection
-                  accounts={connectedAccounts}
-                  onSave={handleSaveAccount}
-                  onDelete={handleDeleteAccount}
-                  onSetPrimary={handleSetPrimary}
-                />
+                {/* Empty state: platform context var ama hesap yok */}
+                {switcherAccounts.length === 0 && currentPlatform && (
+                  <div className="py-2 border-b border-white/10">
+                    <p className="px-3 py-1 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+                      Hesaplar
+                    </p>
+                    <button
+                      onClick={() => setSettingsOpen(true)}
+                      className="flex items-center gap-2 mx-3 my-1 px-3 py-2 w-[calc(100%-24px)] rounded-lg bg-white/[0.04] border border-dashed border-white/10 text-white/50 hover:text-white/70 hover:bg-white/[0.08] transition-colors text-xs"
+                    >
+                      <span className="text-base">➕</span>
+                      <span>{currentPlatformLabel} Hesabı Bağla</span>
+                    </button>
+                  </div>
+                )}
 
                 <DropdownMenuSeparator className="bg-white/10" />
 
@@ -648,7 +683,55 @@ export default function DashboardLayout() {
                   <p className="text-sm font-medium text-white">{user.name}</p>
                   <p className="text-xs text-white/50 truncate">{user.email}</p>
                 </div>
-                <ConnectedAccountsSection accounts={connectedAccounts} onSave={handleSaveAccount} onDelete={handleDeleteAccount} onSetPrimary={handleSetPrimary} />
+                {/* ── Mobile Context-Aware Switcher ── */}
+                {switcherAccounts.length > 0 && (
+                  <div className="py-1.5 border-b border-white/10">
+                    <p className="px-3 py-1 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+                      Hesaplar
+                    </p>
+                    {switcherAccounts.map((acc) => {
+                      const isActiveAcc = acc.id === activeAccountId;
+                      const accAvatar = getAccountAvatar(acc);
+                      return (
+                        <DropdownMenuItem
+                          key={acc.id}
+                          onClick={() => !isActiveAcc && switchAccount(acc.id)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer mx-1",
+                            "hover:bg-white/10 focus:bg-white/10",
+                            isActiveAcc && "bg-white/[0.06]"
+                          )}
+                        >
+                          <Avatar className="h-7 w-7 ring-1 ring-white/10 shrink-0">
+                            {accAvatar && <AvatarImage src={accAvatar} alt={acc.username} />}
+                            <AvatarFallback className="bg-zinc-700 text-white text-[10px] font-bold">
+                              {acc.username?.charAt(0)?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white/90 truncate">@{acc.username}</p>
+                          </div>
+                          {isActiveAcc && <Check className="h-4 w-4 text-emerald-400" />}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Mobile empty state */}
+                {switcherAccounts.length === 0 && currentPlatform && (
+                  <div className="py-2 border-b border-white/10">
+                    <p className="px-3 py-1 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+                      Hesaplar
+                    </p>
+                    <button
+                      onClick={() => setSettingsOpen(true)}
+                      className="flex items-center gap-2 mx-3 my-1 px-3 py-2 w-[calc(100%-24px)] rounded-lg bg-white/[0.04] border border-dashed border-white/10 text-white/50 hover:text-white/70 text-xs"
+                    >
+                      <span className="text-base">➕</span>
+                      <span>{currentPlatformLabel} Hesabı Bağla</span>
+                    </button>
+                  </div>
+                )}
                 <DropdownMenuSeparator className="bg-white/10" />
                 {profileMenuItems.map((item) => {
                   const Icon = item.icon;
@@ -717,12 +800,35 @@ export default function DashboardLayout() {
 
       {/* ── Settings Dialog ── */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-outfit">{t('settings.title')}</DialogTitle>
             <DialogDescription>{t('settings.subtitle')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
+            {user && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('settings.account')}</label>
+                <div className="p-3 rounded-lg bg-secondary/50">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Bağlı Hesaplar */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Bağlı Hesaplar</label>
+              <div className="rounded-lg bg-[#1A1A1A] border border-white/10 overflow-hidden">
+                <ConnectedAccountsSection
+                  accounts={connectedAccounts}
+                  onSave={handleSaveAccount}
+                  onDelete={handleDeleteAccount}
+                  onSetPrimary={handleSetPrimary}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">{t('settings.theme')}</label>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -736,15 +842,6 @@ export default function DashboardLayout() {
                 {t('settings.openaiConnected')}
               </div>
             </div>
-            {user && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('settings.account')}</label>
-                <div className="p-3 rounded-lg bg-secondary/50">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
