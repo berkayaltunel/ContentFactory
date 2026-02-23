@@ -31,21 +31,32 @@ async def get_active_account(
     x_active_account_id: Optional[str] = Header(None),
 ) -> Optional[str]:
     """
-    Aktif hesap ID'sini çöz.
+    Aktif hesap ID'sini çöz + AİDİYET KONTROLÜ.
 
     Öncelik:
-    1. X-Active-Account-Id header (frontend gönderiyorsa)
+    1. X-Active-Account-Id header (frontend gönderiyorsa) → ownership check
     2. user_settings.active_account_id (fallback)
     3. Primary connected_account (son fallback)
     4. None (hesap yok)
     """
-    # 1. Header'dan
-    if x_active_account_id and x_active_account_id != "null":
-        return x_active_account_id
+    sb = _get_supabase()
 
-    # 2. user_settings'ten (fallback, cache'lenebilir)
+    # 1. Header'dan (+ IDOR koruması: bu hesap bu user'a ait mi?)
+    if x_active_account_id and x_active_account_id != "null":
+        ownership = sb.table("connected_accounts") \
+            .select("id") \
+            .eq("id", x_active_account_id) \
+            .eq("user_id", user.id) \
+            .limit(1) \
+            .execute()
+        if ownership.data:
+            return x_active_account_id
+        else:
+            logger.warning(f"IDOR attempt: user {user.id} tried account {x_active_account_id}")
+            # Header'daki ID bu user'a ait değil, fallback'e düş
+
+    # 2. user_settings'ten (fallback)
     try:
-        sb = _get_supabase()
         res = sb.table("user_settings") \
             .select("active_account_id") \
             .eq("user_id", user.id) \
@@ -59,7 +70,6 @@ async def get_active_account(
 
     # 3. Primary account (son fallback)
     try:
-        sb = _get_supabase()
         res = sb.table("connected_accounts") \
             .select("id") \
             .eq("user_id", user.id) \
