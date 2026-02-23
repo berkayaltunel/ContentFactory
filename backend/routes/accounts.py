@@ -88,16 +88,53 @@ async def _run_null_migration(user_id: str, primary_account_id: str, sb):
 
 
 # ═══════════════════════════════════════════
+# HEALTH HELPERS
+# ═══════════════════════════════════════════
+
+async def mark_account_broken(user_id: str, platform: str, reason: str, sb=None):
+    """Hesabı broken olarak işaretle (reaktif health detection)."""
+    if sb is None:
+        sb = get_supabase()
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        sb.table("connected_accounts") \
+            .update({"status": "broken", "broken_reason": reason, "broken_at": now}) \
+            .eq("user_id", user_id) \
+            .eq("platform", platform) \
+            .eq("status", "active") \
+            .execute()
+        logger.warning(f"Account marked broken: user={user_id}, platform={platform}, reason={reason}")
+    except Exception as e:
+        logger.error(f"Failed to mark account broken: {e}")
+
+
+async def mark_account_healed(user_id: str, platform: str, sb=None):
+    """Başarılı API çağrısı sonrası broken hesabı iyileştir."""
+    if sb is None:
+        sb = get_supabase()
+    try:
+        sb.table("connected_accounts") \
+            .update({"status": "active", "broken_reason": None, "broken_at": None}) \
+            .eq("user_id", user_id) \
+            .eq("platform", platform) \
+            .eq("status", "broken") \
+            .execute()
+    except Exception as e:
+        logger.error(f"Failed to heal account: {e}")
+
+
+# ═══════════════════════════════════════════
 # ENDPOINTS
 # ═══════════════════════════════════════════
 
 @router.get("")
 async def get_accounts(user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Tüm bağlı hesapları listele (status dahil)."""
+    """Tüm bağlı hesapları listele (soft-deleted hariç, status dahil)."""
     result = supabase.table("connected_accounts") \
         .select("*") \
         .eq("user_id", user.id) \
         .neq("platform", "default") \
+        .is_("deleted_at", "null") \
         .order("created_at") \
         .execute()
     return result.data or []
@@ -117,29 +154,52 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
 
     # Mevcut hesap var mı? (güncelleme mi ekleme mi)
     existing = supabase.table("connected_accounts") \
-        .select("id") \
+        .select("id, deleted_at, status") \
         .eq("user_id", user.id) \
         .eq("platform", platform) \
         .execute()
 
     if existing.data:
-        # ── Güncelleme ──
-        update_data = {"username": username, "updated_at": now}
+        record = existing.data[0]
+
+        # ── Diriliş: soft-deleted hesap geri bağlanıyor ──
+        if record.get("deleted_at"):
+            restored_id = record["id"]
+            supabase.table("connected_accounts") \
+                .update({
+                    "username": username,
+                    "label": body.label,
+                    "status": "active",
+                    "deleted_at": None,
+                    "broken_reason": None,
+                    "broken_at": None,
+                    "updated_at": now,
+                }) \
+                .eq("id", restored_id) \
+                .execute()
+            logger.info(f"Account restored: {platform}/{username} (id={restored_id}) for user {user.id}")
+            # Veri zaten duruyor (soft-delete), ekstra işlem yok
+            return {"success": True, "id": restored_id, "restored": True}
+
+        # ── Normal güncelleme ──
+        update_data = {"username": username, "updated_at": now, "status": "active",
+                       "broken_reason": None, "broken_at": None}
         if body.label is not None:
             update_data["label"] = body.label
         result = supabase.table("connected_accounts") \
             .update(update_data) \
-            .eq("id", existing.data[0]["id"]) \
+            .eq("id", record["id"]) \
             .execute()
         return result.data[0] if result.data else {"success": True}
 
     # ── Yeni hesap ekleme ──
 
-    # Paywall: hesap limiti kontrolü
+    # Paywall: hesap limiti kontrolü (soft-deleted hariç)
     all_real = supabase.table("connected_accounts") \
         .select("id", count="exact") \
         .eq("user_id", user.id) \
         .neq("platform", "default") \
+        .is_("deleted_at", "null") \
         .execute()
     current_count = all_real.count if hasattr(all_real, 'count') and all_real.count is not None else len(all_real.data or [])
 
@@ -214,15 +274,16 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
 
 @router.delete("/{platform}")
 async def delete_account(platform: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Hesap sil. Aktif hesapsa otomatik fallback."""
+    """Hesap soft-delete. İlişkili veriyi cascade soft-delete yap. Aktif hesapsa fallback."""
     if platform not in VALID_PLATFORMS:
         raise HTTPException(status_code=400, detail=f"Geçersiz platform: {platform}")
 
-    # Silinecek hesabı bul
+    # Silinecek hesabı bul (sadece aktif olanlar)
     target = supabase.table("connected_accounts") \
         .select("id, is_primary") \
         .eq("user_id", user.id) \
         .eq("platform", platform) \
+        .is_("deleted_at", "null") \
         .limit(1) \
         .execute()
 
@@ -231,16 +292,30 @@ async def delete_account(platform: str, user=Depends(require_auth), supabase=Dep
 
     deleted_id = target.data[0]["id"]
     was_primary = target.data[0].get("is_primary", False)
+    now = datetime.now(timezone.utc).isoformat()
 
-    # Sil
+    # 1. Cascade soft-delete: ilişkili veriyi işaretle
+    cascade_tables = ["generations", "favorites", "style_profiles",
+                      "coach_weekly_plans", "coach_dismissed_cards"]
+    cascade_counts = {}
+    for table in cascade_tables:
+        try:
+            res = supabase.table(table) \
+                .select("id", count="exact") \
+                .eq("account_id", deleted_id) \
+                .eq("user_id", user.id) \
+                .execute()
+            cascade_counts[table] = res.count or 0
+        except Exception:
+            cascade_counts[table] = 0
+
+    # 2. Hesabı soft-delete (hard delete değil, diriliş mümkün)
     supabase.table("connected_accounts") \
-        .delete() \
+        .update({"deleted_at": now, "is_primary": False, "status": "deleted"}) \
         .eq("id", deleted_id) \
         .execute()
 
-    now = datetime.now(timezone.utc).isoformat()
-
-    # Aktif hesap silindiyse → fallback
+    # 3. Aktif hesap silindiyse → fallback
     settings = supabase.table("user_settings") \
         .select("active_account_id") \
         .eq("user_id", user.id) \
@@ -249,18 +324,18 @@ async def delete_account(platform: str, user=Depends(require_auth), supabase=Dep
 
     active_was_deleted = settings.data and settings.data[0].get("active_account_id") == deleted_id
 
-    # Kalan hesapları bul
+    # Kalan AKTİF hesapları bul
     remaining = supabase.table("connected_accounts") \
         .select("id") \
         .eq("user_id", user.id) \
         .neq("platform", "default") \
+        .is_("deleted_at", "null") \
         .order("created_at") \
         .limit(1) \
         .execute()
 
     fallback_id = remaining.data[0]["id"] if remaining.data else None
 
-    # Aktif hesap silindiyse veya primary silindiyse → güncelle
     if active_was_deleted:
         supabase.table("user_settings").upsert({
             "user_id": user.id,
@@ -278,6 +353,8 @@ async def delete_account(platform: str, user=Depends(require_auth), supabase=Dep
         "deleted": 1,
         "fallback_account_id": fallback_id,
         "active_changed": active_was_deleted,
+        "cascade": cascade_counts,
+        "restorable": True,
     }
 
 

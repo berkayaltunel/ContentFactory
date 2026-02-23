@@ -137,6 +137,27 @@ export function AccountProvider({ children }) {
     return () => api.interceptors.request.eject(interceptor);
   }, [effectiveAccountId]);
 
+  // ── ACCOUNT_BROKEN event: hesabı broken olarak işaretle (reaktif) ──
+  useEffect(() => {
+    const handler = (e) => {
+      const { platform } = e.detail || {};
+      if (!platform) return;
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.platform === platform && a.status === "active"
+            ? { ...a, status: "broken", broken_reason: e.detail.message }
+            : a
+        )
+      );
+      toast.error(`⚠️ ${platform.charAt(0).toUpperCase() + platform.slice(1)} bağlantınız koptu`, {
+        description: "Hesap ayarlarından yeniden bağlayın.",
+        duration: 8000,
+      });
+    };
+    window.addEventListener("account-broken", handler);
+    return () => window.removeEventListener("account-broken", handler);
+  }, []);
+
   return (
     <AccountContext.Provider value={{
       accounts,

@@ -2121,4 +2121,26 @@ async def get_settings_options():
 async def validate_settings_endpoint(etki: str = "patlassin", karakter: str = "uzman", yapi: str = "dogal"):
     """Validate a settings combination."""
     return validate_settings(etki, karakter, yapi)
+
+# ── Global AccountBrokenError handler ──
+from exceptions import AccountBrokenError
+from routes.accounts import mark_account_broken
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(AccountBrokenError)
+async def account_broken_handler(request: Request, exc: AccountBrokenError):
+    """Twitter 401/403 yakalandığında hesabı broken işaretle ve frontend'e özel code dön."""
+    user_id = getattr(getattr(request.state, "user", None), "id", None)
+    if user_id:
+        await mark_account_broken(user_id, exc.platform, exc.reason)
+    return JSONResponse(
+        status_code=403,
+        content={
+            "code": "ACCOUNT_BROKEN",
+            "platform": exc.platform,
+            "message": f"{exc.platform.title()} bağlantınız koptu: {exc.reason}",
+            "action": "reconnect",
+        },
+    )
+
 app.include_router(api_router)

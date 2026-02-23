@@ -836,6 +836,26 @@ export default function DashboardLayout() {
       {/* ── Main Content ── */}
       <main className="pt-14 md:pt-20 pb-24 md:pb-8 px-3 md:px-8">
         <div className="max-w-6xl mx-auto">
+          {/* Broken Account Banner (sadece aktif hesap broken ise) */}
+          {effectiveAccount?.status === "broken" && (
+            <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              <span className="text-lg">⚠️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-300">
+                  @{effectiveAccount.username} bağlantısı kopmuş
+                </p>
+                <p className="text-xs text-amber-300/60 mt-0.5">
+                  {effectiveAccount.broken_reason || "Token süresi dolmuş olabilir. Hesabı yeniden bağlayın."}
+                </p>
+              </div>
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition-colors"
+              >
+                Yeniden Bağla
+              </button>
+            </div>
+          )}
           <Outlet />
         </div>
       </main>

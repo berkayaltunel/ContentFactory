@@ -114,6 +114,10 @@ async def require_auth(authorization: Optional[str] = Header(None), request: Req
         )
     # else: DEBUG mode with no ALLOWED_EMAILS -> allow all (dev mode)
 
+    # Exception handler'lar için user'ı request state'e kaydet
+    if request:
+        request.state.user = user
+
     return user
 
 

@@ -42,18 +42,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Sanitize error responses - never expose internal details to UI
+// Sanitize error responses + ACCOUNT_BROKEN detection
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      // Don't expose internal error details
       const status = error.response.status;
-      const detail = error.response.data?.detail;
+      const data = error.response.data;
+
+      // ACCOUNT_BROKEN: hesap bağlantısı kopmuş, custom event fırlat
+      if (status === 403 && data?.code === "ACCOUNT_BROKEN") {
+        window.dispatchEvent(new CustomEvent("account-broken", {
+          detail: { platform: data.platform, message: data.message },
+        }));
+        return Promise.reject(error);
+      }
 
       // Keep user-facing messages from known HTTP errors
       if (status === 401 || status === 403 || status === 429 || status === 400) {
-        // These have user-friendly messages from backend
         return Promise.reject(error);
       }
 

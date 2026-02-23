@@ -278,6 +278,10 @@ class TwitterGraphQL:
                         logger.warning(f"⏳ All cookies rate limited, waiting {wait_secs}s (attempt {attempt + 1}/{max_retries + 1})")
                         await _asyncio.sleep(wait_secs)
                         continue
+                    elif resp.status_code in (401, 403):
+                        logger.error(f"Twitter auth failed ({resp.status_code}): {resp.text[:200]}")
+                        from exceptions import AccountBrokenError
+                        raise AccountBrokenError("twitter", f"Twitter API {resp.status_code}: kimlik doğrulama başarısız")
                     else:
                         logger.error(f"Twitter GraphQL {resp.status_code}: {resp.text[:200]}")
                         return None
