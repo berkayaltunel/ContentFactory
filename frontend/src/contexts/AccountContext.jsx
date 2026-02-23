@@ -19,8 +19,8 @@ const AVATAR_PROVIDERS = {
   twitter: (u) => `https://unavatar.io/twitter/${u}`,
   instagram: (u) => `${API}/accounts/avatar/instagram/${u}`,
   youtube: (u) => `https://unavatar.io/youtube/${u}`,
-  tiktok: (u) => `https://unavatar.io/${u}`,
-  linkedin: (u) => `https://unavatar.io/${u}`,
+  tiktok: (u) => `https://unavatar.io/tiktok/${u}`,
+  linkedin: (u) => `https://unavatar.io/linkedin/${u}`,
 };
 
 export function getAccountAvatar(account) {
