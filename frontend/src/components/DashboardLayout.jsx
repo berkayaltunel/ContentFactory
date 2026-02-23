@@ -320,10 +320,15 @@ export default function DashboardLayout() {
   }, [currentPlatform, activeAccount, connectedAccounts, setOverrideAccountId]);
 
   // Navbar avatarı ve ismi: effectiveAccount (sayfa context'ine duyarlı)
+  const currentPlatformConfig = currentPlatform ? PLATFORMS.find(p => p.id === currentPlatform) : null;
+  const CurrentPlatformIcon = currentPlatformConfig?.Icon || null;
+
   const activeAvatarUrl = effectiveAccount ? getAccountAvatar(effectiveAccount) : null;
   const activeDisplayName = effectiveAccount
     ? `@${effectiveAccount.username}`
-    : user?.name?.split(" ")[0] || "U";
+    : currentPlatformConfig
+      ? currentPlatformConfig.label
+      : user?.name?.split(" ")[0] || "U";
 
   const handleSaveAccount = async (platform, username) => {
     try {
@@ -486,8 +491,16 @@ export default function DashboardLayout() {
                       src={activeAvatarUrl}
                       alt={effectiveAccount?.username || user.name}
                     />}
-                    <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
-                      {(effectiveAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
+                    <AvatarFallback className={cn(
+                      "text-white text-xs font-semibold",
+                      effectiveAccount ? "bg-purple-500" : "bg-zinc-700"
+                    )}>
+                      {effectiveAccount
+                        ? (effectiveAccount.username || user.name)?.charAt(0)?.toUpperCase() || "U"
+                        : CurrentPlatformIcon
+                          ? <CurrentPlatformIcon className="h-3.5 w-3.5 text-white/70" />
+                          : user?.name?.charAt(0)?.toUpperCase() || "U"
+                      }
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm text-white/70 font-medium hidden md:inline max-w-[100px] truncate">
@@ -693,8 +706,16 @@ export default function DashboardLayout() {
                 <button className="p-1 rounded-full focus:outline-none haptic-btn">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
                     {activeAvatarUrl && <AvatarImage src={activeAvatarUrl} alt={effectiveAccount?.username || user.name} />}
-                    <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
-                      {(effectiveAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
+                    <AvatarFallback className={cn(
+                      "text-white text-xs font-semibold",
+                      effectiveAccount ? "bg-purple-500" : "bg-zinc-700"
+                    )}>
+                      {effectiveAccount
+                        ? (effectiveAccount.username || user.name)?.charAt(0)?.toUpperCase() || "U"
+                        : CurrentPlatformIcon
+                          ? <CurrentPlatformIcon className="h-3.5 w-3.5 text-white/70" />
+                          : user?.name?.charAt(0)?.toUpperCase() || "U"
+                      }
                     </AvatarFallback>
                   </Avatar>
                 </button>
