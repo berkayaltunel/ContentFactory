@@ -5,6 +5,7 @@ Returns heatmap data (7 days x 24 hours).
 """
 from fastapi import APIRouter, Depends, Header
 from middleware.auth import require_auth
+from middleware.active_account import get_active_account
 from typing import Optional
 from collections import Counter, defaultdict
 import json
@@ -84,7 +85,7 @@ DAYS_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi",
 
 
 @router.get("/heatmap")
-async def get_posting_heatmap(user=Depends(require_auth)):
+async def get_posting_heatmap(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """
     Return 7x24 heatmap data for optimal posting times.
     Combines TR base data with user's generation/favorite patterns.
@@ -93,7 +94,7 @@ async def get_posting_heatmap(user=Depends(require_auth)):
         sb = get_supabase()
 
         # Get user's favorited content timestamps (scoped to current user)
-        favs = sb.table("favorites").select("created_at").eq("user_id", user.id).execute()
+        favs = sb.table("favorites").select("created_at").eq("user_id", user.id).eq("account_id", account_id).execute()
         fav_hours = defaultdict(int)
         for f in (favs.data or []):
             try:
@@ -157,7 +158,7 @@ async def get_posting_heatmap(user=Depends(require_auth)):
 
 
 @router.get("/best-now")
-async def get_best_time_now(user=Depends(require_auth)):
+async def get_best_time_now(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Quick check: is now a good time to post?"""
     now = datetime.utcnow()
     istanbul_hour = (now.hour + 3) % 24

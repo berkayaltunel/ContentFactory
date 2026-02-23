@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
 from middleware.auth import require_auth
+from middleware.active_account import get_active_account
 from middleware.rate_limit import rate_limit
 from middleware.token_tracker import check_token_budget, record_token_usage
 
@@ -69,7 +70,7 @@ def _get_supabase():
 
 
 @router.post("/style-transfer")
-async def style_transfer(req: StyleTransferRequest, _=Depends(rate_limit), user=Depends(require_auth)):
+async def style_transfer(req: StyleTransferRequest, _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """
     Kaynak metni hedef kişinin tarzıyla yeniden yaz.
     2 aşamalı: fikir çıkar -> hedef tarzla yeniden inşa et.
@@ -253,13 +254,13 @@ async def style_transfer(req: StyleTransferRequest, _=Depends(rate_limit), user=
 
 
 @router.get("/style-transfer/profiles")
-async def list_transfer_profiles(user=Depends(require_auth)):
+async def list_transfer_profiles(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Kullanıcının stil profillerini listele (style transfer dropdown için)."""
     supabase = _get_supabase()
 
     profiles = supabase.table("style_profiles") \
         .select("id, name, style_fingerprint, tweet_count, updated_at") \
-        .eq("user_id", user.id) \
+        .eq("user_id", user.id).eq("account_id", account_id) \
         .order("updated_at", desc=True) \
         .execute()
 

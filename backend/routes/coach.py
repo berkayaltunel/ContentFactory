@@ -8,6 +8,7 @@ POST /api/coach/dismiss      — Kartı dismiss et
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
 from middleware.auth import require_auth
+from middleware.active_account import get_active_account
 from pydantic import BaseModel
 from typing import Optional, List
 from collections import Counter
@@ -41,7 +42,7 @@ def _this_monday():
 # ═══════════════════════════════════════════
 
 @router.get("/feed")
-async def get_coach_feed(user=Depends(require_auth)):
+async def get_coach_feed(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Tüm dinamik kartları hesaplayıp priority sırasıyla döndür."""
     from services.coach_engine import (
         get_opportunity_cards,
@@ -70,7 +71,7 @@ async def get_coach_feed(user=Depends(require_auth)):
     try:
         dismissed_res = sb.table("coach_dismissed_cards") \
             .select("card_key") \
-            .eq("user_id", user.id) \
+            .eq("user_id", user.id).eq("account_id", account_id) \
             .execute()
         dismissed_keys = {d["card_key"] for d in (dismissed_res.data or [])}
         cards = [c for c in cards if c.get("key") not in dismissed_keys]
@@ -91,7 +92,7 @@ class DismissRequest(BaseModel):
 
 
 @router.post("/dismiss")
-async def dismiss_card(body: DismissRequest, user=Depends(require_auth)):
+async def dismiss_card(body: DismissRequest, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Kartı dismiss et, bir daha gösterme."""
     sb = get_supabase()
     now = datetime.now(timezone.utc).isoformat()
@@ -113,7 +114,7 @@ async def dismiss_card(body: DismissRequest, user=Depends(require_auth)):
 # ═══════════════════════════════════════════
 
 @router.get("/weekly-plan")
-async def get_weekly_plan(user=Depends(require_auth)):
+async def get_weekly_plan(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Bu haftanın planını DB'den getir. Yoksa null döndür."""
     sb = get_supabase()
     monday = _this_monday().isoformat()
@@ -121,7 +122,7 @@ async def get_weekly_plan(user=Depends(require_auth)):
     try:
         res = sb.table("coach_weekly_plans") \
             .select("*") \
-            .eq("user_id", user.id) \
+            .eq("user_id", user.id).eq("account_id", account_id) \
             .eq("week_start", monday) \
             .limit(1) \
             .execute()
@@ -150,6 +151,7 @@ class WeeklyPlanRequest(BaseModel):
 async def create_weekly_plan(
     body: WeeklyPlanRequest = WeeklyPlanRequest(),
     user=Depends(require_auth),
+    account_id: str = Depends(get_active_account),
 ):
     """GPT ile haftalık plan üret, DB'ye kaydet."""
     try:
@@ -162,7 +164,7 @@ async def create_weekly_plan(
         # Kullanıcının üretim geçmişinden context çıkar
         gen_res = sb.table("generations") \
             .select("persona, tone, length, type") \
-            .eq("user_id", user.id) \
+            .eq("user_id", user.id).eq("account_id", account_id) \
             .order("created_at", desc=True) \
             .limit(30) \
             .execute()
@@ -238,6 +240,7 @@ JSON formatında döndür:
         # DB'ye upsert
         record = {
             "user_id": user.id,
+            "account_id": account_id,
             "week_start": monday,
             "niche": body.niche,
             "plan": plan_data.get("plan", []),
@@ -247,7 +250,7 @@ JSON formatında döndür:
 
         existing = sb.table("coach_weekly_plans") \
             .select("id") \
-            .eq("user_id", user.id) \
+            .eq("user_id", user.id).eq("account_id", account_id) \
             .eq("week_start", monday) \
             .limit(1) \
             .execute()
@@ -282,7 +285,7 @@ JSON formatında döndür:
 # ═══════════════════════════════════════════
 
 @router.get("/insights")
-async def get_insights(user=Depends(require_auth)):
+async def get_insights(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Kullanıcının üretim geçmişini analiz et ve öneriler sun (eski API, geriye uyum)."""
     try:
         sb = get_supabase()
@@ -290,7 +293,7 @@ async def get_insights(user=Depends(require_auth)):
         # Son 100 generation
         gen_res = sb.table("generations") \
             .select("persona, tone, length, type, created_at") \
-            .eq("user_id", user.id) \
+            .eq("user_id", user.id).eq("account_id", account_id) \
             .order("created_at", desc=True) \
             .limit(100) \
             .execute()
@@ -302,7 +305,7 @@ async def get_insights(user=Depends(require_auth)):
         # Favori sayısı
         fav_res = sb.table("favorites") \
             .select("id") \
-            .eq("user_id", user.id) \
+            .eq("user_id", user.id).eq("account_id", account_id) \
             .is_("deleted_at", "null") \
             .execute()
         fav_count = len(fav_res.data or [])

@@ -79,6 +79,7 @@ from middleware.auth import require_auth, optional_auth
 from middleware.rate_limit import rate_limit
 from middleware.input_sanitizer import sanitize_generation_request
 from middleware.token_tracker import check_token_budget, record_token_usage
+from middleware.active_account import get_active_account
 
 # ==================== MODELS ====================
 
@@ -434,7 +435,7 @@ async def find_similar_tweets(request: SimilarTweetsRequest, user=Depends(requir
 # ==================== CONTENT GENERATION ROUTES ====================
 
 @api_router.post("/generate/tweet", response_model=GenerationResponse)
-async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate tweet content"""
     try:
         # Input sanitization
@@ -547,6 +548,7 @@ async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=De
         gen_result = supabase.table("generations").insert({
             "type": "tweet",
             "user_id": user.id,
+            "account_id": account_id,
             "topic": request.topic,
             "mode": request.mode,
             "length": request.length,
@@ -571,7 +573,7 @@ async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=De
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/quote", response_model=GenerationResponse)
-async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate quote tweet content"""
     try:
         sanitize_generation_request(request)
@@ -663,6 +665,7 @@ async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=De
         gen_result = supabase.table("generations").insert({
             "type": "quote",
             "user_id": user.id,
+            "account_id": account_id,
             "tweet_url": request.tweet_url,
             "tweet_content": request.tweet_content,
             "length": request.length,
@@ -686,7 +689,7 @@ async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=De
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/reply", response_model=GenerationResponse)
-async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate reply content"""
     try:
         sanitize_generation_request(request)
@@ -781,6 +784,7 @@ async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=De
         gen_result = supabase.table("generations").insert({
             "type": "reply",
             "user_id": user.id,
+            "account_id": account_id,
             "tweet_url": request.tweet_url,
             "tweet_content": request.tweet_content,
             "reply_mode": request.reply_mode,
@@ -805,7 +809,7 @@ async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=De
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.post("/generate/article", response_model=GenerationResponse)
-async def generate_article(request: ArticleGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_article(request: ArticleGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate X article content"""
     try:
         sanitize_generation_request(request)
@@ -840,6 +844,7 @@ async def generate_article(request: ArticleGenerateRequest, engine: str = "v3", 
         gen_result = supabase.table("generations").insert({
             "type": "article",
             "user_id": user.id,
+            "account_id": account_id,
             "topic": request.topic,
             "title": request.title,
             "length": request.length,
@@ -862,7 +867,7 @@ async def generate_article(request: ArticleGenerateRequest, engine: str = "v3", 
         return GenerationResponse(success=False, variants=[], error="Bir hata oluştu. Lütfen tekrar deneyin.")
 
 @api_router.get("/generations/calendar")
-async def get_generation_calendar(year: int = None, month: int = None, user=Depends(require_auth)):
+async def get_generation_calendar(year: int = None, month: int = None, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Get generation counts grouped by day for calendar view"""
     from datetime import date
     today = date.today()
@@ -878,7 +883,7 @@ async def get_generation_calendar(year: int = None, month: int = None, user=Depe
 
     result = supabase.table("generations") \
         .select("id, type, topic, created_at, variants") \
-        .eq("user_id", user.id) \
+        .eq("user_id", user.id).eq("account_id", account_id) \
         .gte("created_at", start) \
         .lt("created_at", end) \
         .order("created_at", desc=True) \
@@ -934,9 +939,9 @@ async def get_generation_calendar(year: int = None, month: int = None, user=Depe
     }
 
 @api_router.get("/generations/history")
-async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth)):
+async def get_generation_history(limit: int = 50, content_type: Optional[str] = None, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Get generation history with favorite status"""
-    query = supabase.table("generations").select("*").eq("user_id", user.id).order("created_at", desc=True).limit(limit)
+    query = supabase.table("generations").select("*").eq("user_id", user.id).eq("account_id", account_id).order("created_at", desc=True).limit(limit)
     if content_type:
         query = query.eq("type", content_type)
     result = query.execute()
@@ -946,7 +951,7 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
         return []
 
     # Fetch all active favorites for this user that have a generation_id (exclude soft-deleted)
-    fav_result = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).not_.is_("generation_id", "null").is_("deleted_at", "null").execute()
+    fav_result = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).eq("account_id", account_id).not_.is_("generation_id", "null").is_("deleted_at", "null").execute()
     
     # Build lookup: generation_id -> {variant_index: favorite_id}
     fav_map = {}
@@ -963,12 +968,12 @@ async def get_generation_history(limit: int = 50, content_type: Optional[str] = 
     return generations
 
 @api_router.get("/user/stats")
-async def get_user_stats(user=Depends(require_auth)):
+async def get_user_stats(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Get user statistics"""
     try:
-        gen_query = supabase.table("generations").select("id", count="exact").eq("user_id", user.id)
-        tweet_query = supabase.table("generations").select("id", count="exact").eq("type", "tweet").eq("user_id", user.id)
-        fav_query = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).is_("deleted_at", "null")
+        gen_query = supabase.table("generations").select("id", count="exact").eq("user_id", user.id).eq("account_id", account_id)
+        tweet_query = supabase.table("generations").select("id", count="exact").eq("type", "tweet").eq("user_id", user.id).eq("account_id", account_id)
+        fav_query = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).eq("account_id", account_id).is_("deleted_at", "null")
 
         return {
             "generations": gen_query.execute().count or 0,
@@ -979,31 +984,32 @@ async def get_user_stats(user=Depends(require_auth)):
         return {"generations": 0, "tweets": 0, "favorites": 0}
 
 @api_router.get("/favorites")
-async def get_favorites(limit: int = 50, user=Depends(require_auth)):
+async def get_favorites(limit: int = 50, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Get user favorites (only active, not soft-deleted)"""
     try:
-        query = supabase.table("favorites").select("*").eq("user_id", user.id).is_("deleted_at", "null").order("created_at", desc=True).limit(limit)
+        query = supabase.table("favorites").select("*").eq("user_id", user.id).eq("account_id", account_id).is_("deleted_at", "null").order("created_at", desc=True).limit(limit)
         result = query.execute()
         return result.data
     except Exception:
         return []
 
 @api_router.get("/favorites/trash")
-async def get_favorites_trash(limit: int = 50, user=Depends(require_auth)):
+async def get_favorites_trash(limit: int = 50, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Get soft-deleted favorites (Recently Deleted, 30 gün içinde geri alınabilir)"""
     try:
-        query = supabase.table("favorites").select("*").eq("user_id", user.id).not_.is_("deleted_at", "null").order("deleted_at", desc=True).limit(limit)
+        query = supabase.table("favorites").select("*").eq("user_id", user.id).eq("account_id", account_id).not_.is_("deleted_at", "null").order("deleted_at", desc=True).limit(limit)
         result = query.execute()
         return result.data
     except Exception:
         return []
 
 @api_router.post("/favorites")
-async def add_favorite(content: dict, user=Depends(require_auth)):
+async def add_favorite(content: dict, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Add content to favorites"""
     favorite_doc = {
         "id": str(uuid.uuid4()),
         "user_id": user.id,
+        "account_id": account_id,
         "content": content.get("content", ""),
         "type": content.get("type", "tweet"),
         "generation_id": content.get("generation_id"),
@@ -1014,7 +1020,7 @@ async def add_favorite(content: dict, user=Depends(require_auth)):
     return {"success": True, "id": favorite_doc["id"]}
 
 @api_router.post("/favorites/toggle")
-async def toggle_favorite(content: dict, user=Depends(require_auth)):
+async def toggle_favorite(content: dict, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Toggle favorite on a generation variant"""
     generation_id = content.get("generation_id")
     variant_index = content.get("variant_index", 0)
@@ -1023,11 +1029,11 @@ async def toggle_favorite(content: dict, user=Depends(require_auth)):
         raise HTTPException(status_code=400, detail="generation_id gerekli")
 
     # Check if already favorited (only active ones, not soft-deleted)
-    existing = supabase.table("favorites").select("id").eq("user_id", user.id).eq("generation_id", generation_id).eq("variant_index", variant_index).is_("deleted_at", "null").execute()
+    existing = supabase.table("favorites").select("id").eq("user_id", user.id).eq("account_id", account_id).eq("generation_id", generation_id).eq("variant_index", variant_index).is_("deleted_at", "null").execute()
 
     if existing.data:
         # Remove
-        supabase.table("favorites").delete().eq("id", existing.data[0]["id"]).eq("user_id", user.id).execute()
+        supabase.table("favorites").delete().eq("id", existing.data[0]["id"]).eq("user_id", user.id).eq("account_id", account_id).execute()
         return {"success": True, "action": "removed", "favorite_id": None}
     else:
         # Add
@@ -1035,6 +1041,7 @@ async def toggle_favorite(content: dict, user=Depends(require_auth)):
         supabase.table("favorites").insert({
             "id": fav_id,
             "user_id": user.id,
+            "account_id": account_id,
             "content": content.get("content", ""),
             "type": content.get("type", "tweet"),
             "generation_id": generation_id,
@@ -1044,69 +1051,69 @@ async def toggle_favorite(content: dict, user=Depends(require_auth)):
         return {"success": True, "action": "added", "favorite_id": fav_id}
 
 @api_router.delete("/generations/all")
-async def delete_all_generations(user=Depends(require_auth)):
+async def delete_all_generations(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Delete ALL generations and their favorites for the user"""
     # Delete all favorites for this user's generations
-    supabase.table("favorites").delete().eq("user_id", user.id).not_.is_("generation_id", "null").execute()
+    supabase.table("favorites").delete().eq("user_id", user.id).eq("account_id", account_id).not_.is_("generation_id", "null").execute()
     # Delete all generations
-    result = supabase.table("generations").select("id", count="exact").eq("user_id", user.id).execute()
+    result = supabase.table("generations").select("id", count="exact").eq("user_id", user.id).eq("account_id", account_id).execute()
     count = result.count or 0
     if count > 0:
-        supabase.table("generations").delete().eq("user_id", user.id).execute()
+        supabase.table("generations").delete().eq("user_id", user.id).eq("account_id", account_id).execute()
     return {"deleted": count}
 
 @api_router.delete("/generations/bulk")
-async def bulk_delete_generations(body: dict, user=Depends(require_auth)):
+async def bulk_delete_generations(body: dict, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Bulk delete generations by IDs + their favorites"""
     ids = body.get("ids", [])
     if not ids:
         return {"deleted": 0}
     # Delete related favorites
     for gid in ids:
-        supabase.table("favorites").delete().eq("user_id", user.id).eq("generation_id", gid).execute()
+        supabase.table("favorites").delete().eq("user_id", user.id).eq("account_id", account_id).eq("generation_id", gid).execute()
     # Delete generations
     deleted = 0
     for gid in ids:
-        result = supabase.table("generations").delete().eq("id", gid).eq("user_id", user.id).execute()
+        result = supabase.table("generations").delete().eq("id", gid).eq("user_id", user.id).eq("account_id", account_id).execute()
         if result.data:
             deleted += len(result.data)
     return {"deleted": deleted}
 
 @api_router.delete("/generations/{generation_id}")
-async def delete_generation(generation_id: str, user=Depends(require_auth)):
+async def delete_generation(generation_id: str, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Delete a single generation + its favorites"""
     # Delete related favorites
-    supabase.table("favorites").delete().eq("user_id", user.id).eq("generation_id", generation_id).execute()
+    supabase.table("favorites").delete().eq("user_id", user.id).eq("account_id", account_id).eq("generation_id", generation_id).execute()
     # Delete the generation
-    result = supabase.table("generations").delete().eq("id", generation_id).eq("user_id", user.id).execute()
+    result = supabase.table("generations").delete().eq("id", generation_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     count = len(result.data) if result.data else 0
     return {"deleted": count}
 
 @api_router.post("/favorites/{favorite_id}/soft-delete")
-async def soft_delete_favorite(favorite_id: str, user=Depends(require_auth)):
+async def soft_delete_favorite(favorite_id: str, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Soft delete: Çöp kutusuna taşı (30 gün sonra kalıcı silinir)"""
     now = datetime.now(timezone.utc).isoformat()
-    supabase.table("favorites").update({"deleted_at": now}).eq("id", favorite_id).eq("user_id", user.id).execute()
+    supabase.table("favorites").update({"deleted_at": now}).eq("id", favorite_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     return {"success": True, "action": "soft_deleted"}
 
 @api_router.post("/favorites/{favorite_id}/restore")
-async def restore_favorite(favorite_id: str, user=Depends(require_auth)):
+async def restore_favorite(favorite_id: str, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Geri al: Çöp kutusundan geri getir"""
-    supabase.table("favorites").update({"deleted_at": None}).eq("id", favorite_id).eq("user_id", user.id).execute()
+    supabase.table("favorites").update({"deleted_at": None}).eq("id", favorite_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     return {"success": True, "action": "restored"}
 
 @api_router.delete("/favorites/all")
-async def delete_all_favorites(user=Depends(require_auth)):
+async def delete_all_favorites(user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Soft delete ALL active favorites for the user (çöp kutusuna taşı)"""
     now = datetime.now(timezone.utc).isoformat()
-    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).is_("deleted_at", "null").execute()
+    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).eq("account_id", account_id).is_("deleted_at", "null").execute()
     count = result.count or (len(result.data) if result.data else 0)
     if count > 0:
-        supabase.table("favorites").update({"deleted_at": now}).eq("user_id", user.id).is_("deleted_at", "null").execute()
+        supabase.table("favorites").update({"deleted_at": now}).eq("user_id", user.id).eq("account_id", account_id).is_("deleted_at", "null").execute()
     return {"deleted": count}
 
 @api_router.delete("/favorites/bulk")
-async def bulk_delete_favorites(body: dict, user=Depends(require_auth)):
+async def bulk_delete_favorites(body: dict, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Soft delete favorites by IDs (çöp kutusuna taşı)"""
     ids = body.get("ids", [])
     if not ids:
@@ -1114,7 +1121,7 @@ async def bulk_delete_favorites(body: dict, user=Depends(require_auth)):
     now = datetime.now(timezone.utc).isoformat()
     deleted = 0
     for fid in ids:
-        result = supabase.table("favorites").update({"deleted_at": now}).eq("id", fid).eq("user_id", user.id).is_("deleted_at", "null").execute()
+        result = supabase.table("favorites").update({"deleted_at": now}).eq("id", fid).eq("user_id", user.id).eq("account_id", account_id).is_("deleted_at", "null").execute()
         if result.data:
             deleted += len(result.data)
     return {"deleted": deleted}
@@ -1122,10 +1129,10 @@ async def bulk_delete_favorites(body: dict, user=Depends(require_auth)):
 @api_router.delete("/favorites/trash/purge")
 async def purge_trash(user=Depends(require_auth)):
     """Çöp kutusundaki tüm favorileri kalıcı sil"""
-    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).not_.is_("deleted_at", "null").execute()
+    result = supabase.table("favorites").select("id", count="exact").eq("user_id", user.id).eq("account_id", account_id).not_.is_("deleted_at", "null").execute()
     count = result.count or (len(result.data) if result.data else 0)
     if count > 0:
-        supabase.table("favorites").delete().eq("user_id", user.id).not_.is_("deleted_at", "null").execute()
+        supabase.table("favorites").delete().eq("user_id", user.id).eq("account_id", account_id).not_.is_("deleted_at", "null").execute()
     return {"purged": count}
 
 @api_router.post("/favorites/auto-purge")
@@ -1146,9 +1153,9 @@ async def auto_purge_expired_favorites(request: Request):
     return {"purged": count, "cutoff": cutoff}
 
 @api_router.delete("/favorites/{favorite_id}")
-async def remove_favorite(favorite_id: str, user=Depends(require_auth)):
+async def remove_favorite(favorite_id: str, user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Favoriden çıkar (toggle off, hard delete from favorites table)"""
-    supabase.table("favorites").delete().eq("id", favorite_id).eq("user_id", user.id).execute()
+    supabase.table("favorites").delete().eq("id", favorite_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     return {"success": True}
 
 # ==================== CONTENT EVOLUTION ====================
@@ -1886,7 +1893,7 @@ async def generate_tweet_v2(request: TweetGenerateRequestV2, engine: str = "v3",
 
 
 @api_router.post("/v2/generate/quote", response_model=GenerationResponse)
-async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate quote tweet with v2 settings."""
     try:
         sanitize_generation_request(request)
@@ -1935,7 +1942,7 @@ async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limi
         gen_id = str(uuid.uuid4())
         try:
             supabase.table("generations").insert({
-                "id": gen_id, "type": "quote", "user_id": user.id,
+                "id": gen_id, "type": "quote", "user_id": user.id, "account_id": account_id,
                 "topic": f"Quote: {request.tweet_url}", "mode": "v2",
                 "length": request.uzunluk, "persona": request.karakter,
                 "tone": request.yapi, "language": request.language,
@@ -1956,7 +1963,7 @@ async def generate_quote_v2(request: QuoteGenerateRequestV2, _=Depends(rate_limi
 
 
 @api_router.post("/v2/generate/reply", response_model=GenerationResponse)
-async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth)):
+async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate reply with v2 settings."""
     try:
         sanitize_generation_request(request)
@@ -2005,7 +2012,7 @@ async def generate_reply_v2(request: ReplyGenerateRequestV2, _=Depends(rate_limi
         gen_id = str(uuid.uuid4())
         try:
             supabase.table("generations").insert({
-                "id": gen_id, "type": "reply", "user_id": user.id,
+                "id": gen_id, "type": "reply", "user_id": user.id, "account_id": account_id,
                 "topic": f"Reply: {request.tweet_url}", "mode": "v2",
                 "length": request.uzunluk, "persona": request.karakter,
                 "tone": request.yapi, "language": request.language,

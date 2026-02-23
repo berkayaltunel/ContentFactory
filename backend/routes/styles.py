@@ -1,6 +1,7 @@
 """Style Profiles API routes - v3 (Tek adım stil profili)"""
 from fastapi import APIRouter, HTTPException, Depends
 from middleware.auth import require_auth
+from middleware.active_account import get_active_account
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -44,7 +45,7 @@ def get_supabase():
 # ============ Endpoints ============
 
 @router.post("/create-from-handle", response_model=ProfileResponse)
-async def create_from_handle(request: CreateFromHandleRequest, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def create_from_handle(request: CreateFromHandleRequest, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Tek adımda: handle gir → tweet çek → analiz et → stil profili oluştur"""
     username = request.twitter_username.lstrip('@').strip()
     
@@ -52,7 +53,7 @@ async def create_from_handle(request: CreateFromHandleRequest, user=Depends(requ
         raise HTTPException(status_code=400, detail="Kullanıcı adı girin")
     
     # Check if user already has a profile for this handle
-    existing = supabase.table("style_profiles").select("id,name,style_fingerprint").eq("user_id", user.id).execute()
+    existing = supabase.table("style_profiles").select("id,name,style_fingerprint").eq("user_id", user.id).eq("account_id", account_id).execute()
     for p in (existing.data or []):
         fp = p.get("style_fingerprint") or {}
         if fp.get("twitter_username", "").lower() == username.lower():
@@ -81,7 +82,7 @@ async def create_from_handle(request: CreateFromHandleRequest, user=Depends(requ
     }
     
     # Check if source already exists
-    existing_source = supabase.table("style_sources").select("id").eq("twitter_username", username).eq("user_id", user.id).execute()
+    existing_source = supabase.table("style_sources").select("id").eq("twitter_username", username).eq("user_id", user.id).eq("account_id", account_id).execute()
     if existing_source.data:
         source_id = existing_source.data[0]["id"]
     else:
@@ -154,6 +155,7 @@ async def create_from_handle(request: CreateFromHandleRequest, user=Depends(requ
     profile_data = {
         "id": profile_id,
         "user_id": user.id,
+        "account_id": account_id,
         "name": profile_name,
         "source_ids": [source_id],
         "style_fingerprint": fingerprint,
@@ -190,9 +192,9 @@ async def create_from_handle(request: CreateFromHandleRequest, user=Depends(requ
 
 
 @router.get("/list", response_model=List[ProfileResponse])
-async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """List all style profiles"""
-    result = supabase.table("style_profiles").select("*").eq("user_id", user.id).order("created_at", desc=True).execute()
+    result = supabase.table("style_profiles").select("*").eq("user_id", user.id).eq("account_id", account_id).order("created_at", desc=True).execute()
     
     # Hide system profiles
     HIDDEN_PROFILE_IDS = {"dd1a9608-1441-4b72-bf28-83e11d4c5a60", "f3935ab1-3728-4b79-9fa9-fb895a2b4903"}
@@ -224,10 +226,10 @@ async def list_profiles(user=Depends(require_auth), supabase=Depends(get_supabas
 
 
 @router.post("/create", response_model=ProfileResponse)
-async def create_style_profile(request: CreateProfileRequest, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def create_style_profile(request: CreateProfileRequest, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Create a style profile from existing sources (legacy)"""
     for source_id in request.source_ids:
-        check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
+        check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).eq("account_id", account_id).execute()
         if not check.data:
             raise HTTPException(status_code=403, detail="Bu kaynak size ait değil")
     
@@ -245,6 +247,7 @@ async def create_style_profile(request: CreateProfileRequest, user=Depends(requi
     profile_data = {
         "id": profile_id,
         "user_id": user.id,
+        "account_id": account_id,
         "name": request.name,
         "source_ids": request.source_ids,
         "style_fingerprint": fingerprint,
@@ -270,18 +273,18 @@ async def create_style_profile(request: CreateProfileRequest, user=Depends(requi
 
 
 @router.get("/{profile_id}")
-async def get_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def get_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Get full profile"""
-    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).execute()
+    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Profil bulunamadı")
     return result.data[0]
 
 
 @router.get("/{profile_id}/prompt")
-async def get_style_prompt(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def get_style_prompt(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Get the style prompt for generation"""
-    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).execute()
+    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Profil bulunamadı")
     
@@ -300,20 +303,20 @@ PROTECTED_PROFILE_IDS = {"dd1a9608-1441-4b72-bf28-83e11d4c5a60"}  # BeatstoBytes
 
 
 @router.delete("/{profile_id}")
-async def delete_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def delete_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Delete a style profile"""
     if profile_id in PROTECTED_PROFILE_IDS:
         raise HTTPException(status_code=403, detail="Bu profil sistem tarafından korunuyor ve silinemez")
-    result = supabase.table("style_profiles").delete().eq("id", profile_id).eq("user_id", user.id).execute()
+    result = supabase.table("style_profiles").delete().eq("id", profile_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Profil bulunamadı")
     return {"success": True}
 
 
 @router.post("/{profile_id}/refresh")
-async def refresh_style_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def refresh_style_profile(profile_id: str, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Refresh: re-fetch tweets and re-analyze"""
-    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).execute()
+    result = supabase.table("style_profiles").select("*").eq("id", profile_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Profil bulunamadı")
     
@@ -416,7 +419,7 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
         "example_tweets": fingerprint.get('example_tweets', []),
         "tweet_count": len(all_tweets),
         "updated_at": datetime.now(timezone.utc).isoformat()
-    }).eq("id", profile_id).eq("user_id", user.id).execute()
+    }).eq("id", profile_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     
     return {
         "success": True,
@@ -427,9 +430,9 @@ async def refresh_style_profile(profile_id: str, user=Depends(require_auth), sup
 
 
 @router.post("/analyze-source/{source_id}")
-async def analyze_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+async def analyze_source(source_id: str, user=Depends(require_auth), supabase=Depends(get_supabase), account_id: str = Depends(get_active_account)):
     """Analyze a single source (legacy)"""
-    source_check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).execute()
+    source_check = supabase.table("style_sources").select("id").eq("id", source_id).eq("user_id", user.id).eq("account_id", account_id).execute()
     if not source_check.data:
         raise HTTPException(status_code=404, detail="Kaynak bulunamadı")
     
