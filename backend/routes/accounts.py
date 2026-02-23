@@ -214,16 +214,71 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
 
 @router.delete("/{platform}")
 async def delete_account(platform: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Hesap sil."""
+    """Hesap sil. Aktif hesapsa otomatik fallback."""
     if platform not in VALID_PLATFORMS:
         raise HTTPException(status_code=400, detail=f"Geçersiz platform: {platform}")
 
-    result = supabase.table("connected_accounts") \
-        .delete() \
+    # Silinecek hesabı bul
+    target = supabase.table("connected_accounts") \
+        .select("id, is_primary") \
         .eq("user_id", user.id) \
         .eq("platform", platform) \
+        .limit(1) \
         .execute()
-    return {"deleted": len(result.data) if result.data else 0}
+
+    if not target.data:
+        return {"deleted": 0}
+
+    deleted_id = target.data[0]["id"]
+    was_primary = target.data[0].get("is_primary", False)
+
+    # Sil
+    supabase.table("connected_accounts") \
+        .delete() \
+        .eq("id", deleted_id) \
+        .execute()
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Aktif hesap silindiyse → fallback
+    settings = supabase.table("user_settings") \
+        .select("active_account_id") \
+        .eq("user_id", user.id) \
+        .limit(1) \
+        .execute()
+
+    active_was_deleted = settings.data and settings.data[0].get("active_account_id") == deleted_id
+
+    # Kalan hesapları bul
+    remaining = supabase.table("connected_accounts") \
+        .select("id") \
+        .eq("user_id", user.id) \
+        .neq("platform", "default") \
+        .order("created_at") \
+        .limit(1) \
+        .execute()
+
+    fallback_id = remaining.data[0]["id"] if remaining.data else None
+
+    # Aktif hesap silindiyse veya primary silindiyse → güncelle
+    if active_was_deleted:
+        supabase.table("user_settings").upsert({
+            "user_id": user.id,
+            "active_account_id": fallback_id,
+            "updated_at": now,
+        }, on_conflict="user_id").execute()
+
+    if was_primary and fallback_id:
+        supabase.table("connected_accounts") \
+            .update({"is_primary": True}) \
+            .eq("id", fallback_id) \
+            .execute()
+
+    return {
+        "deleted": 1,
+        "fallback_account_id": fallback_id,
+        "active_changed": active_was_deleted,
+    }
 
 
 @router.patch("/{platform}/primary")

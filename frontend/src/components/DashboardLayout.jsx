@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
+import { useAccount, getAccountAvatar } from "@/contexts/AccountContext";
 
 /* ── Brand Icon Wrappers ─────────────────────────── */
 
@@ -268,39 +269,41 @@ export default function DashboardLayout() {
   }, [location.pathname]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [connectedAccounts, setConnectedAccounts] = useState([]);
 
-  // Fetch connected accounts
-  const fetchAccounts = useCallback(async () => {
-    if (!isAuthenticated) return;
-    try {
-      const res = await api.get(`${API}/accounts`);
-      setConnectedAccounts(res.data || []);
-    } catch {}
-  }, [isAuthenticated]);
+  // ── Account Switcher (from AccountContext) ──
+  const {
+    accounts: connectedAccounts,
+    activeAccount,
+    activeAccountId,
+    isMultiAccount,
+    switchAccount,
+    refreshAccounts,
+  } = useAccount();
 
-  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
-
-  // Derive primary account & avatar
-  const primaryAccount = connectedAccounts.find((a) => a.is_primary);
-  const primaryAvatarUrl = primaryAccount
-    ? PLATFORMS.find((p) => p.id === primaryAccount.platform)?.avatarUrl?.(primaryAccount.username)
-    : null;
+  const activeAvatarUrl = activeAccount ? getAccountAvatar(activeAccount) : null;
+  const activeDisplayName = activeAccount
+    ? `@${activeAccount.username}`
+    : user?.name?.split(" ")[0] || "U";
 
   const handleSaveAccount = async (platform, username) => {
     try {
       await api.put(`${API}/accounts/${platform}`, { username });
-      await fetchAccounts();
+      await refreshAccounts();
       toast.success(t('nav.accountSaved'));
-    } catch {
-      toast.error(t('nav.accountSaveError'));
+    } catch (e) {
+      const detail = e?.response?.data?.detail;
+      if (detail?.code === "ACCOUNT_LIMIT") {
+        toast.error(`Hesap limiti: ${detail.current}/${detail.limit}. Pro'ya geçin!`);
+      } else {
+        toast.error(t('nav.accountSaveError'));
+      }
     }
   };
 
   const handleDeleteAccount = async (platform) => {
     try {
       await api.delete(`${API}/accounts/${platform}`);
-      await fetchAccounts();
+      await refreshAccounts();
       toast.success(t('nav.accountRemoved'));
     } catch {
       toast.error(t('nav.accountRemoveError'));
@@ -310,7 +313,7 @@ export default function DashboardLayout() {
   const handleSetPrimary = async (platform) => {
     try {
       await api.patch(`${API}/accounts/${platform}/primary`);
-      await fetchAccounts();
+      await refreshAccounts();
       toast.success(t('nav.primaryChanged'));
     } catch {
       toast.error(t('nav.primaryChangeError'));
@@ -439,23 +442,23 @@ export default function DashboardLayout() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all duration-300 focus:outline-none focus-visible:outline-none">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
-                    {primaryAvatarUrl && <AvatarImage 
-                      src={primaryAvatarUrl} 
-                      alt={user.name}
+                    {activeAvatarUrl && <AvatarImage
+                      src={activeAvatarUrl}
+                      alt={activeAccount?.username || user.name}
                     />}
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
-                      {user.name?.charAt(0)?.toUpperCase() || "U"}
+                      {(activeAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm text-white/70 font-medium hidden md:inline max-w-[100px] truncate">
-                    {user.name?.split(" ")[0]}
+                    {activeAccount ? `@${activeAccount.username}` : user.name?.split(" ")[0]}
                   </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
                 sideOffset={12}
-                className="w-56 rounded-xl bg-[#1A1A1A] border-white/10 text-white shadow-2xl"
+                className="w-64 rounded-xl bg-[#1A1A1A] border-white/10 text-white shadow-2xl"
               >
                 {/* User info */}
                 <div className="px-3 py-2.5 border-b border-white/10">
@@ -463,7 +466,51 @@ export default function DashboardLayout() {
                   <p className="text-xs text-white/50 truncate">{user.email}</p>
                 </div>
 
-                {/* Connected Accounts */}
+                {/* ── Account Switcher ── */}
+                {connectedAccounts.length > 0 && (
+                  <div className="py-1.5 border-b border-white/10">
+                    <p className="px-3 py-1 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+                      Hesaplar
+                    </p>
+                    {connectedAccounts.map((acc) => {
+                      const isActiveAcc = acc.id === activeAccountId;
+                      const accAvatar = getAccountAvatar(acc);
+                      const hasIssue = acc.status && acc.status !== "active";
+                      return (
+                        <DropdownMenuItem
+                          key={acc.id}
+                          onClick={() => !isActiveAcc && switchAccount(acc.id)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer mx-1",
+                            "hover:bg-white/10 focus:bg-white/10",
+                            isActiveAcc && "bg-white/[0.06]"
+                          )}
+                        >
+                          <Avatar className="h-7 w-7 ring-1 ring-white/10 shrink-0">
+                            {accAvatar && <AvatarImage src={accAvatar} alt={acc.username} />}
+                            <AvatarFallback className="bg-zinc-700 text-white text-[10px] font-bold">
+                              {acc.username?.charAt(0)?.toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white/90 truncate">
+                              @{acc.username}
+                            </p>
+                            {acc.label && (
+                              <p className="text-[10px] text-white/40">{acc.label}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {hasIssue && <span title="Bağlantı sorunu">⚠️</span>}
+                            {isActiveAcc && <Check className="h-4 w-4 text-emerald-400" />}
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Connected Accounts Management */}
                 <ConnectedAccountsSection
                   accounts={connectedAccounts}
                   onSave={handleSaveAccount}
