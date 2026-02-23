@@ -856,6 +856,26 @@ export default function DashboardLayout() {
               </button>
             </div>
           )}
+          {/* Zero Accounts: son hesap silinmiş, onboarding */}
+          {!effectiveAccount && connectedAccounts.length === 0 && (
+            <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20 animate-in fade-in slide-in-from-top-2 duration-300">
+              <span className="text-lg">🔗</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-violet-300">
+                  Henüz bir hesap bağlanmamış
+                </p>
+                <p className="text-xs text-violet-300/60 mt-0.5">
+                  İçerik üretmeye başlamak için sosyal medya hesabını bağla.
+                </p>
+              </div>
+              <button
+                onClick={() => setSettingsOpen(true)}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-violet-500/20 text-violet-300 text-xs font-medium hover:bg-violet-500/30 transition-colors"
+              >
+                Hesap Bağla
+              </button>
+            </div>
+          )}
           <Outlet />
         </div>
       </main>

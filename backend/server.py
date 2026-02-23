@@ -986,16 +986,22 @@ async def get_generation_history(
             fav_map[gid] = {}
         fav_map[gid][fav["variant_index"]] = fav["id"]
 
-    # scope=all: hesap bilgilerini ekle
+    # scope=all: hesap bilgilerini ekle (sadece aktif hesaplar, deleted hariç)
     account_map = {}
     if scope == "all":
-        acc_result = supabase.table("connected_accounts").select("id, platform, username, display_name").eq("user_id", user.id).execute()
+        acc_result = supabase.table("connected_accounts") \
+            .select("id, platform, username, display_name") \
+            .eq("user_id", user.id) \
+            .is_("deleted_at", "null") \
+            .execute()
         for acc in (acc_result.data or []):
             account_map[acc["id"]] = {
                 "platform": acc["platform"],
                 "username": acc["username"],
                 "display_name": acc.get("display_name"),
             }
+        # Silinen hesapların generation'larını filtrele
+        generations = [g for g in generations if g.get("account_id") in account_map]
 
     # Attach favorite + account info to each generation
     for gen in generations:
