@@ -152,11 +152,12 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
 
     now = datetime.now(timezone.utc).isoformat()
 
-    # Mevcut hesap var mı? (güncelleme mi ekleme mi)
+    # Mevcut AYNI hesap var mı? (platform + username bazlı, multi-account safe)
     existing = supabase.table("connected_accounts") \
         .select("id, deleted_at, status") \
         .eq("user_id", user.id) \
         .eq("platform", platform) \
+        .eq("username", username) \
         .execute()
 
     if existing.data:
@@ -178,11 +179,10 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
                 .eq("id", restored_id) \
                 .execute()
             logger.info(f"Account restored: {platform}/{username} (id={restored_id}) for user {user.id}")
-            # Veri zaten duruyor (soft-delete), ekstra işlem yok
             return {"success": True, "id": restored_id, "restored": True}
 
-        # ── Normal güncelleme ──
-        update_data = {"username": username, "updated_at": now, "status": "active",
+        # ── Normal güncelleme (aynı username, label değişikliği vs.) ──
+        update_data = {"updated_at": now, "status": "active",
                        "broken_reason": None, "broken_at": None}
         if body.label is not None:
             update_data["label"] = body.label
@@ -272,20 +272,36 @@ async def upsert_account(platform: str, body: AccountUpdate, user=Depends(requir
     return result.data[0] if result.data else {"success": True, "id": new_id}
 
 
+@router.delete("/by-id/{account_id}")
+async def delete_account_by_id(account_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+    """Hesap soft-delete (account_id bazlı, multi-account safe)."""
+    target = supabase.table("connected_accounts") \
+        .select("id, is_primary, platform") \
+        .eq("id", account_id) \
+        .eq("user_id", user.id) \
+        .is_("deleted_at", "null") \
+        .limit(1) \
+        .execute()
+    return await _soft_delete_account(target, user, supabase)
+
+
 @router.delete("/{platform}")
 async def delete_account(platform: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Hesap soft-delete. İlişkili veriyi cascade soft-delete yap. Aktif hesapsa fallback."""
+    """Hesap soft-delete (legacy platform bazlı, tek hesaplı durumlar için)."""
     if platform not in VALID_PLATFORMS:
         raise HTTPException(status_code=400, detail=f"Geçersiz platform: {platform}")
 
-    # Silinecek hesabı bul (sadece aktif olanlar)
     target = supabase.table("connected_accounts") \
-        .select("id, is_primary") \
+        .select("id, is_primary, platform") \
         .eq("user_id", user.id) \
         .eq("platform", platform) \
         .is_("deleted_at", "null") \
         .limit(1) \
         .execute()
+    return await _soft_delete_account(target, user, supabase)
+
+
+async def _soft_delete_account(target, user, supabase):
 
     if not target.data:
         return {"deleted": 0}
@@ -358,16 +374,15 @@ async def delete_account(platform: str, user=Depends(require_auth), supabase=Dep
     }
 
 
-@router.patch("/{platform}/primary")
-async def set_primary(platform: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
-    """Hesabı primary yap."""
-    if platform not in VALID_PLATFORMS:
-        raise HTTPException(status_code=400, detail=f"Geçersiz platform: {platform}")
-
+@router.patch("/by-id/{account_id}/primary")
+async def set_primary_by_id(account_id: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+    """Hesabı primary yap (account_id bazlı, multi-account safe)."""
     existing = supabase.table("connected_accounts") \
-        .select("id") \
+        .select("id, platform") \
+        .eq("id", account_id) \
         .eq("user_id", user.id) \
-        .eq("platform", platform) \
+        .is_("deleted_at", "null") \
+        .limit(1) \
         .execute()
     if not existing.data:
         raise HTTPException(status_code=404, detail="Hesap bulunamadı")
@@ -378,6 +393,34 @@ async def set_primary(platform: str, user=Depends(require_auth), supabase=Depend
         .eq("user_id", user.id) \
         .execute()
     # Bu hesabı set
+    supabase.table("connected_accounts") \
+        .update({"is_primary": True}) \
+        .eq("id", account_id) \
+        .execute()
+
+    return {"success": True, "primary_id": account_id}
+
+
+@router.patch("/{platform}/primary")
+async def set_primary(platform: str, user=Depends(require_auth), supabase=Depends(get_supabase)):
+    """Hesabı primary yap (legacy platform bazlı)."""
+    if platform not in VALID_PLATFORMS:
+        raise HTTPException(status_code=400, detail=f"Geçersiz platform: {platform}")
+
+    existing = supabase.table("connected_accounts") \
+        .select("id") \
+        .eq("user_id", user.id) \
+        .eq("platform", platform) \
+        .is_("deleted_at", "null") \
+        .limit(1) \
+        .execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Hesap bulunamadı")
+
+    supabase.table("connected_accounts") \
+        .update({"is_primary": False}) \
+        .eq("user_id", user.id) \
+        .execute()
     supabase.table("connected_accounts") \
         .update({"is_primary": True}) \
         .eq("id", existing.data[0]["id"]) \

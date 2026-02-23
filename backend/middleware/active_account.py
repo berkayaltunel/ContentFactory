@@ -41,12 +41,13 @@ async def get_active_account(
     """
     sb = _get_supabase()
 
-    # 1. Header'dan (+ IDOR koruması: bu hesap bu user'a ait mi?)
+    # 1. Header'dan (+ IDOR koruması: bu hesap bu user'a ait mi? + deleted check)
     if x_active_account_id and x_active_account_id != "null":
         ownership = sb.table("connected_accounts") \
             .select("id") \
             .eq("id", x_active_account_id) \
             .eq("user_id", user.id) \
+            .is_("deleted_at", "null") \
             .limit(1) \
             .execute()
         if ownership.data:
@@ -68,12 +69,13 @@ async def get_active_account(
     except Exception as e:
         logger.warning(f"Active account fallback error: {e}")
 
-    # 3. Primary account (son fallback)
+    # 3. Primary account (son fallback, deleted hariç)
     try:
         res = sb.table("connected_accounts") \
             .select("id") \
             .eq("user_id", user.id) \
             .eq("is_primary", True) \
+            .is_("deleted_at", "null") \
             .limit(1) \
             .execute()
 

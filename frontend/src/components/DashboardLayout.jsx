@@ -213,7 +213,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   {!acct.is_primary && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); onSetPrimary(id); }}
+                      onClick={(e) => { e.stopPropagation(); onSetPrimary(acct.id); }}
                       className="w-5 h-5 rounded-full hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-yellow-400 transition-colors"
                       title={t('nav.makePrimary')}
                     >
@@ -221,7 +221,7 @@ function ConnectedAccountsSection({ accounts, onSave, onDelete, onSetPrimary }) 
                     </button>
                   )}
                   <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+                    onClick={(e) => { e.stopPropagation(); onDelete(acct.id); }}
                     className="w-5 h-5 rounded-full hover:bg-red-500/10 flex items-center justify-center text-white/30 hover:text-red-400 transition-colors"
                     title={t('nav.removeAccount')}
                   >
@@ -345,9 +345,9 @@ export default function DashboardLayout() {
     }
   };
 
-  const handleDeleteAccount = async (platform) => {
+  const handleDeleteAccount = async (accountId) => {
     try {
-      await api.delete(`${API}/accounts/${platform}`);
+      await api.delete(`${API}/accounts/by-id/${accountId}`);
       await refreshAccounts();
       toast.success(t('nav.accountRemoved'));
     } catch {
@@ -355,9 +355,9 @@ export default function DashboardLayout() {
     }
   };
 
-  const handleSetPrimary = async (platform) => {
+  const handleSetPrimary = async (accountId) => {
     try {
-      await api.patch(`${API}/accounts/${platform}/primary`);
+      await api.patch(`${API}/accounts/by-id/${accountId}/primary`);
       await refreshAccounts();
       toast.success(t('nav.primaryChanged'));
     } catch {

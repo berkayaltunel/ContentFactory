@@ -954,12 +954,26 @@ async def get_generation_history(
     query = supabase.table("generations").select("*").eq("user_id", user.id)
 
     if scope == "all":
-        # Opsiyonel: belirli bir hesaba filtrele (ownership check)
+        # Aktif hesapları çek (deleted hariç, detay dahil — account_map için de kullanılacak)
+        active_accs = supabase.table("connected_accounts") \
+            .select("id, platform, username, display_name") \
+            .eq("user_id", user.id) \
+            .is_("deleted_at", "null") \
+            .execute()
+        active_ids = [a["id"] for a in (active_accs.data or [])]
+
+        if not active_ids:
+            return {"generations": [], "meta": {"account_counts": {}, "total": 0}} if scope == "all" else []
+
         if filter_account_id:
-            own = supabase.table("connected_accounts").select("id").eq("id", filter_account_id).eq("user_id", user.id).limit(1).execute()
-            if own.data:
+            # Belirli hesaba filtrele (ownership check: aktif mi?)
+            if filter_account_id in active_ids:
                 query = query.eq("account_id", filter_account_id)
-        # else: tüm hesapların verisini getir
+            else:
+                return {"generations": [], "meta": {"account_counts": {}, "total": 0}}
+        else:
+            # Supabase'de .in_() ile sadece aktif hesapların verisini çek
+            query = query.in_("account_id", active_ids)
     else:
         query = query.eq("account_id", account_id)
 
@@ -970,7 +984,7 @@ async def get_generation_history(
     generations = result.data or []
 
     if not generations:
-        return []
+        return {"generations": [], "meta": {"account_counts": {}, "total": 0}} if scope == "all" else []
 
     # Fetch favorites (scope=all ise tüm hesapların favorileri)
     fav_query = supabase.table("favorites").select("id, generation_id, variant_index").eq("user_id", user.id).not_.is_("generation_id", "null").is_("deleted_at", "null")
@@ -986,22 +1000,15 @@ async def get_generation_history(
             fav_map[gid] = {}
         fav_map[gid][fav["variant_index"]] = fav["id"]
 
-    # scope=all: hesap bilgilerini ekle (sadece aktif hesaplar, deleted hariç)
+    # scope=all: account_map'i active_accs'tan türet (ekstra sorgu yok)
     account_map = {}
     if scope == "all":
-        acc_result = supabase.table("connected_accounts") \
-            .select("id, platform, username, display_name") \
-            .eq("user_id", user.id) \
-            .is_("deleted_at", "null") \
-            .execute()
-        for acc in (acc_result.data or []):
+        for acc in (active_accs.data or []):
             account_map[acc["id"]] = {
                 "platform": acc["platform"],
                 "username": acc["username"],
                 "display_name": acc.get("display_name"),
             }
-        # Silinen hesapların generation'larını filtrele
-        generations = [g for g in generations if g.get("account_id") in account_map]
 
     # Attach favorite + account info to each generation
     for gen in generations:
