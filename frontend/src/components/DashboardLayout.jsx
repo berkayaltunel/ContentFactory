@@ -636,9 +636,9 @@ export default function DashboardLayout() {
               <DropdownMenuTrigger asChild>
                 <button className="p-1 rounded-full focus:outline-none haptic-btn">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
-                    {primaryAvatarUrl && <AvatarImage src={primaryAvatarUrl} alt={user.name} />}
+                    {activeAvatarUrl && <AvatarImage src={activeAvatarUrl} alt={activeAccount?.username || user.name} />}
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
-                      {user.name?.charAt(0)?.toUpperCase() || "U"}
+                      {(activeAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </button>
