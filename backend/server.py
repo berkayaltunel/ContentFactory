@@ -1434,7 +1434,7 @@ app.add_middleware(
     allow_origins=_cors_origins,
     allow_origin_regex=r"https://frontend-.*\.vercel\.app",
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-TH-Client", "X-Requested-With", "X-Admin-Key", "X-TH-Timestamp", "X-TH-Nonce"],
+    allow_headers=["Authorization", "Content-Type", "X-TH-Client", "X-Requested-With", "X-Admin-Key", "X-TH-Timestamp", "X-TH-Nonce", "X-Active-Account-Id"],
 )
 
 # Middleware stack (last added = first executed)

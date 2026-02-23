@@ -275,9 +275,12 @@ export default function DashboardLayout() {
     accounts: connectedAccounts,
     activeAccount,
     activeAccountId,
+    effectiveAccount,
+    effectiveAccountId,
     isMultiAccount,
     switchAccount,
     refreshAccounts,
+    setOverrideAccountId,
   } = useAccount();
 
   // Context-aware platform detection: URL'den aktif platformu oku
@@ -299,9 +302,27 @@ export default function DashboardLayout() {
     ? (PLATFORMS.find(p => p.id === currentPlatform)?.label || currentPlatform)
     : null;
 
-  const activeAvatarUrl = activeAccount ? getAccountAvatar(activeAccount) : null;
-  const activeDisplayName = activeAccount
-    ? `@${activeAccount.username}`
+  // ── Platform context değiştiğinde effective account'u senkronize et ──
+  useEffect(() => {
+    if (!currentPlatform) {
+      // Generic sayfa (Home, History, Favorites...) → override yok, global active kullan
+      setOverrideAccountId(null);
+      return;
+    }
+    // Aktif hesap zaten bu platformdaysa override gerekmez
+    if (activeAccount?.platform === currentPlatform) {
+      setOverrideAccountId(null);
+      return;
+    }
+    // Farklı platform → o platformun ilk hesabını bul ve override et
+    const match = connectedAccounts.find(a => a.platform === currentPlatform);
+    setOverrideAccountId(match?.id || null);
+  }, [currentPlatform, activeAccount, connectedAccounts, setOverrideAccountId]);
+
+  // Navbar avatarı ve ismi: effectiveAccount (sayfa context'ine duyarlı)
+  const activeAvatarUrl = effectiveAccount ? getAccountAvatar(effectiveAccount) : null;
+  const activeDisplayName = effectiveAccount
+    ? `@${effectiveAccount.username}`
     : user?.name?.split(" ")[0] || "U";
 
   const handleSaveAccount = async (platform, username) => {
@@ -463,14 +484,14 @@ export default function DashboardLayout() {
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
                     {activeAvatarUrl && <AvatarImage
                       src={activeAvatarUrl}
-                      alt={activeAccount?.username || user.name}
+                      alt={effectiveAccount?.username || user.name}
                     />}
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
-                      {(activeAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
+                      {(effectiveAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm text-white/70 font-medium hidden md:inline max-w-[100px] truncate">
-                    {activeAccount ? `@${activeAccount.username}` : user.name?.split(" ")[0]}
+                    {activeDisplayName}
                   </span>
                 </button>
               </DropdownMenuTrigger>
@@ -492,7 +513,7 @@ export default function DashboardLayout() {
                       Hesaplar
                     </p>
                     {switcherAccounts.map((acc) => {
-                      const isActiveAcc = acc.id === activeAccountId;
+                      const isActiveAcc = acc.id === effectiveAccountId;
                       const accAvatar = getAccountAvatar(acc);
                       const hasIssue = acc.status && acc.status !== "active";
                       return (
@@ -671,9 +692,9 @@ export default function DashboardLayout() {
               <DropdownMenuTrigger asChild>
                 <button className="p-1 rounded-full focus:outline-none haptic-btn">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
-                    {activeAvatarUrl && <AvatarImage src={activeAvatarUrl} alt={activeAccount?.username || user.name} />}
+                    {activeAvatarUrl && <AvatarImage src={activeAvatarUrl} alt={effectiveAccount?.username || user.name} />}
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
-                      {(activeAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
+                      {(effectiveAccount?.username || user.name)?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </button>
@@ -690,7 +711,7 @@ export default function DashboardLayout() {
                       Hesaplar
                     </p>
                     {switcherAccounts.map((acc) => {
-                      const isActiveAcc = acc.id === activeAccountId;
+                      const isActiveAcc = acc.id === effectiveAccountId;
                       const accAvatar = getAccountAvatar(acc);
                       return (
                         <DropdownMenuItem

@@ -36,6 +36,9 @@ export function AccountProvider({ children }) {
   );
   const [loading, setLoading] = useState(true);
 
+  // Platform context override: sayfa context'ine göre geçici hesap override
+  const [overrideAccountId, setOverrideAccountId] = useState(null);
+
   // ── Fetch accounts on mount ──
   useEffect(() => {
     api.get(`${API}/accounts`)
@@ -61,10 +64,17 @@ export function AccountProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Active account object ──
+  // ── Active account object (kullanıcının global seçimi) ──
   const activeAccount = useMemo(
     () => accounts.find((a) => a.id === activeAccountId) || null,
     [accounts, activeAccountId]
+  );
+
+  // ── Effective account: platform context override varsa onu, yoksa global active'i kullan ──
+  const effectiveAccountId = overrideAccountId || activeAccountId;
+  const effectiveAccount = useMemo(
+    () => accounts.find((a) => a.id === effectiveAccountId) || activeAccount,
+    [accounts, effectiveAccountId, activeAccount]
   );
 
   // ── Çoklu hesap var mı? ──
@@ -116,26 +126,29 @@ export function AccountProvider({ children }) {
     }
   }, [activeAccountId, accounts]);
 
-  // ── API interceptor: X-Active-Account-Id header ──
+  // ── API interceptor: X-Active-Account-Id header (effectiveAccount kullanır) ──
   useEffect(() => {
     const interceptor = api.interceptors.request.use((config) => {
-      if (activeAccountId) {
-        config.headers["X-Active-Account-Id"] = activeAccountId;
+      if (effectiveAccountId) {
+        config.headers["X-Active-Account-Id"] = effectiveAccountId;
       }
       return config;
     });
     return () => api.interceptors.request.eject(interceptor);
-  }, [activeAccountId]);
+  }, [effectiveAccountId]);
 
   return (
     <AccountContext.Provider value={{
       accounts,
       activeAccount,
       activeAccountId,
+      effectiveAccount,
+      effectiveAccountId,
       isMultiAccount,
       switchAccount,
       refreshAccounts,
       getAccountAvatar,
+      setOverrideAccountId,
       loading,
     }}>
       {children}
