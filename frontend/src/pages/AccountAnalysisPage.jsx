@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from 'react-i18next';
 import { User, Search, BarChart3, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, Clock, MoreVertical, Trash2, RefreshCw, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -10,48 +11,213 @@ import {
   ResponsiveContainer, Tooltip
 } from "recharts";
 
+/* ── Analysis Progress Steps ── */
+const ANALYSIS_STEPS = [
+  { labelKey: "account.loadingSteps.finding", pct: 10 },
+  { labelKey: "account.loadingSteps.scanning", pct: 25 },
+  { labelKey: "account.loadingSteps.hookAnalysis", pct: 45 },
+  { labelKey: "account.loadingSteps.formatAnalysis", pct: 60 },
+  { labelKey: "account.loadingSteps.emotionAnalysis", pct: 78 },
+  { labelKey: "account.loadingSteps.preparing", pct: 95 },
+];
 
-function DimensionRadar({ dimensions }) {
+/* ── Analysis Progress Overlay (Persona Lab style) ── */
+function AnalysisProgressOverlay({ username, currentStep, onCancel }) {
+  const { t } = useTranslation();
+  const step = ANALYSIS_STEPS[Math.min(currentStep, ANALYSIS_STEPS.length - 1)];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.8)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: "420px", padding: "32px", textAlign: "center" }}>
+        {/* Avatar with pulse rings */}
+        <div style={{ position: "relative", display: "inline-block", marginBottom: "24px" }}>
+          <div
+            style={{
+              width: "80px",
+              height: "80px",
+              borderRadius: "50%",
+              overflow: "hidden",
+              background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <img
+              src={`https://unavatar.io/x/${username}`}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              onError={(e) => {
+                e.target.style.display = "none";
+                e.target.parentElement.innerHTML = `<span style="color:white;font-size:28px;font-weight:700">@</span>`;
+              }}
+            />
+          </div>
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.6, ease: "easeOut" }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "50%",
+                border: "2px solid rgba(139, 92, 246, 0.4)",
+              }}
+            />
+          ))}
+        </div>
+
+        <h3 style={{ fontSize: "18px", fontWeight: "700", color: "white", marginBottom: "4px" }}>
+          @{username}
+        </h3>
+        <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", marginBottom: "28px" }}>
+          {t('account.analyzing')}
+        </p>
+
+        {/* Progress bar */}
+        <div
+          style={{
+            width: "100%",
+            height: "4px",
+            borderRadius: "4px",
+            background: "rgba(255,255,255,0.08)",
+            marginBottom: "16px",
+            overflow: "hidden",
+          }}
+        >
+          <motion.div
+            animate={{ width: `${step.pct}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            style={{
+              height: "100%",
+              borderRadius: "4px",
+              background: "linear-gradient(90deg, #7c3aed, #a855f7, #c084fc)",
+            }}
+          />
+        </div>
+
+        {/* Step label with animation */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div style={{ fontSize: "14px", fontWeight: "600", color: "#a78bfa", marginBottom: "4px" }}>
+              {t(step.labelKey, { username })}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.3)", marginTop: "12px" }}>
+          {t('account.processingTime')}
+        </p>
+
+        {/* Cancel */}
+        <button
+          onClick={onCancel}
+          style={{
+            marginTop: "20px",
+            padding: "8px 20px",
+            borderRadius: "8px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            color: "rgba(255,255,255,0.4)",
+            fontSize: "12px",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.4)";
+          }}
+        >
+          {t('common.cancel') || 'İptal'}
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+
+function DimensionRadar({ dimensions, dimensionDetails }) {
   const { t } = useTranslation();
   if (!dimensions) return null;
   const data = [
-    { subject: t('account.dimensions.content'), value: dimensions.content_quality || 0 },
-    { subject: t('account.dimensions.engagement'), value: dimensions.engagement_rate || 0 },
-    { subject: t('account.dimensions.consistency'), value: dimensions.consistency || 0 },
-    { subject: t('account.dimensions.creativity'), value: dimensions.creativity || 0 },
-    { subject: t('account.dimensions.community'), value: dimensions.community || 0 },
-    { subject: t('account.dimensions.growth'), value: dimensions.growth_potential || 0 },
+    { subject: t('account.dimensions.hookPower'), value: dimensions.hook_power || 0, key: 'hook_power' },
+    { subject: t('account.dimensions.engagement'), value: dimensions.engagement_potential || 0, key: 'engagement_potential' },
+    { subject: t('account.dimensions.formatDiversity'), value: dimensions.format_diversity || 0, key: 'format_diversity' },
+    { subject: t('account.dimensions.emotionalRange'), value: dimensions.emotional_range || 0, key: 'emotional_range' },
+    { subject: t('account.dimensions.visualUsage'), value: dimensions.visual_usage || 0, key: 'visual_usage' },
   ];
 
+  const CustomTooltip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    const detail = dimensionDetails?.[d.key];
+    return (
+      <div className="bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-3 max-w-[280px] shadow-2xl">
+        <p className="text-sm font-semibold text-white">{d.subject}</p>
+        <p className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">{d.value}/100</p>
+        {detail && <p className="text-xs text-white/60 mt-1 leading-relaxed">{detail}</p>}
+      </div>
+    );
+  };
+
   return (
-    <div className="h-[300px] w-full">
+    <div className="h-[320px] w-full" style={{ filter: "drop-shadow(0 0 8px rgba(168,85,247,0.15))" }}>
       <ResponsiveContainer>
         <RadarChart data={data} cx="50%" cy="50%" outerRadius="75%">
-          <PolarGrid stroke="hsl(var(--border))" />
+          <PolarGrid stroke="rgba(255,255,255,0.08)" />
           <PolarAngleAxis
             dataKey="subject"
-            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+            tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 500 }}
           />
           <PolarRadiusAxis
             angle={30}
             domain={[0, 100]}
-            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+            tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+            axisLine={false}
           />
           <Radar
             name="Skor"
             dataKey="value"
-            stroke="#3b82f6"
-            fill="#3b82f6"
-            fillOpacity={0.25}
-            strokeWidth={2}
+            stroke="#a855f7"
+            fill="url(#radarGradient)"
+            fillOpacity={0.3}
+            strokeWidth={2.5}
+            dot={{ r: 4, fill: "#a855f7", strokeWidth: 0 }}
           />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: 8,
-            }}
-          />
+          <Tooltip content={<CustomTooltip />} />
+          <defs>
+            <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#d946ef" />
+            </linearGradient>
+          </defs>
         </RadarChart>
       </ResponsiveContainer>
     </div>
@@ -163,7 +329,8 @@ export default function AccountAnalysisPage() {
   const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState("");
+  const [analysisStep, setAnalysisStep] = useState(0);
+  const [analysisUsername, setAnalysisUsername] = useState("");
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -205,8 +372,6 @@ export default function AccountAnalysisPage() {
 
   const handleViewDetail = async (item) => {
     try {
-      setLoading(true);
-      setLoadingStep("Rapor yükleniyor...");
       const res = await api.get(`${API}/analyze/history/${item.id}`);
       setResult({
         success: true,
@@ -221,9 +386,6 @@ export default function AccountAnalysisPage() {
       setUsername(res.data.twitter_username);
     } catch {
       toast.error("Rapor yüklenemedi");
-    } finally {
-      setLoading(false);
-      setLoadingStep("");
     }
   };
 
@@ -234,16 +396,23 @@ export default function AccountAnalysisPage() {
     }
     setLoading(true);
     setResult(null);
-    setLoadingStep(t('account.fetchingTweets'));
+    setAnalysisStep(0);
+    setAnalysisUsername(username.replace("@", ""));
 
     try {
-      setTimeout(() => setLoadingStep(t('account.aiAnalyzing')), 8000);
-      setTimeout(() => setLoadingStep(t('account.preparingReport')), 15000);
+      const stepTimers = [
+        setTimeout(() => setAnalysisStep(1), 5000),
+        setTimeout(() => setAnalysisStep(2), 10000),
+        setTimeout(() => setAnalysisStep(3), 15000),
+        setTimeout(() => setAnalysisStep(4), 20000),
+        setTimeout(() => setAnalysisStep(5), 25000),
+      ];
 
       const res = await api.post(`${API}/analyze/account`, {
         twitter_username: username.replace("@", ""),
       });
 
+      stepTimers.forEach(clearTimeout);
       if (res.data.success) {
         setResult(res.data);
         toast.success(t('account.analysisComplete'));
@@ -255,7 +424,7 @@ export default function AccountAnalysisPage() {
       toast.error(err.response?.data?.detail || t('account.analysisError'));
     } finally {
       setLoading(false);
-      setLoadingStep("");
+      setAnalysisStep(0);
     }
   };
 
@@ -300,29 +469,41 @@ export default function AccountAnalysisPage() {
         </Button>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="text-center py-16">
-          <div className="relative w-20 h-20 mx-auto mb-4">
-            <div className="absolute inset-0 rounded-full border-4 border-blue-500/20" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" />
-          </div>
-          <p className="text-lg font-medium">{loadingStep}</p>
-          <p className="text-sm text-muted-foreground mt-1">{t('account.processingTime')}</p>
-          <div className="w-64 mx-auto mt-4 h-1.5 bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" style={{ width: "60%" }} />
-          </div>
-        </div>
-      )}
+      {/* Loading Overlay (Persona Lab style) */}
+      <AnimatePresence>
+        {loading && analysisUsername && (
+          <AnalysisProgressOverlay
+            username={analysisUsername}
+            currentStep={analysisStep}
+            onCancel={() => setLoading(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Results */}
       {!loading && analysis && (
         <div className="space-y-6">
+          {/* Back to history */}
+          <button
+            onClick={() => setResult(null)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <span>←</span> {t('account.previousAnalyses')}
+          </button>
+
           {/* Score Header */}
           <div className="flex items-center justify-between p-6 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-2xl font-bold text-white">
-                {analysis.overall_score || 0}
+              <div className="relative h-16 w-16 shrink-0">
+                <img
+                  src={result.avatar_url || `https://unavatar.io/x/${result.username}`}
+                  alt={`@${result.username}`}
+                  className="h-16 w-16 rounded-full object-cover ring-2 ring-purple-500/30"
+                  onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                />
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 items-center justify-center text-2xl font-bold text-white" style={{ display: 'none' }}>
+                  {(result.username || '?').charAt(0).toUpperCase()}
+                </div>
               </div>
               <div>
                 <h2 className="text-xl font-bold">@{result.username}</h2>
@@ -333,7 +514,7 @@ export default function AccountAnalysisPage() {
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">{t('account.overallScore')}</p>
-              <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              <p className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-500 bg-clip-text text-transparent">
                 {analysis.overall_score || 0}/100
               </p>
             </div>
@@ -343,10 +524,10 @@ export default function AccountAnalysisPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-border bg-card p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
+                <TrendingUp className="h-5 w-5 text-purple-500" />
                 {t('account.performanceDimensions')}
               </h3>
-              <DimensionRadar dimensions={analysis.dimensions} />
+              <DimensionRadar dimensions={analysis.dimensions} dimensionDetails={analysis.dimension_details} />
             </div>
 
             <div className="space-y-4">

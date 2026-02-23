@@ -759,6 +759,14 @@
   "coach": {
     "title": "AI Coach",
     "subtitle": "Kişiselleştirilmiş içerik önerileri",
+    "greeting": {
+      "morning": "Günaydın",
+      "afternoon": "İyi günler",
+      "evening": "İyi akşamlar"
+    },
+    "cardCount": "Bugün {{count}} önerim var",
+    "noCards": "Bugünlük bu kadar! 🎉",
+    "stats": "İstatistikler",
     "totalGeneration": "Toplam Üretim",
     "favorite": "Favori",
     "favoriteRatio": "Favori Oranı",
@@ -766,14 +774,17 @@
     "toneDistribution": "Ton Dağılımı",
     "lengthDistribution": "Uzunluk Dağılımı",
     "contentType": "İçerik Türü",
-    "aiSuggestions": "AI Önerileri",
-    "startGenerating": "İçerik Üretmeye Başla",
     "weeklyPlan": "Haftalık İçerik Planı",
-    "createPlan": "Plan Oluştur",
-    "recreatePlan": "Yeniden Oluştur",
-    "noPlan": "Henüz haftalık plan oluşturulmadı",
-    "weeklyGoal": "Hedef: {{goal}}",
-    "write": "Yaz",
+    "plan": {
+      "empty": "Bu hafta için henüz plan yok",
+      "create": "✨ Bu Haftanın Planını Oluştur",
+      "creating": "Oluşturuluyor...",
+      "created": "Plan oluşturuldu! 🎉",
+      "recreate": "Yeniden Oluştur",
+      "cachedLabel": "oluşturuldu",
+      "write": "Yaz →",
+      "today": "Bugün"
+    },
     "optimalPostingTimes": "Optimal Paylaşım Saatleri",
     "postNow": "Şimdi Paylaşsam?",
     "score": "Skor: {{score}}%",
@@ -881,12 +892,19 @@
     "topTweets": "🏆 En İyi Tweet'ler",
     "previousAnalyses": "Geçmiş Analizler",
     "dimensions": {
-      "content": "İçerik",
+      "hookPower": "Kanca Gücü",
       "engagement": "Etkileşim",
-      "consistency": "Tutarlılık",
-      "creativity": "Yaratıcılık",
-      "community": "Topluluk",
-      "growth": "Büyüme"
+      "formatDiversity": "Format Çeşitliliği",
+      "emotionalRange": "Duygu Yoğunluğu",
+      "visualUsage": "Görsel Kullanımı"
+    },
+    "loadingSteps": {
+      "finding": "🔍 @{{username}} hesabını buluyoruz...",
+      "scanning": "📊 Son tweetler taranıyor...",
+      "hookAnalysis": "🧠 Kanca gücü analiz ediliyor...",
+      "formatAnalysis": "🎨 Format çeşitliliği hesaplanıyor...",
+      "emotionAnalysis": "💡 Duygu paleti çıkarılıyor...",
+      "preparing": "📈 Rapor hazırlanıyor..."
     }
   },
   "youtube": {

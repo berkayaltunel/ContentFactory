@@ -1234,6 +1234,23 @@ export default function XAIModule() {
   const navigate = useNavigate();
   const { profiles, activeProfileId, activeProfile, setActiveProfile } = useProfile();
 
+  // Connected account primary avatar (for generation cards)
+  const [primaryAccountAvatar, setPrimaryAccountAvatar] = useState(null);
+  useEffect(() => {
+    api.get(`${API}/accounts`).then(res => {
+      const primary = (res.data || []).find(a => a.is_primary);
+      if (primary) {
+        const platformAvatars = {
+          twitter: (u) => `https://unavatar.io/x/${u}`,
+          youtube: (u) => `https://unavatar.io/youtube/${u}`,
+          tiktok: (u) => `https://unavatar.io/tiktok/${u}`,
+        };
+        const fn = platformAvatars[primary.platform];
+        if (fn) setPrimaryAccountAvatar(fn(primary.username));
+      }
+    }).catch(() => {});
+  }, []);
+
   const [settings, setSettings] = useState({
     mode: "classic",
     persona: "otorite",
@@ -1280,6 +1297,15 @@ export default function XAIModule() {
       // Stil profilini aktif et (ProfileContext üzerinden)
       if (setActiveProfile) setActiveProfile(styleParam);
     }
+    // Coach integration: persona, tone, length, hook URL params
+    const urlPersona = searchParams.get("persona");
+    const urlTone = searchParams.get("tone");
+    const urlLength = searchParams.get("length");
+    const urlHook = searchParams.get("hook");
+    if (urlPersona) setSettings(s => ({ ...s, persona: urlPersona }));
+    if (urlTone) setSettings(s => ({ ...s, tone: urlTone }));
+    if (urlLength) setSettings(s => ({ ...s, length: urlLength }));
+    if (urlHook && !topic) setInputValue(urlHook);
   }, [searchParams]);
 
   useEffect(() => {
@@ -2159,7 +2185,7 @@ export default function XAIModule() {
                 key={job.id}
                 job={job}
                 onEvolve={handleEvolve}
-                avatarUrl={activeProfile?.avatar_url || profiles[0]?.avatar_url || (activeProfile?.twitter_username ? `https://unavatar.io/x/${activeProfile.twitter_username}` : undefined)}
+                avatarUrl={primaryAccountAvatar}
               />
             ))}
           </div>
@@ -2240,7 +2266,7 @@ export default function XAIModule() {
                 tweetContent={gen.tweet_content}
                 tweetUrl={gen.tweet_url}
                 initialFavorites={gen.favorited_variants}
-                avatarUrl={activeProfile?.avatar_url || profiles[0]?.avatar_url || (activeProfile?.twitter_username ? `https://unavatar.io/x/${activeProfile.twitter_username}` : undefined)}
+                avatarUrl={primaryAccountAvatar}
               />
             ))}
           </div>

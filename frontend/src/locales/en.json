@@ -759,6 +759,14 @@
   "coach": {
     "title": "AI Coach",
     "subtitle": "Personalized content recommendations",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "cardCount": "{{count}} suggestions for you today",
+    "noCards": "All caught up for today! 🎉",
+    "stats": "Statistics",
     "totalGeneration": "Total Generations",
     "favorite": "Favorites",
     "favoriteRatio": "Favorite Ratio",
@@ -766,14 +774,17 @@
     "toneDistribution": "Tone Distribution",
     "lengthDistribution": "Length Distribution",
     "contentType": "Content Type",
-    "aiSuggestions": "AI Suggestions",
-    "startGenerating": "Start Generating Content",
     "weeklyPlan": "Weekly Content Plan",
-    "createPlan": "Create Plan",
-    "recreatePlan": "Recreate",
-    "noPlan": "No weekly plan created yet",
-    "weeklyGoal": "Goal: {{goal}}",
-    "write": "Write",
+    "plan": {
+      "empty": "No plan for this week yet",
+      "create": "✨ Create This Week's Plan",
+      "creating": "Creating...",
+      "created": "Plan created! 🎉",
+      "recreate": "Recreate",
+      "cachedLabel": "created",
+      "write": "Write →",
+      "today": "Today"
+    },
     "optimalPostingTimes": "Optimal Posting Times",
     "postNow": "Should I Post Now?",
     "score": "Score: {{score}}%",
@@ -881,12 +892,19 @@
     "topTweets": "🏆 Top Tweets",
     "previousAnalyses": "Previous Analyses",
     "dimensions": {
-      "content": "Content",
+      "hookPower": "Hook Power",
       "engagement": "Engagement",
-      "consistency": "Consistency",
-      "creativity": "Creativity",
-      "community": "Community",
-      "growth": "Growth"
+      "formatDiversity": "Format Diversity",
+      "emotionalRange": "Emotional Range",
+      "visualUsage": "Visual Usage"
+    },
+    "loadingSteps": {
+      "finding": "🔍 Finding @{{username}}...",
+      "scanning": "📊 Scanning recent tweets...",
+      "hookAnalysis": "🧠 Analyzing hook power...",
+      "formatAnalysis": "🎨 Calculating format diversity...",
+      "emotionAnalysis": "💡 Extracting emotion palette...",
+      "preparing": "📈 Preparing report..."
     }
   },
   "youtube": {

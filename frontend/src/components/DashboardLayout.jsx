@@ -439,11 +439,10 @@ export default function DashboardLayout() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/10 transition-all duration-300 focus:outline-none focus-visible:outline-none">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
-                    <AvatarImage 
-                      src={primaryAvatarUrl || user.avatar_url} 
+                    {primaryAvatarUrl && <AvatarImage 
+                      src={primaryAvatarUrl} 
                       alt={user.name}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
+                    />}
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
                       {user.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
@@ -590,7 +589,7 @@ export default function DashboardLayout() {
               <DropdownMenuTrigger asChild>
                 <button className="p-1 rounded-full focus:outline-none haptic-btn">
                   <Avatar className="h-7 w-7 ring-1 ring-white/20">
-                    <AvatarImage src={primaryAvatarUrl || user.avatar_url} alt={user.name} onError={(e) => { e.target.style.display = 'none'; }} />
+                    {primaryAvatarUrl && <AvatarImage src={primaryAvatarUrl} alt={user.name} />}
                     <AvatarFallback className="bg-purple-500 text-white text-xs font-semibold">
                       {user.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
