@@ -1003,6 +1003,25 @@ async def get_generation_history(
         if scope == "all" and gen.get("account_id"):
             gen["account_info"] = account_map.get(gen["account_id"])
 
+    # scope=all: gerçek toplam sayıları ekle (limit'ten bağımsız, pagination-safe)
+    if scope == "all" and account_map:
+        account_counts = {}
+        total = 0
+        for acc_id in account_map:
+            cnt_q = supabase.table("generations").select("id", count="exact").eq("user_id", user.id).eq("account_id", acc_id)
+            if content_type:
+                cnt_q = cnt_q.eq("type", content_type)
+            cnt = cnt_q.execute().count or 0
+            account_counts[acc_id] = cnt
+            total += cnt
+        return {
+            "generations": generations,
+            "meta": {
+                "account_counts": account_counts,
+                "total": total,
+            }
+        }
+
     return generations
 
 @api_router.get("/user/stats")

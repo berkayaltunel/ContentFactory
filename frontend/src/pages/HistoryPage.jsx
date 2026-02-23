@@ -71,6 +71,7 @@ export default function HistoryPage() {
   const [accountFilter, setAccountFilter] = useState(null); // null = tümü, string = account_id
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [metaCounts, setMetaCounts] = useState(null);       // backend'den gelen gerçek sayılar
 
   // Generation'dan account_id lookup (silme/evolve/bulk işlemleri için)
   const accountIdMap = useMemo(() => {
@@ -158,7 +159,15 @@ export default function HistoryPage() {
       let url = `${API}/generations/history?limit=50&scope=all`;
       if (accountFilter) url += `&filter_account_id=${accountFilter}`;
       const response = await api.get(url);
-      setGenerations(response.data || []);
+      const data = response.data;
+      // scope=all: { generations: [...], meta: { account_counts, total } }
+      if (data?.generations && data?.meta) {
+        setGenerations(data.generations);
+        setMetaCounts(data.meta.account_counts || null);
+      } else {
+        // Legacy format (plain array)
+        setGenerations(Array.isArray(data) ? data : []);
+      }
     } catch (error) {
       console.error("History fetch error:", error);
     } finally {
@@ -166,15 +175,16 @@ export default function HistoryPage() {
     }
   };
 
-  // ── Hesap bazlı sayıları hesapla (tab badge) ──
+  // ── Hesap bazlı sayılar: backend meta varsa onu kullan, yoksa frontend sayımı ──
   const accountCounts = useMemo(() => {
+    if (metaCounts) return metaCounts;
     const m = {};
     generations.forEach((g) => {
       const aid = g.account_id;
       if (aid) m[aid] = (m[aid] || 0) + 1;
     });
     return m;
-  }, [generations]);
+  }, [generations, metaCounts]);
 
   const filteredGenerations = filter === "all"
     ? generations
@@ -219,6 +229,11 @@ export default function HistoryPage() {
             )}
           >
             Tümü
+            {metaCounts && (
+              <span className="text-[11px] text-muted-foreground ml-1">
+                ({Object.values(metaCounts).reduce((a, b) => a + b, 0)})
+              </span>
+            )}
           </button>
           {accounts.filter(a => a.platform !== "default").map((acc) => {
             const isActive = accountFilter === acc.id;
