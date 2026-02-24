@@ -331,27 +331,42 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
     profile = sb.table("user_settings").select("niches").eq("user_id", user.id).limit(1).execute()
     niches = profile.data[0].get("niches", []) if profile.data else []
 
+    # Rastgele bir niche seç (context olarak)
+    import random
+    niche_topic = random.choice(niches) if niches else None
+    niche_labels = {n["slug"]: n["label"] for n in NICHE_TAXONOMY}
+    topic_str = niche_labels.get(niche_topic, niche_topic) if niche_topic else "kendi uzmanlık alanın"
+
+    avoid_str = ', '.join(body.avoid[:5]) if body.avoid else ''
+    principles_str = ', '.join(body.principles[:5]) if body.principles else ''
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": f"""Kullanıcının marka sesiyle tek bir tweet üret.
+                {"role": "system", "content": f"""Kullanıcının marka sesiyle, "{topic_str}" konusunda tek bir tweet üret.
 
 Ton: {tone_str}
-Nişler: {', '.join(niches[:3]) if niches else 'Genel'}
 
-ZORUNLU İLKELER (her içerikte uygulanmalı): {', '.join(body.principles[:5]) if body.principles else 'Yok'}
-YASAKLAR (kesinlikle kullanma, ihlal edersen içerik reddedilir): {', '.join(body.avoid[:5]) if body.avoid else 'Yok'}
+{f'ZORUNLU İLKELER: {principles_str}' if principles_str else ''}
+{f'KULLANICI YASAKLARI: {avoid_str}' if avoid_str else ''}
 
-KURALLAR:
+KIRILMAZ YASAKLAR (kullanıcı seçmese bile her zaman geçerli):
+- Emoji YASAK. Tek bir emoji bile kullanma.
+- Hashtag YASAK. # işareti kullanma.
+- "Unutmayın ki...", "Sonuç olarak...", "İşte size...", "Peki siz ne düşünüyorsunuz?" gibi AI şablon kalıpları YASAK.
+- "Siz ne düşünüyorsunuz?", "Yorumlarınızı bekliyorum", "Katılıyor musunuz?" gibi ucuz etkileşim tuzakları YASAK.
+- Kahve, ofis, pazartesi, motivasyon gibi genel geçer konular YASAK (konu verilmişse ona odaklan).
+- "... ama aslında ...", "İşin sırrı..." gibi clickbait yapılar YASAK.
+- Üç nokta (...) ile biten cümleler YASAK.
+
+ZORUNLU:
+- Konu "{topic_str}" olmalı, başka konuya kayma
 - Max 280 karakter
-- Emoji YASAK (kullanıcı isterse ekler)
-- AI klişeleri YASAK ("Yapay zeka dünyasında...", "İşte size..." gibi kalıplar)
-- Ton dağılımına SADIK kal (baskın ton belirgin olmalı)
-- YASAKLAR bölümündeki her madde KESİN kural, tavsiye değil
-- Doğal, kişisel, insan gibi yaz
-- Sadece tweet metnini döndür, başka bir şey yazma"""},
-                {"role": "user", "content": "Bu DNA ile bir tweet üret."}
+- Gerçek bir insan gibi yaz, yapay zeka gibi değil
+- Baskın ton belirgin olmalı
+- Sadece tweet metnini döndür"""},
+                {"role": "user", "content": f'"{topic_str}" hakkında bu DNA ile bir tweet üret.'}
             ],
             temperature=0.8,
             max_tokens=150,

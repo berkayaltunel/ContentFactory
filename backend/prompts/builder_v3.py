@@ -137,10 +137,21 @@ def _extract_tone_essence(tone_id: str) -> str:
 
 
 
+BASE_PROHIBITIONS = """
+### Kırılmaz Yasaklar (her zaman geçerli)
+- "Unutmayın ki...", "Sonuç olarak...", "İşte size..." gibi AI şablon kalıpları YASAK
+- "Siz ne düşünüyorsunuz?", "Yorumlarınızı bekliyorum" gibi ucuz etkileşim tuzakları YASAK
+- Hashtag spam YASAK (max 1, tercihen 0)
+- Aşırı emoji YASAK (max 1, tercihen 0)
+- Üç nokta (...) ile biten gizemli cümleler YASAK
+- "İşin sırrı...", "Ama aslında..." gibi clickbait yapılar YASAK
+"""
+
+
 def _build_brand_voice_section(brand_voice: dict = None) -> str:
     """Brand Voice DNA from Creator Hub profile. Background layer, overridden by persona/tone."""
     if not brand_voice:
-        return ""
+        return BASE_PROHIBITIONS
     tones = brand_voice.get("tones", {})
     principles = brand_voice.get("principles", [])
     avoid = brand_voice.get("avoid", [])
@@ -179,6 +190,7 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
     if avoid:
         a_labels = [avoid_labels.get(a, a) for a in avoid[:5]]
         parts.append(f"YASAKLAR (kesinlikle kullanma, ihlal edersen içerik reddedilir): {', '.join(a_labels)}")
+    parts.append(BASE_PROHIBITIONS)
     return chr(10).join(parts)
 
 
