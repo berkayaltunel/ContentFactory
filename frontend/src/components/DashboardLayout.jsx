@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import { useAccount, getAccountAvatar } from "@/contexts/AccountContext";
+import { useCreatorProfile } from "@/contexts/CreatorProfileContext";
 
 /* ── Brand Icon Wrappers ─────────────────────────── */
 
@@ -284,6 +285,8 @@ export default function DashboardLayout() {
     setOverrideAccountId,
   } = useAccount();
 
+  const { creatorProfile } = useCreatorProfile();
+
   // Context-aware platform detection: URL'den aktif platformu oku
   const currentPlatform = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -324,12 +327,15 @@ export default function DashboardLayout() {
   const currentPlatformConfig = currentPlatform ? PLATFORMS.find(p => p.id === currentPlatform) : null;
   const CurrentPlatformIcon = currentPlatformConfig?.Icon || null;
 
-  const activeAvatarUrl = effectiveAccount ? getAccountAvatar(effectiveAccount) : null;
-  const activeDisplayName = effectiveAccount
-    ? `@${effectiveAccount.username}`
-    : currentPlatformConfig
-      ? currentPlatformConfig.label
-      : user?.name?.split(" ")[0] || "U";
+  // Avatar fallback zinciri: Master Avatar → Platform Avatar → null
+  const activeAvatarUrl = creatorProfile?.avatar_url
+    || (effectiveAccount ? getAccountAvatar(effectiveAccount) : null);
+  // Name fallback zinciri: Master Name → @username → platform label → Google name → "U"
+  const activeDisplayName = creatorProfile?.display_name
+    || (effectiveAccount ? `@${effectiveAccount.username}` : null)
+    || currentPlatformConfig?.label
+    || user?.name?.split(" ")[0]
+    || "U";
 
   const handleSaveAccount = async (platform, username) => {
     try {

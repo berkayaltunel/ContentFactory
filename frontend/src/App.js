@@ -7,6 +7,7 @@ import { ProtectedRoute, PublicRoute } from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { AccountProvider } from "@/contexts/AccountContext";
+import { CreatorProfileProvider } from "@/contexts/CreatorProfileContext";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
@@ -41,7 +42,7 @@ function App() {
 
               {/* Protected dashboard routes */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<AccountProvider><ProfileProvider><DashboardLayout /></ProfileProvider></AccountProvider>}>
+                <Route path="/dashboard" element={<AccountProvider><CreatorProfileProvider><ProfileProvider><DashboardLayout /></ProfileProvider></CreatorProfileProvider></AccountProvider>}>
                   <Route index element={<DashboardHome />} />
                   <Route path="create" element={<XAIModule />} />
                   <Route path="history" element={<HistoryPage />} />

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import api, { API } from "@/lib/api";
 import { useAccount, getAccountAvatar } from "@/contexts/AccountContext";
+import { useCreatorProfile } from "@/contexts/CreatorProfileContext";
 
 /* ══════════════════════════════════════════
    CONSTANTS
@@ -56,22 +57,22 @@ function ToneSlider({ config, value, remaining, onChange }) {
         max={value + remaining}
         value={value}
         onChange={(e) => onChange(config.key, parseInt(e.target.value))}
-        className="w-full h-2 appearance-none bg-transparent cursor-pointer absolute opacity-0"
-        style={{ marginTop: "-18px", position: "relative" }}
+        className="w-full h-8 appearance-none bg-transparent cursor-pointer absolute opacity-0"
+        style={{ marginTop: "-22px", position: "relative", touchAction: "none" }}
       />
       {/* +/- buttons for precision */}
       <div className="flex gap-1 justify-end">
         <button
           onClick={() => value > 0 && onChange(config.key, value - 5)}
           disabled={value === 0}
-          className="text-xs px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-zinc-400 transition-colors"
+          className="text-xs px-3 py-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 text-zinc-400 transition-colors select-none"
         >
           -5
         </button>
         <button
           onClick={() => canIncrease && onChange(config.key, Math.min(value + 5, value + remaining))}
           disabled={!canIncrease}
-          className="text-xs px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-zinc-400 transition-colors"
+          className="text-xs px-3 py-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-30 text-zinc-400 transition-colors select-none"
         >
           +5
         </button>
@@ -165,6 +166,7 @@ function TagInput({ items, onChange, placeholder, max = 5 }) {
 
 export default function CreatorHubPage() {
   const { accounts } = useAccount();
+  const { updateProfile } = useCreatorProfile();
 
   // Profile state
   const [displayName, setDisplayName] = useState("");
@@ -266,6 +268,7 @@ export default function CreatorHubPage() {
         content_type: file.type,
       });
       setAvatarUrl(res.data.avatar_url);
+      updateProfile({ avatar_url: res.data.avatar_url });
       toast.success("Avatar güncellendi");
     } catch (err) {
       toast.error("Avatar yüklenemedi");
@@ -280,6 +283,7 @@ export default function CreatorHubPage() {
     try {
       const res = await api.post(`${API}/profile/avatar`, { source: platform });
       setAvatarUrl(res.data.avatar_url);
+      updateProfile({ avatar_url: res.data.avatar_url });
       toast.success(`${platform} avatarı alındı`);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Avatar alınamadı");
@@ -305,6 +309,14 @@ export default function CreatorHubPage() {
         },
       });
       setDirty(false);
+      // Global state güncelle → Navbar anında yansır
+      updateProfile({
+        display_name: displayName || null,
+        title: title || null,
+        avatar_url: avatarUrl,
+        niches,
+        brand_voice: { tones, principles, avoid, sample_voice: sampleVoice },
+      });
       toast.success("Profil kaydedildi ✨");
     } catch (err) {
       const detail = err.response?.data?.detail;
