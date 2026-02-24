@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { User, Upload, Plus, X, Save, Loader2, AlertCircle, Check, Search, ChevronDown } from "lucide-react";
 import { FaXTwitter, FaInstagram } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -16,11 +15,11 @@ import { useCreatorProfile } from "@/contexts/CreatorProfileContext";
    ══════════════════════════════════════════ */
 
 const TONE_CONFIG = [
-  { key: "informative", label: "Bilgi Verici", emoji: "📚", color: "from-blue-500 to-cyan-500", bg: "bg-blue-500" },
-  { key: "friendly", label: "Samimi", emoji: "🤝", color: "from-green-500 to-emerald-500", bg: "bg-green-500" },
-  { key: "witty", label: "Esprili", emoji: "😏", color: "from-yellow-500 to-orange-500", bg: "bg-yellow-500" },
-  { key: "aggressive", label: "Agresif", emoji: "🔥", color: "from-red-500 to-rose-500", bg: "bg-red-500" },
-  { key: "inspirational", label: "İlham Verici", emoji: "✨", color: "from-violet-500 to-fuchsia-500", bg: "bg-violet-500" },
+  { key: "informative", label: "Bilgi Verici", emoji: "📚", color: "from-blue-500 to-cyan-500", bg: "bg-blue-500", hex: "#3b82f6" },
+  { key: "friendly", label: "Samimi", emoji: "🤝", color: "from-green-500 to-emerald-500", bg: "bg-green-500", hex: "#22c55e" },
+  { key: "witty", label: "Esprili", emoji: "😏", color: "from-amber-500 to-orange-500", bg: "bg-amber-500", hex: "#f59e0b" },
+  { key: "aggressive", label: "Agresif", emoji: "🔥", color: "from-red-500 to-rose-500", bg: "bg-red-500", hex: "#ef4444" },
+  { key: "inspirational", label: "İlham Verici", emoji: "✨", color: "from-violet-500 to-fuchsia-500", bg: "bg-violet-500", hex: "#8b5cf6" },
 ];
 
 const MAX_NICHES = 5;
@@ -35,24 +34,59 @@ const NICHE_CATEGORIES = {
   "Diğer": ["crypto", "realestate", "sustainability", "politics", "automotive", "parenting", "diy", "motivation", "cinema", "community"],
 };
 
+// Dynamic AI persona summary based on tone distribution
+const AI_PERSONA_MAP = [
+  { check: (t) => t.witty >= 50 && t.informative >= 30, text: "Eğlendirirken öğreten, hazırcevap bir profesyonel" },
+  { check: (t) => t.witty >= 60, text: "Keskin zekasıyla dikkat çeken, esprili bir içerik makinesi" },
+  { check: (t) => t.aggressive >= 50, text: "Sözünü esirgemeyen, provokatif bir düşünce lideri" },
+  { check: (t) => t.inspirational >= 50, text: "İlham veren, vizyoner bir hikaye anlatıcısı" },
+  { check: (t) => t.friendly >= 50 && t.informative >= 30, text: "Samimi üslubuyla bilgi paylaşan, güvenilir bir rehber" },
+  { check: (t) => t.friendly >= 60, text: "Sıcak ve samimi, herkesin yakınlık hissettiği bir ses" },
+  { check: (t) => t.informative >= 60, text: "Veriyle konuşan, net ve otoriteli bir uzman" },
+  { check: (t) => t.informative >= 40 && t.friendly >= 40, text: "Bilgili ama erişilebilir, dengeli bir içerik üreticisi" },
+];
+
+function getAIPersonaSummary(tones) {
+  for (const entry of AI_PERSONA_MAP) {
+    if (entry.check(tones)) return entry.text;
+  }
+  return "Kendine özgü bir sesteki yaratıcı";
+}
+
 /* ══════════════════════════════════════════
-   TONE SLIDER (RPG STYLE - BUG FIXED)
+   GLASS CARD WRAPPER
+   ══════════════════════════════════════════ */
+
+function GlassCard({ children, className, hover = true }) {
+  return (
+    <div className={cn(
+      "relative rounded-2xl border border-white/[0.06] bg-gradient-to-b from-zinc-900/80 to-zinc-950/80 backdrop-blur-sm",
+      "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
+      hover && "transition-all duration-300 hover:border-white/[0.1] hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_0_20px_rgba(139,92,246,0.03)]",
+      className
+    )}>
+      {children}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   TONE SLIDER (REFINED)
    ══════════════════════════════════════════ */
 
 function ToneSlider({ config, value, otherTotal, onChange }) {
-  // Max this slider can go = TOTAL_POINTS - sum of OTHER sliders
   const maxAllowed = TOTAL_POINTS - otherTotal;
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-          <span>{config.emoji}</span>
-          <span>{config.label}</span>
+    <div className="group space-y-1">
+      <div className="flex items-center justify-between px-0.5">
+        <span className="text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors flex items-center gap-1.5">
+          <span className="text-sm">{config.emoji}</span>
+          {config.label}
         </span>
         <span className={cn(
-          "text-xs font-mono font-bold tabular-nums",
-          value > 0 ? "text-white" : "text-zinc-600"
+          "text-[11px] font-mono font-bold tabular-nums transition-colors",
+          value > 0 ? "text-white" : "text-zinc-700"
         )}>
           {value}
         </span>
@@ -61,15 +95,22 @@ function ToneSlider({ config, value, otherTotal, onChange }) {
         <button
           onClick={() => value >= 5 && onChange(config.key, value - 5)}
           disabled={value < 5}
-          className="w-7 h-7 flex items-center justify-center rounded-md bg-zinc-800/80 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-20 text-zinc-400 text-xs font-bold transition-colors select-none shrink-0"
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] disabled:opacity-15 text-zinc-500 text-[10px] font-bold transition-all select-none shrink-0 border border-white/[0.04]"
         >
           −
         </button>
-        <div className="relative flex-1 h-2 bg-zinc-800/80 rounded-full overflow-hidden">
+        <div className="relative flex-1 h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
           <div
-            className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-300 ease-out", config.color)}
+            className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-500 ease-out", config.color)}
             style={{ width: `${value}%` }}
           />
+          {/* Glow effect on active slider */}
+          {value > 0 && (
+            <div
+              className="absolute top-0 h-full rounded-full blur-sm opacity-30 transition-all duration-500"
+              style={{ width: `${value}%`, background: config.hex }}
+            />
+          )}
           <input
             type="range"
             min={0}
@@ -83,7 +124,7 @@ function ToneSlider({ config, value, otherTotal, onChange }) {
         <button
           onClick={() => value + 5 <= maxAllowed && onChange(config.key, value + 5)}
           disabled={value + 5 > maxAllowed}
-          className="w-7 h-7 flex items-center justify-center rounded-md bg-zinc-800/80 hover:bg-zinc-700 active:bg-zinc-600 disabled:opacity-20 text-zinc-400 text-xs font-bold transition-colors select-none shrink-0"
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] disabled:opacity-15 text-zinc-500 text-[10px] font-bold transition-all select-none shrink-0 border border-white/[0.04]"
         >
           +
         </button>
@@ -93,7 +134,7 @@ function ToneSlider({ config, value, otherTotal, onChange }) {
 }
 
 /* ══════════════════════════════════════════
-   NICHE SELECTOR (SEARCHABLE + CATEGORIZED)
+   NICHE SELECTOR (CATEGORIZED + SEARCH)
    ══════════════════════════════════════════ */
 
 function NicheSelector({ taxonomy, selected, onChange, max }) {
@@ -102,56 +143,52 @@ function NicheSelector({ taxonomy, selected, onChange, max }) {
   const atLimit = selected.length >= max;
 
   const filteredTaxonomy = useMemo(() => {
-    if (!search.trim()) return null; // Show categories when no search
+    if (!search.trim()) return null;
     const q = search.toLowerCase();
-    return taxonomy.filter(n =>
-      n.label.toLowerCase().includes(q) || n.slug.includes(q)
-    );
+    return taxonomy.filter(n => n.label.toLowerCase().includes(q) || n.slug.includes(q));
   }, [search, taxonomy]);
 
   const toggle = (slug) => {
-    if (selected.includes(slug)) {
-      onChange(selected.filter(s => s !== slug));
-    } else if (selected.length < max) {
-      onChange([...selected, slug]);
-    }
+    if (selected.includes(slug)) onChange(selected.filter(s => s !== slug));
+    else if (selected.length < max) onChange([...selected, slug]);
   };
 
   const selectedNiches = taxonomy.filter(n => selected.includes(n.slug));
 
   return (
     <div className="space-y-3">
-      {/* Selected chips */}
       {selectedNiches.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selectedNiches.map(n => (
             <button
               key={n.slug}
               onClick={() => toggle(n.slug)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs hover:bg-violet-500/30 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+                bg-violet-500/10 border border-violet-400/20 text-violet-300
+                hover:bg-violet-500/20 hover:border-violet-400/30
+                shadow-[0_0_12px_rgba(139,92,246,0.08)]
+                transition-all duration-200"
             >
               <span>{n.emoji}</span>
               <span>{n.label}</span>
-              <X className="w-3 h-3 ml-0.5 opacity-60" />
+              <X className="w-3 h-3 opacity-50" />
             </button>
           ))}
         </div>
       )}
 
-      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Alan ara..."
-          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+          className="w-full bg-white/[0.02] border border-white/[0.06] rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/30 transition-colors"
         />
       </div>
 
-      {/* Search results */}
       {filteredTaxonomy ? (
-        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
           {filteredTaxonomy.map(n => {
             const isSel = selected.includes(n.slug);
             return (
@@ -160,44 +197,49 @@ function NicheSelector({ taxonomy, selected, onChange, max }) {
                 onClick={() => toggle(n.slug)}
                 disabled={atLimit && !isSel}
                 className={cn(
-                  "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-all",
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-all",
                   isSel
-                    ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
+                    ? "bg-violet-500/10 border-violet-400/20 text-violet-300"
                     : atLimit
-                    ? "bg-zinc-900/30 border-zinc-800/30 text-zinc-600 cursor-not-allowed"
-                    : "bg-zinc-900/50 border-zinc-800/50 text-zinc-400 hover:border-zinc-700 cursor-pointer"
+                    ? "bg-zinc-900/20 border-zinc-800/20 text-zinc-700 cursor-not-allowed"
+                    : "bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:border-white/[0.12] hover:text-zinc-300 cursor-pointer"
                 )}
               >
                 <span>{n.emoji}</span> {n.label}
               </button>
             );
           })}
-          {filteredTaxonomy.length === 0 && (
-            <span className="text-xs text-zinc-600">Sonuç bulunamadı</span>
-          )}
+          {filteredTaxonomy.length === 0 && <span className="text-xs text-zinc-600">Sonuç yok</span>}
         </div>
       ) : (
-        /* Categorized view */
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {Object.entries(NICHE_CATEGORIES).map(([cat, slugs]) => {
             const catNiches = taxonomy.filter(n => slugs.includes(n.slug));
             if (!catNiches.length) return null;
             const isOpen = expandedCat === cat;
-            const hasSelected = catNiches.some(n => selected.includes(n.slug));
+            const selCount = catNiches.filter(n => selected.includes(n.slug)).length;
             return (
-              <div key={cat}>
+              <div key={cat} className="overflow-hidden">
                 <button
                   onClick={() => setExpandedCat(isOpen ? null : cat)}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors",
-                    hasSelected ? "text-violet-300 bg-violet-500/5" : "text-zinc-400 hover:bg-zinc-800/50"
+                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all duration-200",
+                    selCount > 0 ? "text-violet-300" : "text-zinc-500 hover:text-zinc-300"
                   )}
                 >
-                  <span className="font-medium">{cat}</span>
-                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", isOpen && "rotate-180")} />
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium">{cat}</span>
+                    {selCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-400">{selCount}</span>
+                    )}
+                  </span>
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", isOpen && "rotate-180")} />
                 </button>
-                {isOpen && (
-                  <div className="flex flex-wrap gap-1.5 px-3 py-2">
+                <div className={cn(
+                  "transition-all duration-300 ease-out",
+                  isOpen ? "max-h-40 opacity-100 pb-2" : "max-h-0 opacity-0"
+                )} style={{ overflow: "hidden" }}>
+                  <div className="flex flex-wrap gap-1.5 px-3 pt-1">
                     {catNiches.map(n => {
                       const isSel = selected.includes(n.slug);
                       return (
@@ -206,12 +248,12 @@ function NicheSelector({ taxonomy, selected, onChange, max }) {
                           onClick={() => toggle(n.slug)}
                           disabled={atLimit && !isSel}
                           className={cn(
-                            "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-all",
+                            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-all duration-200",
                             isSel
-                              ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
+                              ? "bg-violet-500/10 border-violet-400/20 text-violet-300 shadow-[0_0_8px_rgba(139,92,246,0.06)]"
                               : atLimit
-                              ? "bg-zinc-900/30 border-zinc-800/30 text-zinc-600 cursor-not-allowed"
-                              : "bg-zinc-900/50 border-zinc-800/50 text-zinc-400 hover:border-zinc-700 cursor-pointer"
+                              ? "bg-zinc-900/20 border-zinc-800/20 text-zinc-700 cursor-not-allowed"
+                              : "bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:border-white/[0.12] cursor-pointer"
                           )}
                         >
                           <span>{n.emoji}</span> {n.label}
@@ -219,7 +261,7 @@ function NicheSelector({ taxonomy, selected, onChange, max }) {
                       );
                     })}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
@@ -246,9 +288,9 @@ function TagInput({ items, onChange, placeholder, max = 5 }) {
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-1">
         {items.map((item, i) => (
-          <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[11px]">
+          <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-zinc-300 text-[11px]">
             {item}
-            <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="hover:text-red-400"><X className="w-2.5 h-2.5" /></button>
+            <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="hover:text-red-400 transition-colors"><X className="w-2.5 h-2.5" /></button>
           </span>
         ))}
       </div>
@@ -259,9 +301,9 @@ function TagInput({ items, onChange, placeholder, max = 5 }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addItem())}
             placeholder={placeholder}
-            className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-md px-2 py-1 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+            className="flex-1 bg-white/[0.02] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500/30 transition-colors"
           />
-          <button onClick={addItem} className="px-2 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400">
+          <button onClick={addItem} className="px-2 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-zinc-500 transition-colors">
             <Plus className="w-3 h-3" />
           </button>
         </div>
@@ -271,26 +313,69 @@ function TagInput({ items, onChange, placeholder, max = 5 }) {
 }
 
 /* ══════════════════════════════════════════
-   MAIN PAGE - BENTO GRID LAYOUT
+   INLINE EDITABLE TEXT
+   ══════════════════════════════════════════ */
+
+function InlineEdit({ value, onChange, placeholder, className, inputClassName }) {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => setEditing(false)}
+        onKeyDown={(e) => e.key === "Enter" && setEditing(false)}
+        placeholder={placeholder}
+        maxLength={100}
+        className={cn(
+          "bg-transparent border-b border-violet-500/30 outline-none w-full text-center",
+          inputClassName
+        )}
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEditing(true)}
+      className={cn(
+        "w-full text-center cursor-text transition-colors",
+        value ? "" : "text-zinc-600",
+        className
+      )}
+      title="Düzenlemek için tıkla"
+    >
+      {value || placeholder}
+    </button>
+  );
+}
+
+/* ══════════════════════════════════════════
+   MAIN PAGE
    ══════════════════════════════════════════ */
 
 export default function CreatorHubPage() {
   const { accounts } = useAccount();
   const { updateProfile } = useCreatorProfile();
 
-  // Profile state
   const [displayName, setDisplayName] = useState("");
   const [title, setTitle] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [niches, setNiches] = useState([]);
-  const [tones, setTones] = useState({
-    informative: 40, friendly: 40, witty: 20, aggressive: 0, inspirational: 0,
-  });
+  const [tones, setTones] = useState({ informative: 40, friendly: 40, witty: 20, aggressive: 0, inspirational: 0 });
   const [principles, setPrinciples] = useState([]);
   const [avoid, setAvoid] = useState([]);
   const [sampleVoice, setSampleVoice] = useState("");
-
-  // UI state
   const [taxonomy, setTaxonomy] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -298,17 +383,14 @@ export default function CreatorHubPage() {
   const [dirty, setDirty] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Derived - FIXED: per-slider otherTotal calculation
   const toneTotal = Object.values(tones).reduce((a, b) => a + b, 0);
-  const toneRemaining = TOTAL_POINTS - toneTotal;
-  const isOverBudget = toneTotal > TOTAL_POINTS;
   const isExact = toneTotal === TOTAL_POINTS;
   const canSave = dirty && isExact && !saving;
+  const personaSummary = useMemo(() => getAIPersonaSummary(tones), [tones]);
 
   const twitterAccount = accounts.find(a => a.platform === "twitter" && a.status === "active");
   const instagramAccount = accounts.find(a => a.platform === "instagram" && a.status === "active");
 
-  // Load
   useEffect(() => {
     Promise.all([
       api.get(`${API}/profile`).then(r => r.data),
@@ -329,22 +411,14 @@ export default function CreatorHubPage() {
 
   const markDirty = useCallback(() => setDirty(true), []);
 
-  // FIXED: Slider can never exceed budget
   const handleToneChange = useCallback((key, val) => {
     setTones(prev => {
       const otherTotal = Object.entries(prev).reduce((sum, [k, v]) => k === key ? sum : sum + v, 0);
-      const clamped = Math.min(val, TOTAL_POINTS - otherTotal);
-      return { ...prev, [key]: Math.max(0, clamped) };
+      return { ...prev, [key]: Math.max(0, Math.min(val, TOTAL_POINTS - otherTotal)) };
     });
     markDirty();
   }, [markDirty]);
 
-  const toggleNiche = useCallback((newNiches) => {
-    setNiches(newNiches);
-    markDirty();
-  }, [markDirty]);
-
-  // Avatar upload
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -352,11 +426,7 @@ export default function CreatorHubPage() {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { toast.error("JPEG, PNG veya WebP"); return; }
     setAvatarUploading(true);
     try {
-      const base64 = await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.readAsDataURL(file);
-      });
+      const base64 = await new Promise(resolve => { const r = new FileReader(); r.onload = () => resolve(r.result.split(",")[1]); r.readAsDataURL(file); });
       const res = await api.post(`${API}/profile/avatar`, { source: "upload", data: base64, content_type: file.type });
       setAvatarUrl(res.data.avatar_url);
       updateProfile({ avatar_url: res.data.avatar_url });
@@ -371,7 +441,7 @@ export default function CreatorHubPage() {
       const res = await api.post(`${API}/profile/avatar`, { source: platform });
       setAvatarUrl(res.data.avatar_url);
       updateProfile({ avatar_url: res.data.avatar_url });
-      toast.success(`${platform} avatarı alındı`);
+      toast.success(`Avatar alındı`);
     } catch (err) { toast.error(err.response?.data?.detail || "Avatar alınamadı"); }
     finally { setAvatarUploading(false); }
   };
@@ -381,27 +451,19 @@ export default function CreatorHubPage() {
     setSaving(true);
     try {
       await api.put(`${API}/profile`, {
-        display_name: displayName || null,
-        title: title || null,
-        niches,
+        display_name: displayName || null, title: title || null, niches,
         brand_voice: { tones, principles, avoid, sample_voice: sampleVoice },
       });
       setDirty(false);
-      updateProfile({
-        display_name: displayName || null, title: title || null,
-        avatar_url: avatarUrl, niches,
-        brand_voice: { tones, principles, avoid, sample_voice: sampleVoice },
-      });
+      updateProfile({ display_name: displayName || null, title: title || null, avatar_url: avatarUrl, niches, brand_voice: { tones, principles, avoid, sample_voice: sampleVoice } });
       toast.success("Profil kaydedildi ✨");
     } catch (err) {
-      const detail = err.response?.data?.detail;
-      if (typeof detail === "string") toast.error(detail);
-      else toast.error("Kayıt başarısız");
+      toast.error(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Kayıt başarısız");
     } finally { setSaving(false); }
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-6 h-6 animate-spin text-violet-400" /></div>;
+    return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-5 h-5 animate-spin text-violet-400" /></div>;
   }
 
   return (
@@ -409,20 +471,11 @@ export default function CreatorHubPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Creator Hub</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">Dijital DNA'nı tanımla</p>
+          <h1 className="text-lg font-bold text-white tracking-tight">Creator Hub</h1>
+          <p className="text-[11px] text-zinc-600 mt-0.5">Dijital DNA'nı tanımla</p>
         </div>
-        <Button
-          onClick={handleSave}
-          disabled={!canSave}
-          size="sm"
-          className={cn(
-            "gap-1.5 text-xs",
-            canSave
-              ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/20"
-              : ""
-          )}
-        >
+        <Button onClick={handleSave} disabled={!canSave} size="sm"
+          className={cn("gap-1.5 text-xs h-8 rounded-xl", canSave ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/20" : "")}>
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           Kaydet
         </Button>
@@ -431,201 +484,188 @@ export default function CreatorHubPage() {
       {/* ═══ BENTO GRID ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-        {/* ── LEFT COLUMN (4 cols) ── */}
+        {/* ── LEFT: Identity + Accounts ── */}
         <div className="lg:col-span-4 space-y-4">
 
           {/* IDENTITY CARD */}
-          <section className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-5">
-            <div className="flex flex-col items-center text-center">
-              <div className="relative group">
-                <Avatar className="w-20 h-20 border-2 border-zinc-700 group-hover:border-violet-500/50 transition-colors">
-                  <AvatarImage src={avatarUrl} />
-                  <AvatarFallback className="bg-zinc-800 text-zinc-400 text-xl">
-                    {displayName?.[0]?.toUpperCase() || <User className="w-7 h-7" />}
+          <GlassCard className="p-6 relative overflow-hidden">
+            {/* Radial glow behind avatar */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full opacity-20 blur-3xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)" }}
+            />
+
+            <div className="relative flex flex-col items-center">
+              {/* Avatar */}
+              <div className="relative group mb-4">
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm" />
+                <Avatar className="w-20 h-20 border-2 border-white/[0.08] group-hover:border-violet-500/30 transition-all duration-300 relative">
+                  <AvatarImage src={avatarUrl} className="object-cover" />
+                  <AvatarFallback className="bg-zinc-900 text-zinc-500 text-xl font-light">
+                    {displayName?.[0]?.toUpperCase() || <User className="w-6 h-6" />}
                   </AvatarFallback>
                 </Avatar>
                 {avatarUploading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
-                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
                   </div>
                 )}
               </div>
 
-              <div className="flex gap-1.5 mt-3">
+              {/* Avatar buttons */}
+              <div className="flex gap-1 mb-5">
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileUpload} />
-                <Button size="sm" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={avatarUploading} className="text-[11px] h-7 px-2 text-zinc-400 hover:text-white">
-                  <Upload className="w-3 h-3 mr-1" /> Yükle
-                </Button>
+                <button onClick={() => fileInputRef.current?.click()} disabled={avatarUploading}
+                  className="text-[10px] text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-md hover:bg-white/[0.04] transition-all flex items-center gap-1">
+                  <Upload className="w-3 h-3" /> Yükle
+                </button>
                 {twitterAccount && (
-                  <Button size="sm" variant="ghost" onClick={() => fetchPlatformAvatar("twitter")} disabled={avatarUploading} className="text-[11px] h-7 px-2 text-zinc-400 hover:text-white">
-                    <FaXTwitter className="w-3 h-3 mr-1" /> Çek
-                  </Button>
+                  <button onClick={() => fetchPlatformAvatar("twitter")} disabled={avatarUploading}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-md hover:bg-white/[0.04] transition-all flex items-center gap-1">
+                    <FaXTwitter className="w-2.5 h-2.5" /> Çek
+                  </button>
                 )}
                 {instagramAccount && (
-                  <Button size="sm" variant="ghost" onClick={() => fetchPlatformAvatar("instagram")} disabled={avatarUploading} className="text-[11px] h-7 px-2 text-zinc-400 hover:text-white">
-                    <FaInstagram className="w-3 h-3 mr-1" /> Çek
-                  </Button>
+                  <button onClick={() => fetchPlatformAvatar("instagram")} disabled={avatarUploading}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-md hover:bg-white/[0.04] transition-all flex items-center gap-1">
+                    <FaInstagram className="w-2.5 h-2.5" /> Çek
+                  </button>
                 )}
               </div>
 
-              <div className="w-full mt-4 space-y-2.5">
-                <Input
-                  value={displayName}
-                  onChange={(e) => { setDisplayName(e.target.value); markDirty(); }}
-                  placeholder="Ad Soyad"
-                  className="bg-zinc-900/50 border-zinc-800 text-white text-sm h-9 text-center"
-                  maxLength={100}
-                />
-                <Input
-                  value={title}
-                  onChange={(e) => { setTitle(e.target.value); markDirty(); }}
-                  placeholder="Unvan (ör: Founder)"
-                  className="bg-zinc-900/50 border-zinc-800 text-white text-sm h-9 text-center"
-                  maxLength={100}
-                />
-              </div>
+              {/* Inline editable name + title */}
+              <InlineEdit
+                value={displayName}
+                onChange={(v) => { setDisplayName(v); markDirty(); }}
+                placeholder="Adını gir"
+                className="text-xl font-bold text-white tracking-tight hover:text-violet-300 transition-colors"
+                inputClassName="text-xl font-bold text-white"
+              />
+              <InlineEdit
+                value={title}
+                onChange={(v) => { setTitle(v); markDirty(); }}
+                placeholder="Unvan ekle"
+                className="text-xs text-zinc-500 mt-1 hover:text-zinc-300 transition-colors"
+                inputClassName="text-xs text-zinc-400 mt-1"
+              />
             </div>
-          </section>
+          </GlassCard>
 
-          {/* CONNECTED ACCOUNTS */}
-          <section className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-5">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Bağlı Hesaplar</h3>
+          {/* ACCOUNTS */}
+          <GlassCard className="p-5">
+            <h3 className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.15em] mb-3">Bağlı Hesaplar</h3>
             {accounts.length === 0 ? (
-              <p className="text-xs text-zinc-600">Henüz hesap yok</p>
+              <p className="text-xs text-zinc-700">Henüz hesap yok</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {accounts.map(acc => (
                   <div key={acc.id} className={cn(
-                    "flex items-center gap-2.5 p-2.5 rounded-xl border transition-colors",
-                    acc.status === "broken" ? "bg-red-950/20 border-red-900/30" : "bg-zinc-800/20 border-zinc-800/40"
+                    "flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200",
+                    "hover:bg-white/[0.02]",
+                    acc.status === "broken" && "bg-red-500/[0.03]"
                   )}>
-                    <Avatar className="w-8 h-8 border border-zinc-700">
+                    <Avatar className="w-8 h-8 border border-white/[0.06]">
                       <AvatarImage src={getAccountAvatar(acc)} />
-                      <AvatarFallback className="bg-zinc-800 text-zinc-400 text-[10px]">{acc.platform?.[0]?.toUpperCase()}</AvatarFallback>
+                      <AvatarFallback className="bg-zinc-900 text-zinc-500 text-[10px] font-medium">{acc.platform?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-medium text-white truncate">@{acc.username}</span>
-                        {acc.is_primary && <Badge className="text-[9px] px-1 py-0 bg-violet-500/20 text-violet-300 border-0">Ana</Badge>}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-zinc-200 truncate">@{acc.username}</span>
+                        {acc.is_primary && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400 font-medium">Ana</span>}
                       </div>
-                      <span className="text-[10px] text-zinc-500 capitalize">{acc.platform}</span>
+                      <span className="text-[10px] text-zinc-600 capitalize">{acc.platform}</span>
                     </div>
-                    {acc.status === "broken" && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
+                    {acc.status === "broken" && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
                   </div>
                 ))}
               </div>
             )}
-          </section>
+          </GlassCard>
         </div>
 
-        {/* ── RIGHT COLUMN (8 cols) ── */}
+        {/* ── RIGHT: Voice + Niches ── */}
         <div className="lg:col-span-8 space-y-4">
 
-          {/* BRAND VOICE DNA */}
-          <section className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-5">
+          {/* BRAND VOICE */}
+          <GlassCard className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white">🎙️ Marka Tonu</h3>
-              {/* Points indicator */}
+              <h3 className="text-sm font-semibold text-white tracking-tight">🎙️ Marka Tonu</h3>
               <div className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold transition-all duration-300",
-                isExact ? "bg-emerald-500/15 text-emerald-400" :
-                isOverBudget ? "bg-red-500/15 text-red-400 animate-pulse" :
-                "bg-amber-500/10 text-amber-400"
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition-all duration-500",
+                isExact ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                toneTotal > TOTAL_POINTS ? "bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse" :
+                "bg-white/[0.03] text-zinc-500 border border-white/[0.06]"
               )}>
-                {isExact ? <Check className="w-3 h-3" /> : isOverBudget ? <AlertCircle className="w-3 h-3" /> : null}
+                {isExact ? <Check className="w-3 h-3" /> : toneTotal > TOTAL_POINTS ? <AlertCircle className="w-3 h-3" /> : null}
                 {toneTotal}/{TOTAL_POINTS}
               </div>
             </div>
 
             {/* Composite bar */}
-            <div className="h-2.5 bg-zinc-800/80 rounded-full overflow-hidden flex mb-5">
+            <div className="h-2 bg-white/[0.03] rounded-full overflow-hidden flex mb-1">
               {TONE_CONFIG.map(cfg => {
                 const val = tones[cfg.key];
                 if (val === 0) return null;
-                return (
-                  <div
-                    key={cfg.key}
-                    className={cn("h-full transition-all duration-500 first:rounded-l-full last:rounded-r-full", cfg.bg)}
-                    style={{ width: `${val}%`, opacity: isOverBudget ? 0.5 : 1 }}
-                    title={`${cfg.label}: ${val}%`}
-                  />
-                );
+                return <div key={cfg.key} className={cn("h-full transition-all duration-700 ease-out first:rounded-l-full last:rounded-r-full", cfg.bg)} style={{ width: `${val}%` }} />;
               })}
             </div>
+
+            {/* AI Persona Summary */}
+            <p className="text-[11px] italic text-zinc-600 mb-5 pl-0.5 transition-all duration-500">
+              AI seni şöyle görüyor: <span className="text-zinc-400">{personaSummary}</span>
+            </p>
 
             {/* Sliders */}
             <div className="space-y-3">
               {TONE_CONFIG.map(cfg => (
-                <ToneSlider
-                  key={cfg.key}
-                  config={cfg}
-                  value={tones[cfg.key]}
-                  otherTotal={toneTotal - tones[cfg.key]}
-                  onChange={handleToneChange}
-                />
+                <ToneSlider key={cfg.key} config={cfg} value={tones[cfg.key]} otherTotal={toneTotal - tones[cfg.key]} onChange={handleToneChange} />
               ))}
             </div>
 
             {/* Principles & Avoid */}
-            <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-4 border-t border-zinc-800/40">
+            <div className="grid sm:grid-cols-2 gap-4 mt-5 pt-4 border-t border-white/[0.04]">
               <div>
-                <label className="text-xs text-zinc-400 mb-1.5 block">📌 İlkelerim</label>
+                <label className="text-[11px] text-zinc-500 mb-1.5 block font-medium">📌 İlkelerim</label>
                 <TagInput items={principles} onChange={v => { setPrinciples(v); markDirty(); }} placeholder="Kısa ve öz yaz" max={5} />
               </div>
               <div>
-                <label className="text-xs text-zinc-400 mb-1.5 block">🚫 Kaçınılacaklar</label>
+                <label className="text-[11px] text-zinc-500 mb-1.5 block font-medium">🚫 Kaçınılacaklar</label>
                 <TagInput items={avoid} onChange={v => { setAvoid(v); markDirty(); }} placeholder="Emoji spam" max={5} />
               </div>
             </div>
 
-            {/* Sample voice */}
-            <div className="mt-4 pt-4 border-t border-zinc-800/40">
-              <label className="text-xs text-zinc-400 mb-1.5 block">💬 Ses Tarifi</label>
+            <div className="mt-4 pt-4 border-t border-white/[0.04]">
+              <label className="text-[11px] text-zinc-500 mb-1.5 block font-medium">💬 Ses Tarifi</label>
               <textarea
                 value={sampleVoice}
                 onChange={(e) => { setSampleVoice(e.target.value); markDirty(); }}
                 placeholder="Teknik ama samimi, jargonsuz açıkla..."
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 resize-none h-16 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                className="w-full bg-white/[0.02] border border-white/[0.06] rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-600 resize-none h-16 focus:outline-none focus:border-violet-500/30 transition-colors"
                 maxLength={500}
               />
             </div>
-          </section>
+          </GlassCard>
 
           {/* NICHES */}
-          <section className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-5">
+          <GlassCard className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-white">🎯 İlgi Alanları</h3>
+              <h3 className="text-sm font-semibold text-white tracking-tight">🎯 İlgi Alanları</h3>
               <Badge variant="outline" className={cn(
-                "text-[10px] border-zinc-700",
-                niches.length >= MAX_NICHES ? "text-amber-400 border-amber-500/30" : "text-zinc-500"
+                "text-[10px] border-white/[0.08] rounded-full",
+                niches.length >= MAX_NICHES ? "text-amber-400 border-amber-500/20" : "text-zinc-600"
               )}>
                 {niches.length}/{MAX_NICHES}
               </Badge>
             </div>
-            <NicheSelector
-              taxonomy={taxonomy}
-              selected={niches}
-              onChange={toggleNiche}
-              max={MAX_NICHES}
-            />
-          </section>
+            <NicheSelector taxonomy={taxonomy} selected={niches} onChange={(v) => { setNiches(v); markDirty(); }} max={MAX_NICHES} />
+          </GlassCard>
         </div>
       </div>
 
       {/* Mobile sticky save */}
       {dirty && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 lg:hidden">
-          <Button
-            onClick={handleSave}
-            disabled={!canSave}
-            size="lg"
-            className={cn(
-              "shadow-2xl gap-2 rounded-full px-6",
-              canSave
-                ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-violet-500/25"
-                : "bg-zinc-800 text-zinc-500"
-            )}
-          >
+          <Button onClick={handleSave} disabled={!canSave} size="lg"
+            className={cn("shadow-2xl gap-2 rounded-full px-6", canSave ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-violet-500/25" : "bg-zinc-800 text-zinc-500")}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {!isExact ? `${toneTotal}/${TOTAL_POINTS}` : "Kaydet"}
           </Button>
