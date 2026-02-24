@@ -290,6 +290,7 @@ export default function DashboardLayout() {
     switchAccount,
     refreshAccounts,
     setOverrideAccountId,
+    loading: accountsLoading,
   } = useAccount();
 
   const { creatorProfile } = useCreatorProfile();
@@ -871,7 +872,7 @@ export default function DashboardLayout() {
             </div>
           )}
           {/* Zero Accounts: son hesap silinmiş, onboarding */}
-          {!effectiveAccount && connectedAccounts.length === 0 && (
+          {!accountsLoading && !effectiveAccount && connectedAccounts.length === 0 && (
             <div className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20 animate-in fade-in slide-in-from-top-2 duration-300">
               <span className="text-lg">🔗</span>
               <div className="flex-1 min-w-0">
