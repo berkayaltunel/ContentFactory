@@ -136,8 +136,36 @@ def _extract_tone_essence(tone_id: str) -> str:
     return "\n".join(lines)
 
 
+
+def _build_brand_voice_section(brand_voice: dict = None) -> str:
+    """Brand Voice DNA from Creator Hub profile. Background layer, overridden by persona/tone."""
+    if not brand_voice:
+        return ""
+    tones = brand_voice.get("tones", {})
+    principles = brand_voice.get("principles", [])
+    avoid = brand_voice.get("avoid", [])
+    sample_voice = brand_voice.get("sample_voice", "")
+    active_tones = {k: v for k, v in tones.items() if v > 0}
+    if not active_tones and not principles and not avoid and not sample_voice:
+        return ""
+    parts = ["### Marka DNA (Arka Plan)"]
+    parts.append("Bu kullanıcının genel yazım eğilimidir. Persona ve Ton seçimleri bunu override edebilir.")
+    if active_tones:
+        tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili", "aggressive": "Agresif", "inspirational": "İlham Verici"}
+        tone_parts = [f"%{v} {tone_labels.get(k, k)}" for k, v in sorted(active_tones.items(), key=lambda x: -x[1])]
+        parts.append(f"Ton dengesi: {', '.join(tone_parts)}")
+    if principles:
+        parts.append(f"İlkeleri: {', '.join(principles[:5])}")
+    if avoid:
+        parts.append(f"Kaçınılacaklar: {', '.join(avoid[:5])}")
+    if sample_voice:
+        parts.append(f"Ses tarifi: {sample_voice[:300]}")
+    return chr(10).join(parts)
+
+
 def _build_ses(persona: str, tone: str, style_prompt: str = None,
-               platform: str = "twitter", content_type: str = "tweet") -> str:
+               platform: str = "twitter", content_type: str = "tweet",
+               brand_voice: dict = None) -> str:
     """Section 2: SES — nasıl seslenecek. Öncelik: stil > persona > ton."""
     parts = ["## SES\n"]
 
@@ -165,6 +193,11 @@ def _build_ses(persona: str, tone: str, style_prompt: str = None,
     tone_text = _extract_tone_essence(tone)
     if tone_text:
         parts.append(f"### Ton\n{tone_text}")
+
+    # Brand Voice DNA (background layer)
+    bv_section = _build_brand_voice_section(brand_voice)
+    if bv_section:
+        parts.append(bv_section)
 
     # Twitter-specific base voice (only if no platform prompt)
     if platform == "twitter" and content_type in ("tweet", "quote", "reply", "article"):
@@ -319,6 +352,7 @@ def build_final_prompt_v3(
     platform: str = "twitter",
     direction: str = None,
     direction_custom: str = None,
+    brand_voice: dict = None,
     # Accept but ignore v1 extras for compatibility
     **kwargs,
 ) -> str:
@@ -355,6 +389,7 @@ def build_final_prompt_v3(
         style_prompt=style_prompt,
         platform=platform,
         content_type=content_type,
+        brand_voice=brand_voice,
     ))
 
     # 3. KURALLAR

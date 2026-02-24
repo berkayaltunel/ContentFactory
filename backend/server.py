@@ -74,6 +74,17 @@ def _select_builder(engine: str = "v3"):
         return build_final_prompt_v3
     return build_final_prompt
 
+
+async def _get_brand_voice(user_id: str) -> dict:
+    """Fetch brand_voice from user_settings for prompt injection."""
+    try:
+        result = supabase.table("user_settings").select("brand_voice").eq("user_id", user_id).limit(1).execute()
+        if result.data and result.data[0].get("brand_voice"):
+            return result.data[0]["brand_voice"]
+    except Exception:
+        pass
+    return None
+
 # ==================== AUTH ====================
 from middleware.auth import require_auth, optional_auth
 from middleware.rate_limit import rate_limit
@@ -438,6 +449,7 @@ async def find_similar_tweets(request: SimilarTweetsRequest, user=Depends(requir
 async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate tweet content"""
     try:
+        _brand_voice = await _get_brand_voice(user.id)
         # Input sanitization
         sanitize_generation_request(request)
 
@@ -539,7 +551,8 @@ async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=De
                 language=request.language,
                 additional_context=combined_context if combined_context else None,
                 is_apex=(request.mode == "ultra" or request.mode == "apex"),
-                platform="twitter"
+                platform="twitter",
+                brand_voice=_brand_voice,
             )
             contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
             variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
@@ -576,6 +589,7 @@ async def generate_tweet(request: TweetGenerateRequest, engine: str = "v3", _=De
 async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate quote tweet content"""
     try:
+        _brand_voice = await _get_brand_voice(user.id)
         sanitize_generation_request(request)
 
         if not request.tweet_content:
@@ -657,7 +671,8 @@ async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=De
                 knowledge=request.knowledge, length=request.length,
                 language=request.language, original_tweet=request.tweet_content,
                 additional_context=quote_context if quote_context else None,
-                platform="twitter"
+                platform="twitter",
+                brand_voice=_brand_voice,
             )
             contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
             variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
@@ -692,6 +707,7 @@ async def generate_quote(request: QuoteGenerateRequest, engine: str = "v3", _=De
 async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate reply content"""
     try:
+        _brand_voice = await _get_brand_voice(user.id)
         sanitize_generation_request(request)
 
         if not request.tweet_content:
@@ -776,7 +792,8 @@ async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=De
                 language=request.language, original_tweet=request.tweet_content,
                 reply_mode=request.reply_mode,
                 additional_context=reply_context if reply_context else None,
-                platform="twitter"
+                platform="twitter",
+                brand_voice=_brand_voice,
             )
             contents, tokens_used = await generate_with_openai(system_prompt, "İçeriği üret.", request.variants, user_id=user.id)
             variants = [GeneratedContent(content=c, variant_index=i, character_count=len(c)) for i, c in enumerate(contents)]
@@ -812,6 +829,7 @@ async def generate_reply(request: ReplyGenerateRequest, engine: str = "v3", _=De
 async def generate_article(request: ArticleGenerateRequest, engine: str = "v3", _=Depends(rate_limit), user=Depends(require_auth), account_id: str = Depends(get_active_account)):
     """Generate X article content"""
     try:
+        _brand_voice = await _get_brand_voice(user.id)
         sanitize_generation_request(request)
 
         topic = request.topic
