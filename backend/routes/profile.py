@@ -1,9 +1,10 @@
 """Creator Hub Profile — Master Identity, Brand Voice, Niches.
 
-GET  /profile          — Profil bilgilerini getir
-PUT  /profile          — Profil güncelle (Pydantic validated)
-POST /profile/avatar   — Avatar yükle (base64 veya URL)
-GET  /profile/taxonomy — Niche taxonomy listesi
+GET  /profile               — Profil bilgilerini getir
+PUT  /profile               — Profil güncelle (Pydantic validated)
+POST /profile/avatar        — Avatar yükle (base64 veya URL)
+GET  /profile/taxonomy      — Niche taxonomy listesi
+POST /profile/analyze-tone  — Twitter'dan AI ile ton analizi
 """
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
@@ -14,6 +15,7 @@ import logging
 import httpx
 import base64
 import uuid
+import json
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 logger = logging.getLogger(__name__)
@@ -295,3 +297,116 @@ async def update_avatar(body: AvatarUpdate, user=Depends(require_auth), supabase
         .execute()
 
     return {"success": True, "avatar_url": avatar_url}
+
+
+# ═══════════════════════════════════════════
+# AI TONE ANALYSIS (Twitter → Brand Voice)
+# ═══════════════════════════════════════════
+
+class AnalyzeToneRequest(BaseModel):
+    twitter_username: Optional[str] = None  # Boşsa bağlı hesaptan alır
+
+
+@router.post("/analyze-tone")
+async def analyze_tone(body: AnalyzeToneRequest = AnalyzeToneRequest(), user=Depends(require_auth), supabase=Depends(get_supabase)):
+    """Twitter tweetlerinden AI ile marka tonu analizi.
+    Son 50 tweeti okur, 5 ton ekseninde yüzdelik dağılım döner.
+    """
+    from server import openai_client
+    from services.twitter_scraper import scraper
+
+    # Username belirle
+    username = body.twitter_username
+    if not username:
+        acc = supabase.table("connected_accounts") \
+            .select("username") \
+            .eq("user_id", user.id) \
+            .eq("platform", "twitter") \
+            .is_("deleted_at", "null") \
+            .limit(1) \
+            .execute()
+        if not acc.data:
+            raise HTTPException(status_code=404, detail="Bağlı Twitter hesabı bulunamadı. Önce bir hesap ekleyin.")
+        username = acc.data[0]["username"]
+
+    username = username.lstrip("@").strip()
+    if not username:
+        raise HTTPException(status_code=400, detail="Geçerli bir kullanıcı adı gerekli")
+
+    # Tweetleri çek
+    try:
+        tweets = await scraper.get_user_tweets_async(username, count=50)
+    except Exception as e:
+        logger.error(f"Tweet fetch failed for @{username}: {e}")
+        raise HTTPException(status_code=502, detail="Tweetler alınamadı, lütfen tekrar deneyin")
+
+    if not tweets or len(tweets) < 5:
+        raise HTTPException(status_code=422, detail=f"@{username} için yeterli tweet bulunamadı (min 5)")
+
+    tweet_texts = [t.get("content", "") for t in tweets if t.get("content", "").strip()]
+    tweet_block = "\n---\n".join(tweet_texts[:50])
+
+    # GPT ile ton analizi
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": """Sen uzman bir sosyal medya ton analistisin.
+Verilen tweetleri analiz edip yazarın iletişim tonunu 5 eksende yüzdelik olarak belirle.
+
+5 EKSEN:
+1. informative: Bilgi verici, öğretici, veri odaklı
+2. friendly: Samimi, sıcak, yakın, kişisel
+3. witty: Esprili, keskin, mizahi, alaycı
+4. aggressive: Agresif, provokatif, sert, direkt
+5. inspirational: İlham verici, motive edici, vizyoner
+
+KURALLAR:
+- Toplam TAM 100 olmalı
+- Her değer 0-100 arası, 5'in katı
+- En az 2 eksen 0'dan büyük olmalı
+- Tweetlerdeki gerçek tona bak, ne söylediklerine değil nasıl söylediklerine
+
+Ayrıca kısa bir "insight" yaz: Yazarın farkında olmayabileceği bir ton özelliği. Şaşırtıcı, kışkırtıcı ve eğlenceli olsun. Türkçe yaz.
+
+JSON formatında döndür:
+{
+  "tones": {"informative": 25, "friendly": 30, "witty": 35, "aggressive": 5, "inspirational": 5},
+  "insight": "Sen kendini ciddi sanıyorsun ama tweetlerinin %70'i espri kokan cümlelerle başlıyor!",
+  "dominant": "witty"
+}"""},
+                {"role": "user", "content": f"@{username} kullanıcısının son {len(tweet_texts)} tweeti:\n\n{tweet_block}"}
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+
+        result = json.loads(response.choices[0].message.content)
+        tones = result.get("tones", {})
+
+        # Validasyon: toplam 100 olmalı
+        total = sum(tones.values())
+        if total != 100:
+            # Normalize et
+            factor = 100 / max(total, 1)
+            tones = {k: max(0, round(v * factor / 5) * 5) for k, v in tones.items()}
+            # Farkı en büyük değere ekle/çıkar
+            diff = 100 - sum(tones.values())
+            if diff != 0:
+                max_key = max(tones, key=tones.get)
+                tones[max_key] += diff
+
+        return {
+            "success": True,
+            "username": username,
+            "tones": tones,
+            "insight": result.get("insight", ""),
+            "dominant": result.get("dominant", ""),
+            "tweets_analyzed": len(tweet_texts),
+        }
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="AI analiz sonucu okunamadı")
+    except Exception as e:
+        logger.error(f"Tone analysis AI error: {e}")
+        raise HTTPException(status_code=500, detail="Ton analizi başarısız oldu")

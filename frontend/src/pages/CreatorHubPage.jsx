@@ -73,14 +73,14 @@ function AuroraBackground({ tones }) {
       <div className="absolute inset-0 bg-zinc-950" />
       {/* Primary blob */}
       <div
-        className="absolute w-[200%] h-[200%] -top-1/2 -left-1/2 animate-[spin_20s_linear_infinite] opacity-[0.07]"
+        className="absolute w-[200%] h-[200%] -top-1/2 -left-1/2 animate-[spin_20s_linear_infinite] opacity-[0.12]"
         style={{
           background: `conic-gradient(from 0deg, rgba(${primary.rgb},0.6), transparent 120deg, rgba(${secondary.rgb},0.4) 240deg, transparent 360deg)`,
         }}
       />
       {/* Secondary glow */}
       <div
-        className="absolute w-40 h-40 rounded-full blur-3xl opacity-[0.12] transition-all duration-[2000ms]"
+        className="absolute w-40 h-40 rounded-full blur-3xl opacity-[0.25] transition-all duration-[2000ms]"
         style={{
           background: `radial-gradient(circle, rgba(${dominant.rgb},0.8), transparent 70%)`,
           top: "20%", left: "50%", transform: "translateX(-50%)",
@@ -114,7 +114,7 @@ function ToneRadar({ tones }) {
     <div className="w-full aspect-square max-w-[200px] mx-auto">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%">
-          <PolarGrid stroke="rgba(255,255,255,0.04)" />
+          <PolarGrid stroke="rgba(255,255,255,0.15)" />
           <PolarAngleAxis
             dataKey="subject"
             tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: 500 }}
@@ -141,12 +141,14 @@ function ToneRadar({ tones }) {
 function GlassCard({ children, className, hover = true }) {
   return (
     <div className={cn(
-      "relative rounded-2xl border border-white/[0.06]",
-      "bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-sm",
-      "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]",
-      hover && "transition-all duration-500 hover:border-white/[0.1] hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),0_4px_24px_rgba(0,0,0,0.2)]",
+      "relative rounded-2xl border border-white/10",
+      "bg-zinc-900/40 backdrop-blur-2xl",
+      "shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.5)]",
+      hover && "transition-all duration-500 hover:border-white/[0.15] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),_0_12px_40px_rgba(0,0,0,0.6)] hover:-translate-y-0.5",
       className
     )}>
+      {/* Top highlight line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent rounded-t-2xl" />
       {children}
     </div>
   );
@@ -344,6 +346,8 @@ export default function CreatorHubPage() {
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeInsight, setAnalyzeInsight] = useState("");
   const fileInputRef = useRef(null);
 
   const toneTotal = Object.values(tones).reduce((a, b) => a + b, 0);
@@ -401,6 +405,22 @@ export default function CreatorHubPage() {
     } catch (err) { toast.error(err.response?.data?.detail || "Avatar alınamadı"); } finally { setAvatarUploading(false); }
   };
 
+  const handleAnalyzeTone = async () => {
+    if (!twitterAccount) { toast.error("Önce bir Twitter hesabı bağlayın"); return; }
+    setAnalyzing(true);
+    setAnalyzeInsight("");
+    try {
+      const res = await api.post(`${API}/profile/analyze-tone`, { twitter_username: twitterAccount.username });
+      const { tones: newTones, insight } = res.data;
+      setTones(newTones);
+      setAnalyzeInsight(insight || "");
+      markDirty();
+      toast.success(`@${twitterAccount.username} tonu analiz edildi! ✨`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Analiz başarısız");
+    } finally { setAnalyzing(false); }
+  };
+
   const handleSave = async () => {
     if (!canSave) return;
     setSaving(true);
@@ -417,6 +437,7 @@ export default function CreatorHubPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <style>{`@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}`}</style>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -437,7 +458,7 @@ export default function CreatorHubPage() {
         <div className="lg:col-span-4 space-y-5">
 
           {/* APPLE WALLET ID CARD */}
-          <div className="relative rounded-2xl overflow-hidden border border-white/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+          <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),_0_8px_32px_rgba(0,0,0,0.5)]">
             <AuroraBackground tones={tones} />
 
             <div className="relative z-10 p-8 flex flex-col items-center">
@@ -522,8 +543,8 @@ export default function CreatorHubPage() {
           <GlassCard className="p-6">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h3 className="text-sm font-semibold text-white tracking-tight">Marka Tonu</h3>
-                <p className="text-[10px] text-zinc-600 mt-0.5">{TOTAL_POINTS} puanı dağıt</p>
+                <h3 className="text-sm font-semibold text-white tracking-tight">Kişisel Sesin</h3>
+                <p className="text-[10px] text-zinc-600 mt-0.5">Yaratıcı DNA · {TOTAL_POINTS} puanı dağıt</p>
               </div>
               <div className={cn(
                 "flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold transition-all duration-500",
@@ -535,6 +556,48 @@ export default function CreatorHubPage() {
                 {toneTotal}/{TOTAL_POINTS}
               </div>
             </div>
+
+            {/* AI Analyze Button */}
+            {twitterAccount && (
+              <div className="mb-5">
+                <button
+                  onClick={handleAnalyzeTone}
+                  disabled={analyzing}
+                  className={cn(
+                    "w-full relative overflow-hidden rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-500",
+                    analyzing
+                      ? "border-violet-500/30 bg-violet-500/10 text-violet-300 cursor-wait"
+                      : "border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 text-violet-300 hover:border-violet-500/40 hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] hover:-translate-y-0.5"
+                  )}
+                >
+                  {/* Shimmer effect */}
+                  {!analyzing && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full animate-[shimmer_3s_ease-in-out_infinite]" />
+                  )}
+                  <div className="relative flex items-center justify-center gap-2">
+                    {analyzing ? (
+                      <>
+                        <span className="text-lg animate-bounce">🐙</span>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>DNA'nı çözümlüyorum...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-lg">✨</span>
+                        <span>X Profilimden Analiz Et</span>
+                        <FaXTwitter className="w-3.5 h-3.5 opacity-50" />
+                      </>
+                    )}
+                  </div>
+                </button>
+                {analyzeInsight && (
+                  <div className="mt-3 flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-violet-500/5 border border-violet-500/10 animate-[fadeIn_0.5s_ease-out]">
+                    <span className="text-xl shrink-0">🐙</span>
+                    <p className="text-[11px] text-violet-300/80 leading-relaxed italic">{analyzeInsight}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-6">
               {/* Left: Sliders */}
