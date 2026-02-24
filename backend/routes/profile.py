@@ -340,35 +340,49 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
     avoid_str = ', '.join(body.avoid[:5]) if body.avoid else ''
     principles_str = ', '.join(body.principles[:5]) if body.principles else ''
 
+    # Tone voice guides (dominant tonların ses kılavuzu)
+    from prompts.builder_v3 import TONE_VOICE_GUIDES, CONTENT_ARCHITECTURE
+    sorted_t = sorted(active.items(), key=lambda x: -x[1])
+    voice_section = ""
+    for key, val in sorted_t[:2]:
+        guide = TONE_VOICE_GUIDES.get(key)
+        if guide:
+            voice_section += f"\n**ANA TON: %{val} {guide['label']}**\nSes: {guide['voice']}\nHook: {guide['hook']}\n"
+
+    # Sentez ipucu
+    if len(sorted_t) >= 2:
+        l1 = TONE_VOICE_GUIDES.get(sorted_t[0][0], {}).get("label", sorted_t[0][0])
+        l2 = TONE_VOICE_GUIDES.get(sorted_t[1][0], {}).get("label", sorted_t[1][0])
+        voice_section += f"\nSENTEZ: {l1} + {l2} = tek bir ruh hali. Bipolar davranma.\n"
+
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": f"""Kullanıcının marka sesiyle, "{topic_str}" konusunda tek bir tweet üret.
 
-Ton: {tone_str}
+{voice_section}
 
 {f'ZORUNLU İLKELER: {principles_str}' if principles_str else ''}
 {f'KULLANICI YASAKLARI: {avoid_str}' if avoid_str else ''}
 
-KIRILMAZ YASAKLAR (kullanıcı seçmese bile her zaman geçerli):
-- Emoji YASAK. Tek bir emoji bile kullanma.
-- Hashtag YASAK. # işareti kullanma.
-- "Unutmayın ki...", "Sonuç olarak...", "İşte size...", "Peki siz ne düşünüyorsunuz?" gibi AI şablon kalıpları YASAK.
-- "Siz ne düşünüyorsunuz?", "Yorumlarınızı bekliyorum", "Katılıyor musunuz?" gibi ucuz etkileşim tuzakları YASAK.
-- Kahve, ofis, pazartesi, motivasyon gibi genel geçer konular YASAK (konu verilmişse ona odaklan).
-- "... ama aslında ...", "İşin sırrı..." gibi clickbait yapılar YASAK.
-- Üç nokta (...) ile biten cümleler YASAK.
+{CONTENT_ARCHITECTURE}
+
+KIRILMAZ YASAKLAR:
+- Emoji YASAK. Hashtag YASAK.
+- AI şablon kalıpları YASAK ("Unutmayın", "Sonuç olarak", "İşte size")
+- Ucuz etkileşim tuzakları YASAK ("Siz ne düşünüyorsunuz?", "Katılıyor musunuz?")
+- Genel geçer konular YASAK (kahve, ofis, pazartesi). Konu: "{topic_str}"
+- Ana fikri özetleme. Tespit et ve BIRAK.
+- Clickbait, üç nokta, "İşin sırrı..." YASAK.
 
 ZORUNLU:
-- Konu "{topic_str}" olmalı, başka konuya kayma
+- Konu "{topic_str}" olmalı
 - Max 280 karakter
-- Gerçek bir insan gibi yaz, yapay zeka gibi değil
-- Baskın ton belirgin olmalı
 - Sadece tweet metnini döndür"""},
                 {"role": "user", "content": f'"{topic_str}" hakkında bu DNA ile bir tweet üret.'}
             ],
-            temperature=0.8,
+            temperature=0.85,
             max_tokens=150,
         )
         content = response.choices[0].message.content.strip().strip('"')

@@ -147,6 +147,74 @@ BASE_PROHIBITIONS = """
 - "İşin sırrı...", "Ama aslında..." gibi clickbait yapılar YASAK
 """
 
+# ═══════════════════════════════════════════
+# TONE VOICE GUIDES — Her ton için "nasıl yaz" kılavuzu
+# ═══════════════════════════════════════════
+
+TONE_VOICE_GUIDES = {
+    "witty": {
+        "label": "Esprili",
+        "voice": "Keskin ironi, beklenmedik final, deadpan humor. Espriyi yap ve orada bırak, açıklama. Okuyucu 2 saniye düşünsün, sonra gülsün.",
+        "hook": "İronik zıtlık veya absürt bir gözlemle aç. Herkesin bildiği bir şeyi ters çevir.",
+        "example_energy": "Twitter'daki 'ölüm' esprileri. Kuru, zeki, acımasız.",
+    },
+    "aggressive": {
+        "label": "Agresif",
+        "voice": "Direkt, korkusuz, tartışma başlat. Hot take formatı. Özür dileme, yumuşatma, 'ama tabii herkesin fikri farklı olabilir' ekleme.",
+        "hook": "Sarsıcı bir iddia veya meydan okumayla aç. Popüler bir görüşe direkt karşı çık.",
+        "example_energy": "Tartışma başlatan, insanların RT yapıp 'buna katılmıyorum ama...' dediği tweetler.",
+    },
+    "informative": {
+        "label": "Bilgi Verici",
+        "voice": "Veriyle konuş, insight ver. 'Bunu bilmiyordunuz' hissi yarat. Otorite ol ama ukala olma.",
+        "hook": "Şaşırtıcı bir istatistik, az bilinen bir gerçek veya yaygın bir yanılgıyı yıkan bir cümleyle aç.",
+        "example_energy": "'TIL (Today I Learned)' hissi. Okuyucu kaydedip paylaşmak istesin.",
+    },
+    "friendly": {
+        "label": "Samimi",
+        "voice": "1. tekil şahıs, kişisel deneyim, arkadaşına anlatıyormuş gibi. Samimi ama yüzeysel değil.",
+        "hook": "Kişisel bir anekdot veya 'dün başıma şu geldi' formatıyla aç. Okuyucu kendini bulsun.",
+        "example_energy": "Kahve sohbetindeki o zeki arkadaş. Rahat ama derin.",
+    },
+    "inspirational": {
+        "label": "İlham Verici",
+        "voice": "Vizyon çiz, büyük düşün. Motivasyonel klişeler YASAK. Gerçek deneyimden gelen bilgelik.",
+        "hook": "'Ya şöyle olsaydı' veya geleceğe dair cesur bir öngörüyle aç.",
+        "example_energy": "Steve Jobs keynote'u, motivasyonel poster değil. Büyük resmi gör, küçük adımı söyle.",
+    },
+}
+
+# ═══════════════════════════════════════════
+# CONTENT ARCHITECTURE — Twitter Ustalığı Kuralları
+# ═══════════════════════════════════════════
+
+CONTENT_ARCHITECTURE = """
+### İçerik Mimarisi (Twitter Native Kuralları)
+
+**HOOK (Kanca):**
+İlk cümle scroll durdurucu olmalı. Düz giriş YASAK. Zıtlık, iddia, soru veya şaşırtıcı veriyle aç.
+
+**SENTEZ KURALI (Bipolar Yapay Zeka Sendromu YASAK):**
+Birden fazla ton aktifse bunları ayrı ayrı cümleler olarak değil, TEK BİR RUH HALİNDE sentezle.
+Örnek: Agresif + Esprili = karanlık ve alaycı (sarcastic), Samimi + Bilgi Verici = erişilebilir uzman.
+Tek bir tutarlı insan sesi çıkar, bipolar davranma.
+
+**RİTİM (Punchline Formülü):**
+Twitter formatında 3 cümleyi yan yana blok halinde yazma.
+Setup (kurulum) yap → satır boşluğu bırak → Punchline (vurucu tespit) indir.
+Nefes alan, ritmik bir yapı kur. Blok metin = ölüm.
+
+**SHOW DON'T TELL (Göster, Söyleme):**
+Ana fikri asla özetleme. Esprini veya tespitini yap ve ORADA BIRAK.
+"Yani kısacası...", "Anlatmak istediğim..." gibi açıklamalar YASAK.
+Okuyucunun zekasına güven. O boşluğu zihninde doldursun.
+
+**KUSURLUlUK İLLÜZYONU (Anti-Grammar):**
+Aşırı resmi ve kusursuz dilbilgisinden kaçın.
+Bazen cümle sonuna nokta koyma. Küçük harfle başla.
+Gerçek bir insanın aceleyle attığı organik bir tweet gibi hissettir.
+"""
+
 
 def _build_brand_voice_section(brand_voice: dict = None) -> str:
     """Brand Voice DNA from Creator Hub profile. Background layer, overridden by persona/tone."""
@@ -162,17 +230,33 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
     parts = ["### Marka DNA (Arka Plan)"]
     parts.append("Bu kullanıcının genel yazım eğilimidir. Persona ve Ton seçimleri bunu override edebilir.")
     if active_tones:
-        tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili", "aggressive": "Agresif", "inspirational": "İlham Verici"}
         sorted_tones = sorted(active_tones.items(), key=lambda x: -x[1])
-        # Focus: sadece dominant tonları vurgula, AI'ın kafası karışmasın
-        dominant = sorted_tones[:2]  # En güçlü 2 ton = ana karakter
-        minor = sorted_tones[2:]     # Geri kalan = hafif dokunuş
-        dom_parts = [f"**%{v} {tone_labels.get(k, k)}**" for k, v in dominant]
-        parts.append(f"ANA KARAKTER: {', '.join(dom_parts)}")
+        dominant = sorted_tones[:2]
+        minor = sorted_tones[2:]
+
+        # Dominant tonların voice guide'larını ekle
+        for key, val in dominant:
+            guide = TONE_VOICE_GUIDES.get(key)
+            if guide:
+                parts.append(f"\n**ANA TON: %{val} {guide['label']}**")
+                parts.append(f"Ses: {guide['voice']}")
+                parts.append(f"Hook: {guide['hook']}")
+
+        # Sentez ipucu (2+ dominant ton varsa)
+        if len(dominant) >= 2:
+            k1, v1 = dominant[0]
+            k2, v2 = dominant[1]
+            l1 = TONE_VOICE_GUIDES.get(k1, {}).get("label", k1)
+            l2 = TONE_VOICE_GUIDES.get(k2, {}).get("label", k2)
+            parts.append(f"\nSENTEZ: {l1} + {l2} tonlarını ayrı cümleler olarak değil, TEK bir ruh halinde birleştir.")
+
         if minor:
-            min_parts = [f"%{v} {tone_labels.get(k, k)}" for k, v in minor if v >= 10]
+            min_parts = [f"%{v} {TONE_VOICE_GUIDES.get(k, {}).get('label', k)}" for k, v in minor if v >= 10]
             if min_parts:
                 parts.append(f"Hafif dokunuş: {', '.join(min_parts)}")
+
+    # Content Architecture (her zaman)
+    parts.append(CONTENT_ARCHITECTURE)
     # Pre-defined chip key → label mapping
     principle_labels = {
         "concise": "Kısa ve Öz", "data-driven": "Veri Odaklı", "question-hook": "Soru ile Başla",
