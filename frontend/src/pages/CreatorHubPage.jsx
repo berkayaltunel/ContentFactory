@@ -756,12 +756,20 @@ export default function CreatorHubPage() {
 
           {/* DNA TEST — Instant Gratification */}
           <GlassCard className="p-6" hover={false}>
+            {niches.length === 0 && (
+              <p className="text-[11px] text-zinc-600 italic mb-2 flex items-center gap-1.5">
+                <Info className="w-3 h-3 text-zinc-700" />
+                AI koçunuzun gündemi yakalaması için önce yukarıdan en az 1 ilgi alanı seçin
+              </p>
+            )}
             <button
               onClick={handleDnaTest}
-              disabled={dnaLoading || !isExact}
+              disabled={dnaLoading || !isExact || niches.length === 0}
               className={cn(
                 "w-full relative overflow-hidden rounded-xl border px-4 py-3.5 text-sm font-medium transition-all duration-500",
-                dnaLoading
+                niches.length === 0
+                  ? "border-zinc-800 bg-zinc-900/30 text-zinc-700 cursor-not-allowed"
+                  : dnaLoading
                   ? "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300 cursor-wait"
                   : "border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-500/10 via-violet-500/10 to-fuchsia-500/10 text-fuchsia-300 hover:border-fuchsia-500/40 hover:shadow-[0_0_30px_rgba(217,70,239,0.15)] hover:-translate-y-0.5"
               )}

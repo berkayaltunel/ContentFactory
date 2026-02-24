@@ -346,10 +346,13 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         .limit(20) \
         .execute()
 
+    if not niches:
+        raise HTTPException(status_code=400, detail="En az 1 ilgi alanı seçmelisiniz")
+
     all_trends = trend_query.data or []
     chosen_trend = None
 
-    if all_trends and niches:
+    if all_trends:
         niche_kws = []
         for n in niches:
             niche_kws.extend(NICHE_KEYWORDS.get(n, []))
@@ -361,9 +364,6 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         )]
         if matching:
             chosen_trend = random.choice(matching[:5])
-
-    if not chosen_trend and all_trends:
-        chosen_trend = random.choice(all_trends[:5])
 
     if chosen_trend:
         topic_str = chosen_trend["topic"]
