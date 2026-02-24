@@ -53,6 +53,7 @@ const MORE_ITEMS_CONFIG = [
 ];
 
 const PROFILE_MENU_CONFIG = [
+  { path: "/dashboard/creator-hub", label: "Creator Hub", icon: User },
   { path: "/dashboard/history", labelKey: "nav.history", icon: History },
   { path: "/dashboard/favorites", labelKey: "nav.favorite", icon: Heart },
 ];

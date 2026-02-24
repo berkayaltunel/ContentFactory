@@ -21,6 +21,7 @@ import DashboardHome from "@/pages/DashboardHome";
 import YouTubeStudioPage from "@/pages/YouTubeStudioPage";
 import ABTestPage from "@/pages/ABTestPage";
 import PersonaLabPage from "@/pages/PersonaLabPage";
+import CreatorHubPage from "@/pages/CreatorHubPage";
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="contentfactory-theme">
@@ -52,6 +53,7 @@ function App() {
                   <Route path="youtube-studio" element={<YouTubeStudioPage />} />
                   <Route path="ab-test" element={<ABTestPage />} />
                   <Route path="persona-lab" element={<PersonaLabPage />} />
+                  <Route path="creator-hub" element={<CreatorHubPage />} />
                 </Route>
               </Route>
 
