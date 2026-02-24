@@ -331,11 +331,48 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
     profile = sb.table("user_settings").select("niches").eq("user_id", user.id).limit(1).execute()
     niches = profile.data[0].get("niches", []) if profile.data else []
 
-    # Rastgele bir niche seç (context olarak)
+    # Gerçek trend çek (niche'e göre filtreli)
     import random
-    niche_topic = random.choice(niches) if niches else None
-    niche_labels = {n["slug"]: n["label"] for n in NICHE_TAXONOMY}
-    topic_str = niche_labels.get(niche_topic, niche_topic) if niche_topic else "kendi uzmanlık alanın"
+    from datetime import timedelta
+    from routes.trends import NICHE_KEYWORDS
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+    trend_query = supabase.table("trends") \
+        .select("topic, summary, keywords") \
+        .eq("is_visible", True) \
+        .gte("created_at", cutoff) \
+        .gte("score", 60) \
+        .order("score", desc=True) \
+        .limit(20) \
+        .execute()
+
+    all_trends = trend_query.data or []
+    chosen_trend = None
+
+    if all_trends and niches:
+        niche_kws = []
+        for n in niches:
+            niche_kws.extend(NICHE_KEYWORDS.get(n, []))
+        niche_kws_lower = [kw.lower() for kw in niche_kws]
+
+        matching = [t for t in all_trends if any(
+            nk in (t.get("topic", "") + " ".join(t.get("keywords", []))).lower()
+            for nk in niche_kws_lower
+        )]
+        if matching:
+            chosen_trend = random.choice(matching[:5])
+
+    if not chosen_trend and all_trends:
+        chosen_trend = random.choice(all_trends[:5])
+
+    if chosen_trend:
+        topic_str = chosen_trend["topic"]
+        trend_context = f'Güncel trend: "{chosen_trend["topic"]}". Özet: {chosen_trend.get("summary", "")}'
+    else:
+        niche_labels = {n["slug"]: n["label"] for n in NICHE_TAXONOMY}
+        fallback_niche = random.choice(niches) if niches else "teknoloji"
+        topic_str = niche_labels.get(fallback_niche, fallback_niche)
+        trend_context = f'Konu: {topic_str}'
 
     avoid_str = ', '.join(body.avoid[:5]) if body.avoid else ''
     principles_str = ', '.join(body.principles[:5]) if body.principles else ''
@@ -359,7 +396,9 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": f"""Kullanıcının marka sesiyle, "{topic_str}" konusunda tek bir tweet üret.
+                {"role": "system", "content": f"""Kullanıcının marka sesiyle, güncel bir trend hakkında tek bir tweet üret.
+
+{trend_context}
 
 {voice_section}
 
@@ -372,21 +411,24 @@ KIRILMAZ YASAKLAR:
 - Emoji YASAK. Hashtag YASAK.
 - AI şablon kalıpları YASAK ("Unutmayın", "Sonuç olarak", "İşte size")
 - Ucuz etkileşim tuzakları YASAK ("Siz ne düşünüyorsunuz?", "Katılıyor musunuz?")
-- Genel geçer konular YASAK (kahve, ofis, pazartesi). Konu: "{topic_str}"
+- Genel geçer konular YASAK (kahve, ofis, pazartesi)
 - Ana fikri özetleme. Tespit et ve BIRAK.
 - Clickbait, üç nokta, "İşin sırrı..." YASAK.
 
 ZORUNLU:
-- Konu "{topic_str}" olmalı
 - Max 280 karakter
 - Sadece tweet metnini döndür"""},
-                {"role": "user", "content": f'"{topic_str}" hakkında bu DNA ile bir tweet üret.'}
+                {"role": "user", "content": f'{trend_context}\n\nBu trend hakkında DNA ile bir tweet üret.'}
             ],
             temperature=0.85,
             max_tokens=150,
         )
         content = response.choices[0].message.content.strip().strip('"')
-        return {"success": True, "content": content}
+        return {
+            "success": True,
+            "content": content,
+            "trend_topic": chosen_trend["topic"] if chosen_trend else None,
+        }
     except Exception as e:
         logger.error(f"DNA test error: {e}")
         raise HTTPException(status_code=500, detail="Örnek üretilemedi")

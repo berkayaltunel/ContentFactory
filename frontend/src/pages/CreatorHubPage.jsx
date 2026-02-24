@@ -501,12 +501,16 @@ export default function CreatorHubPage() {
     } finally { setAnalyzing(false); }
   };
 
+  const [dnaTrendTopic, setDnaTrendTopic] = useState("");
+
   const handleDnaTest = async () => {
     setDnaLoading(true);
     setDnaPreview("");
+    setDnaTrendTopic("");
     try {
       const res = await api.post(`${API}/profile/dna-test`, { tones, principles, avoid });
       setDnaPreview(res.data?.content || "");
+      setDnaTrendTopic(res.data?.trend_topic || "");
     } catch (err) {
       toast.error("Örnek üretilemedi");
     } finally { setDnaLoading(false); }
@@ -773,7 +777,10 @@ export default function CreatorHubPage() {
             </button>
             {dnaPreview && (
               <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] animate-[fadeIn_0.5s_ease-out]">
-                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.15em] mb-2">Senin Sesinle</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-[10px] text-zinc-600 uppercase tracking-[0.15em]">Senin Sesinle</p>
+                  {dnaTrendTopic && <span className="text-[9px] px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/15 truncate max-w-[200px]">📰 {dnaTrendTopic}</span>}
+                </div>
                 <p className="text-sm text-white/80 leading-relaxed">{dnaPreview}</p>
                 <div className="flex gap-2 mt-3">
                   <button onClick={() => { navigator.clipboard.writeText(dnaPreview); toast.success("Kopyalandı!"); }}
