@@ -272,6 +272,13 @@ export default function DashboardLayout() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Listen for open-settings-modal custom event (from CreatorHub etc.)
+  useEffect(() => {
+    const handler = () => setSettingsOpen(true);
+    window.addEventListener("open-settings-modal", handler);
+    return () => window.removeEventListener("open-settings-modal", handler);
+  }, []);
+
   // ── Account Switcher (from AccountContext) ──
   const {
     accounts: connectedAccounts,

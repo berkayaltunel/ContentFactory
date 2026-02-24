@@ -338,15 +338,17 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
                 {"role": "system", "content": f"""Kullanıcının marka sesiyle tek bir tweet üret.
 
 Ton: {tone_str}
-İlkeler: {', '.join(body.principles[:5]) if body.principles else 'Yok'}
-Kaçınılacaklar: {', '.join(body.avoid[:5]) if body.avoid else 'Yok'}
 Nişler: {', '.join(niches[:3]) if niches else 'Genel'}
+
+ZORUNLU İLKELER (her içerikte uygulanmalı): {', '.join(body.principles[:5]) if body.principles else 'Yok'}
+YASAKLAR (kesinlikle kullanma, ihlal edersen içerik reddedilir): {', '.join(body.avoid[:5]) if body.avoid else 'Yok'}
 
 KURALLAR:
 - Max 280 karakter
-- Emoji kullanma
-- AI klişeleri YASAK
+- Emoji YASAK (kullanıcı isterse ekler)
+- AI klişeleri YASAK ("Yapay zeka dünyasında...", "İşte size..." gibi kalıplar)
 - Ton dağılımına SADIK kal (baskın ton belirgin olmalı)
+- YASAKLAR bölümündeki her madde KESİN kural, tavsiye değil
 - Doğal, kişisel, insan gibi yaz
 - Sadece tweet metnini döndür, başka bir şey yazma"""},
                 {"role": "user", "content": "Bu DNA ile bir tweet üret."}

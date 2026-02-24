@@ -175,10 +175,10 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
     }
     if principles:
         p_labels = [principle_labels.get(p, p) for p in principles[:5]]
-        parts.append(f"İlkeleri: {', '.join(p_labels)}")
+        parts.append(f"ZORUNLU İLKELER (her içerikte uygulanmalı): {', '.join(p_labels)}")
     if avoid:
         a_labels = [avoid_labels.get(a, a) for a in avoid[:5]]
-        parts.append(f"Kaçınılacaklar: {', '.join(a_labels)}")
+        parts.append(f"YASAKLAR (kesinlikle kullanma, ihlal edersen içerik reddedilir): {', '.join(a_labels)}")
     return chr(10).join(parts)
 
 
