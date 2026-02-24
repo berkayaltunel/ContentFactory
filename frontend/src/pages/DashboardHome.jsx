@@ -194,6 +194,9 @@ export default function DashboardHome() {
   const [styleProfiles, setStyleProfiles] = useState([]);
   const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [topicInput, setTopicInput] = useState("");
+  const [magicDrafts, setMagicDrafts] = useState([]);
+  const [magicLoading, setMagicLoading] = useState(true);
+  const [magicCached, setMagicCached] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -228,11 +231,40 @@ export default function DashboardHome() {
       } catch (e) { /* ignore */ }
     };
     load();
+
+    // Magic Morning (JIT)
+    const loadDrafts = async () => {
+      try {
+        setMagicLoading(true);
+        const res = await api.get(`${API}/drafts/today`);
+        setMagicDrafts(res.data?.drafts || []);
+        setMagicCached(res.data?.cached || false);
+      } catch (e) { /* ignore - no drafts */ }
+      finally { setMagicLoading(false); }
+    };
+    loadDrafts();
   }, []);
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
     toast.success(t('common.copied'));
+  };
+
+  const handleDraftCopy = (draft) => {
+    const text = draft.content;
+    navigator.clipboard.writeText(text);
+    const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(intentUrl, "_blank");
+    toast.success("Kopyalandı ve X açılıyor!");
+    // Mark as published
+    api.put(`${API}/drafts/${draft.id}`, { status: "published" }).catch(() => {});
+  };
+
+  const handleDraftDismiss = async (draftId) => {
+    try {
+      await api.put(`${API}/drafts/${draftId}`, { status: "dismissed" });
+      setMagicDrafts(prev => prev.filter(d => d.id !== draftId));
+    } catch { /* ignore */ }
   };
 
   const handleTopicSubmit = () => {
@@ -367,6 +399,77 @@ export default function DashboardHome() {
             <p className="text-[11px] md:text-xs text-muted-foreground">{t('common.favoriteContent')}</p>
           </div>
         </div>
+
+        {/* ═══════════════════════════════════════
+            MAGIC MORNING — Günlük Taslaklar
+            ═══════════════════════════════════════ */}
+        {(magicLoading || magicDrafts.filter(d => d.status === "pending" || d.status === "edited").length > 0) && (
+          <div
+            className="bento-card relative col-span-2 md:col-span-4 rounded-2xl md:rounded-3xl p-4 md:p-6 overflow-hidden bg-gradient-to-br from-violet-500/[0.06] to-fuchsia-500/[0.04] border border-violet-500/15"
+            style={{ "--bento-i": 3 }}
+          >
+            <div className="bento-orb w-32 h-32 bg-violet-500/10 top-[-20px] right-[10%]" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center">
+                  <span className="text-lg">✨</span>
+                </div>
+                <div>
+                  <h2 className="text-base font-bold">Magic Morning</h2>
+                  <p className="text-[12px] text-muted-foreground">DNA'na göre hazırlanmış günlük taslaklar</p>
+                </div>
+              </div>
+
+              {magicLoading ? (
+                <div className="flex items-center gap-3 py-8 justify-center">
+                  <span className="text-2xl animate-bounce">🐙</span>
+                  <p className="text-sm text-muted-foreground animate-pulse">Günlük taslakların DNA'na göre hazırlanıyor...</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {magicDrafts.filter(d => d.status === "pending" || d.status === "edited").map((draft, i) => (
+                    <div key={draft.id} className="relative group p-4 rounded-xl bg-card/60 border border-border/40 hover:border-violet-500/20 transition-all">
+                      {/* Trend badge */}
+                      {draft.trend_topic && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <TrendingUp className="h-3 w-3 text-violet-500" />
+                          <span className="text-[10px] text-violet-400 font-medium truncate">{draft.trend_topic}</span>
+                        </div>
+                      )}
+                      {/* Content */}
+                      <p className="text-sm leading-relaxed mb-3 line-clamp-4">{draft.content}</p>
+                      {/* Insight */}
+                      {draft.insight && (
+                        <p className="text-[10px] text-muted-foreground italic mb-3 flex items-start gap-1">
+                          <Lightbulb className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                          {draft.insight}
+                        </p>
+                      )}
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleDraftCopy(draft)}
+                          className="flex-1 h-8 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-[11px] font-medium"
+                        >
+                          <Rocket className="h-3 w-3 mr-1" /> Kopyala ve X'te Aç
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDraftDismiss(draft.id)}
+                          className="h-8 px-2 text-muted-foreground/50 hover:text-muted-foreground text-[11px]"
+                        >
+                          Geç
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ═══════════════════════════════════════
             ROW 2: ARAÇLAR (full width, prominent!)

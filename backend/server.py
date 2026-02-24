@@ -1515,6 +1515,9 @@ api_router.include_router(youtube_studio_router)
 from routes.profile import router as profile_router
 api_router.include_router(profile_router)
 
+from routes.drafts import router as drafts_router
+api_router.include_router(drafts_router)
+
 # Include the router in the main app
 # app.include_router(api_router)  # Moved to end for v2 routes
 
