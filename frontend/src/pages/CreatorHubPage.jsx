@@ -53,6 +53,56 @@ const AVOID_OPTIONS = [
   { key: "hashtag-spam", label: "Hashtag Spam", emoji: "#️⃣" },
 ];
 
+const AUDIENCE_OPTIONS = [
+  { key: "beginners", label: "Yeni Başlayanlar", emoji: "🌱", desc: "Basit dil, sıfır jargon" },
+  { key: "professionals", label: "Profesyoneller", emoji: "👔", desc: "Mesleki derinlik" },
+  { key: "clevel", label: "C-Level", emoji: "👑", desc: "Stratejik, vizyoner" },
+  { key: "founders", label: "Girişimciler", emoji: "🚀", desc: "Büyüme ve veri odaklı" },
+];
+
+const ARCHETYPES = [
+  {
+    key: "sage-founder",
+    label: "Bilge Kurucu",
+    emoji: "🧘",
+    desc: "Sakin, derin, uzun vadeli düşünen",
+    tones: { informative: 40, friendly: 25, witty: 15, aggressive: 0, inspirational: 20 },
+    principles: ["data-driven", "storytelling", "actionable"],
+    avoid: ["clickbait", "emoji-spam", "slang"],
+    audience: "founders",
+  },
+  {
+    key: "growth-hacker",
+    label: "Büyüme Uzmanı",
+    emoji: "📈",
+    desc: "Agresif, veri odaklı, cesur",
+    tones: { informative: 30, friendly: 5, witty: 15, aggressive: 35, inspirational: 15 },
+    principles: ["data-driven", "contrarian", "concise"],
+    avoid: ["corporate", "generic", "long-winded"],
+    audience: "founders",
+  },
+  {
+    key: "friendly-creator",
+    label: "Samimi Hikayeci",
+    emoji: "💬",
+    desc: "Kişisel, sıcak, erişilebilir",
+    tones: { informative: 15, friendly: 45, witty: 25, aggressive: 0, inspirational: 15 },
+    principles: ["personal", "storytelling", "question-hook"],
+    avoid: ["corporate", "jargon", "self-promo"],
+    audience: "beginners",
+  },
+  {
+    key: "sharp-wit",
+    label: "Keskin Zeka",
+    emoji: "🎯",
+    desc: "İronik, keskin, viral potansiyel",
+    tones: { informative: 10, friendly: 10, witty: 55, aggressive: 20, inspirational: 5 },
+    principles: ["contrarian", "concise"],
+    avoid: ["generic", "emoji-spam", "clickbait"],
+    audience: "professionals",
+  },
+];
+
 const NICHE_CATEGORIES = {
   "Teknoloji": ["ai", "dev", "data", "security", "nocode", "gaming"],
   "İş Dünyası": ["saas", "startup", "marketing", "ecommerce", "finance", "freelance"],
@@ -420,6 +470,7 @@ export default function CreatorHubPage() {
   const [tones, setTones] = useState({ informative: 40, friendly: 40, witty: 20, aggressive: 0, inspirational: 0 });
   const [principles, setPrinciples] = useState([]);
   const [avoid, setAvoid] = useState([]);
+  const [targetAudience, setTargetAudience] = useState(null);
   const [taxonomy, setTaxonomy] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -452,6 +503,7 @@ export default function CreatorHubPage() {
       if (profile.brand_voice?.tones) setTones(profile.brand_voice.tones);
       if (profile.brand_voice?.principles) setPrinciples(profile.brand_voice.principles);
       if (profile.brand_voice?.avoid) setAvoid(profile.brand_voice.avoid);
+      if (profile.brand_voice?.target_audience) setTargetAudience(profile.brand_voice.target_audience);
     }).catch(() => toast.error("Profil yüklenemedi")).finally(() => setLoading(false));
   }, []);
 
@@ -508,7 +560,7 @@ export default function CreatorHubPage() {
     setDnaPreview("");
     setDnaTrendTopic("");
     try {
-      const res = await api.post(`${API}/profile/dna-test`, { tones, principles, avoid });
+      const res = await api.post(`${API}/profile/dna-test`, { tones, principles, avoid, target_audience: targetAudience });
       setDnaPreview(res.data?.content || "");
       setDnaTrendTopic(res.data?.trend_topic || "");
     } catch (err) {
@@ -520,9 +572,9 @@ export default function CreatorHubPage() {
     if (!canSave) return;
     setSaving(true);
     try {
-      await api.put(`${API}/profile`, { display_name: displayName || null, title: title || null, niches, brand_voice: { tones, principles, avoid } });
+      await api.put(`${API}/profile`, { display_name: displayName || null, title: title || null, niches, brand_voice: { tones, principles, avoid, target_audience: targetAudience } });
       setDirty(false);
-      updateProfile({ display_name: displayName || null, title: title || null, avatar_url: avatarUrl, niches, brand_voice: { tones, principles, avoid } });
+      updateProfile({ display_name: displayName || null, title: title || null, avatar_url: avatarUrl, niches, brand_voice: { tones, principles, avoid, target_audience: targetAudience } });
       toast.success("Profil kaydedildi ✨");
     } catch (err) { toast.error(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Kayıt başarısız"); }
     finally { setSaving(false); }
@@ -533,11 +585,32 @@ export default function CreatorHubPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
       <style>{`@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      {/* Header */}
+      {/* Header + Completion Badge */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-white tracking-tight">Creator Hub</h1>
-          <p className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-1">Dijital DNA</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-lg font-semibold text-white tracking-tight">Creator Hub</h1>
+            <p className="text-[10px] uppercase tracking-[0.15em] text-zinc-600 mt-1">Dijital DNA</p>
+          </div>
+          {(() => {
+            const steps = [
+              displayName,
+              avatarUrl,
+              niches.length > 0,
+              isExact,
+              targetAudience,
+            ].filter(Boolean).length;
+            return (
+              <span className={cn(
+                "text-[10px] px-2.5 py-1 rounded-full font-mono font-medium border",
+                steps >= 5
+                  ? "bg-emerald-500/8 text-emerald-400 border-emerald-500/15"
+                  : "bg-white/[0.02] text-zinc-600 border-white/[0.06]"
+              )}>
+                {steps}/5 Adım
+              </span>
+            );
+          })()}
         </div>
         <Button onClick={handleSave} disabled={!canSave} size="sm"
           className={cn("gap-1.5 text-[11px] h-8 rounded-xl font-medium", canSave ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/20" : "")}>
@@ -545,6 +618,31 @@ export default function CreatorHubPage() {
           Kaydet
         </Button>
       </div>
+
+      {/* ═══ ARCHETYPES — Başlangıç Noktaları ═══ */}
+      {!displayName && !dirty && (
+        <GlassCard className="p-5" hover={false}>
+          <h3 className="text-[9px] font-semibold text-zinc-600 uppercase tracking-[0.2em] mb-1">Başlangıç Noktaları</h3>
+          <p className="text-[10px] text-zinc-700 mb-3">Bir arketip seç, sonra sürgülerle kendi imzanı at</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {ARCHETYPES.map(arch => (
+              <button key={arch.key} onClick={() => {
+                setTones(arch.tones);
+                setPrinciples(arch.principles);
+                setAvoid(arch.avoid);
+                setTargetAudience(arch.audience);
+                markDirty();
+                toast.success(`${arch.label} şablonu yüklendi, ince ayar yapabilirsin`);
+              }}
+                className="group p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:border-violet-500/20 hover:bg-violet-500/5 transition-all text-left">
+                <span className="text-xl mb-1.5 block">{arch.emoji}</span>
+                <p className="text-[11px] font-medium text-white/80 group-hover:text-white transition-colors">{arch.label}</p>
+                <p className="text-[9px] text-zinc-700 mt-0.5">{arch.desc}</p>
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       {/* ═══ BENTO GRID ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -736,6 +834,29 @@ export default function CreatorHubPage() {
               <div>
                 <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2 block">Kaçınılacaklar <span className="text-zinc-800 normal-case tracking-normal">(max 5)</span></label>
                 <ChipSelector options={AVOID_OPTIONS} selected={avoid} onChange={v => { setAvoid(v); markDirty(); }} max={5} />
+              </div>
+            </div>
+
+            {/* Target Audience — Single Select */}
+            <div className="mt-5 pt-5 border-t border-white/[0.04]">
+              <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2.5 block">Kime Konuşuyorsun?</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {AUDIENCE_OPTIONS.map(opt => {
+                  const isSel = targetAudience === opt.key;
+                  return (
+                    <button key={opt.key} onClick={() => { setTargetAudience(isSel ? null : opt.key); markDirty(); }}
+                      className={cn(
+                        "p-2.5 rounded-xl border text-left transition-all duration-200",
+                        isSel
+                          ? "bg-violet-500/10 border-violet-400/20 shadow-[0_0_12px_rgba(139,92,246,0.08)]"
+                          : "bg-white/[0.02] border-white/[0.05] hover:border-white/[0.1]"
+                      )}>
+                      <span className="text-sm block mb-0.5">{opt.emoji}</span>
+                      <p className={cn("text-[10px] font-medium", isSel ? "text-violet-300" : "text-zinc-500")}>{opt.label}</p>
+                      <p className="text-[8px] text-zinc-700 mt-0.5">{opt.desc}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </GlassCard>

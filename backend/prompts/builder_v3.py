@@ -255,6 +255,19 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
             if min_parts:
                 parts.append(f"Hafif dokunuş: {', '.join(min_parts)}")
 
+    # Target Audience
+    audience = brand_voice.get("target_audience")
+    if audience:
+        audience_guides = {
+            "beginners": "HEDEF KİTLE: Yeni başlayanlar. Basit dil, sıfır jargon, açıklayıcı ama patronluk taslama.",
+            "professionals": "HEDEF KİTLE: Sektör profesyonelleri. Mesleki derinlik, teknik terimler kullanabilirsin, 101 seviyesi değil.",
+            "clevel": "HEDEF KİTLE: C-Level yöneticiler. Stratejik ve vizyoner dil, ROI/impact odaklı, kısa ve özlü.",
+            "founders": "HEDEF KİTLE: Girişimciler ve yatırımcılar. Büyüme metrikleri, pazar dinamikleri, cesur öngörüler.",
+        }
+        guide = audience_guides.get(audience)
+        if guide:
+            parts.append(f"\n{guide}")
+
     # Content Architecture (her zaman)
     parts.append(CONTENT_ARCHITECTURE)
     # Pre-defined chip key → label mapping

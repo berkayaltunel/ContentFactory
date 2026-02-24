@@ -95,11 +95,22 @@ class BrandVoiceTones(BaseModel):
         return self
 
 
+VALID_AUDIENCES = {"beginners", "professionals", "clevel", "founders"}
+
+AUDIENCE_LABELS = {
+    "beginners": "Yeni Başlayanlar / Herkes",
+    "professionals": "Sektör Profesyonelleri",
+    "clevel": "C-Level / Yöneticiler",
+    "founders": "Girişimciler / Yatırımcılar",
+}
+
+
 class BrandVoice(BaseModel):
     tones: BrandVoiceTones = BrandVoiceTones()
     principles: list[str] = Field(default=[], max_length=5)
     avoid: list[str] = Field(default=[], max_length=5)
     sample_voice: str = Field(default="", max_length=500)
+    target_audience: Optional[str] = None  # single select
 
     @model_validator(mode="after")
     def clean_lists(self):
@@ -313,6 +324,7 @@ class DnaTestRequest(BaseModel):
     tones: dict = {}
     principles: list = []
     avoid: list = []
+    target_audience: Optional[str] = None
 
 
 @router.post("/dna-test")
@@ -381,6 +393,18 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
     from prompts.builder_v3 import TONE_VOICE_GUIDES, CONTENT_ARCHITECTURE
     sorted_t = sorted(active.items(), key=lambda x: -x[1])
     voice_section = ""
+
+    # Audience guide
+    if body.target_audience:
+        aud_guides = {
+            "beginners": "HEDEF KİTLE: Yeni başlayanlar. Basit dil, sıfır jargon.",
+            "professionals": "HEDEF KİTLE: Sektör profesyonelleri. Teknik derinlik, 101 seviyesi değil.",
+            "clevel": "HEDEF KİTLE: C-Level yöneticiler. Stratejik, ROI odaklı, kısa.",
+            "founders": "HEDEF KİTLE: Girişimciler/yatırımcılar. Büyüme, metrik, cesur öngörü.",
+        }
+        aud = aud_guides.get(body.target_audience)
+        if aud:
+            voice_section += f"\n{aud}\n"
     for key, val in sorted_t[:2]:
         guide = TONE_VOICE_GUIDES.get(key)
         if guide:
