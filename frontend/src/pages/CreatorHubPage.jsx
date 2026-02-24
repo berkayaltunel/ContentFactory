@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { User, Upload, Plus, X, Save, Loader2, AlertCircle, Check, Search, ChevronDown } from "lucide-react";
+import { User, Upload, Plus, X, Save, Loader2, AlertCircle, Check, Search, ChevronDown, Info, Link2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { FaXTwitter, FaInstagram } from "react-icons/fa6";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,32 @@ const TONE_CONFIG = [
 
 const MAX_NICHES = 5;
 const TOTAL_POINTS = 100;
+
+const PRINCIPLE_OPTIONS = [
+  { key: "concise", label: "Kısa ve Öz", emoji: "✂️" },
+  { key: "data-driven", label: "Veri Odaklı", emoji: "📊" },
+  { key: "question-hook", label: "Soru ile Başla", emoji: "❓" },
+  { key: "storytelling", label: "Hikayeleştirici", emoji: "📖" },
+  { key: "actionable", label: "Uygulanabilir Tavsiye", emoji: "🎯" },
+  { key: "personal", label: "Kişisel Deneyim", emoji: "💭" },
+  { key: "contrarian", label: "Karşıt Görüş", emoji: "🔥" },
+  { key: "educational", label: "Öğretici", emoji: "🎓" },
+  { key: "thread-style", label: "Thread Formatı", emoji: "🧵" },
+  { key: "visual-first", label: "Görsel Ağırlıklı", emoji: "🖼️" },
+];
+
+const AVOID_OPTIONS = [
+  { key: "emoji-spam", label: "Emoji Spam", emoji: "🚫" },
+  { key: "clickbait", label: "Tıklama Tuzağı", emoji: "🪤" },
+  { key: "corporate", label: "Kurumsal Dil", emoji: "🏢" },
+  { key: "slang", label: "Aşırı Argo", emoji: "🗣️" },
+  { key: "generic", label: "Genel Geçer Klişe", emoji: "😴" },
+  { key: "self-promo", label: "Sürekli Reklam", emoji: "📢" },
+  { key: "negativity", label: "Negatif Ton", emoji: "👎" },
+  { key: "jargon", label: "Teknik Jargon", emoji: "🤓" },
+  { key: "long-winded", label: "Gereksiz Uzun", emoji: "📜" },
+  { key: "hashtag-spam", label: "Hashtag Spam", emoji: "#️⃣" },
+];
 
 const NICHE_CATEGORIES = {
   "Teknoloji": ["ai", "dev", "data", "security", "nocode", "gaming"],
@@ -307,6 +334,58 @@ function TagInput({ items, onChange, placeholder, max = 5 }) {
 }
 
 /* ═══════════════════════════════════════════════════
+   CHIP SELECTOR (Pre-defined options)
+   ═══════════════════════════════════════════════════ */
+
+function ChipSelector({ options, selected, onChange, max = 5 }) {
+  const toggle = (key) => {
+    if (selected.includes(key)) onChange(selected.filter(s => s !== key));
+    else if (selected.length < max) onChange([...selected, key]);
+  };
+  const atLimit = selected.length >= max;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => {
+        const isSel = selected.includes(opt.key);
+        return (
+          <button key={opt.key} onClick={() => toggle(opt.key)} disabled={atLimit && !isSel}
+            className={cn(
+              "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] border transition-all duration-200",
+              isSel
+                ? "bg-violet-500/10 border-violet-400/20 text-violet-300 shadow-[0_0_10px_rgba(139,92,246,0.06)]"
+                : atLimit && !isSel
+                ? "bg-zinc-900/20 border-zinc-800/20 text-zinc-700 cursor-not-allowed"
+                : "bg-white/[0.02] border-white/[0.05] text-zinc-500 hover:border-white/[0.1] hover:text-zinc-300 cursor-pointer"
+            )}>
+            <span>{opt.emoji}</span> {opt.label}
+            {isSel && <X className="w-2.5 h-2.5 ml-0.5 opacity-50" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   TOOLTIP
+   ═══════════════════════════════════════════════════ */
+
+function InfoTooltip({ text }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-flex ml-1.5" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400 transition-colors cursor-help" />
+      {show && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-zinc-800 border border-white/10 text-[10px] text-zinc-300 leading-relaxed w-56 shadow-xl z-50 animate-[fadeIn_0.15s_ease-out]">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-800 border-r border-b border-white/10 rotate-45 -mt-1" />
+        </div>
+      )}
+    </span>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    INLINE EDIT
    ═══════════════════════════════════════════════════ */
 
@@ -332,6 +411,7 @@ function InlineEdit({ value, onChange, placeholder, className, inputClassName })
 export default function CreatorHubPage() {
   const { accounts } = useAccount();
   const { updateProfile } = useCreatorProfile();
+  const navigate = useNavigate();
 
   const [displayName, setDisplayName] = useState("");
   const [title, setTitle] = useState("");
@@ -340,7 +420,6 @@ export default function CreatorHubPage() {
   const [tones, setTones] = useState({ informative: 40, friendly: 40, witty: 20, aggressive: 0, inspirational: 0 });
   const [principles, setPrinciples] = useState([]);
   const [avoid, setAvoid] = useState([]);
-  const [sampleVoice, setSampleVoice] = useState("");
   const [taxonomy, setTaxonomy] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -371,7 +450,6 @@ export default function CreatorHubPage() {
       if (profile.brand_voice?.tones) setTones(profile.brand_voice.tones);
       if (profile.brand_voice?.principles) setPrinciples(profile.brand_voice.principles);
       if (profile.brand_voice?.avoid) setAvoid(profile.brand_voice.avoid);
-      if (profile.brand_voice?.sample_voice) setSampleVoice(profile.brand_voice.sample_voice);
     }).catch(() => toast.error("Profil yüklenemedi")).finally(() => setLoading(false));
   }, []);
 
@@ -425,9 +503,9 @@ export default function CreatorHubPage() {
     if (!canSave) return;
     setSaving(true);
     try {
-      await api.put(`${API}/profile`, { display_name: displayName || null, title: title || null, niches, brand_voice: { tones, principles, avoid, sample_voice: sampleVoice } });
+      await api.put(`${API}/profile`, { display_name: displayName || null, title: title || null, niches, brand_voice: { tones, principles, avoid } });
       setDirty(false);
-      updateProfile({ display_name: displayName || null, title: title || null, avatar_url: avatarUrl, niches, brand_voice: { tones, principles, avoid, sample_voice: sampleVoice } });
+      updateProfile({ display_name: displayName || null, title: title || null, avatar_url: avatarUrl, niches, brand_voice: { tones, principles, avoid } });
       toast.success("Profil kaydedildi ✨");
     } catch (err) { toast.error(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Kayıt başarısız"); }
     finally { setSaving(false); }
@@ -512,7 +590,12 @@ export default function CreatorHubPage() {
 
           {/* ACCOUNTS */}
           <GlassCard className="p-5">
-            <h3 className="text-[9px] font-semibold text-zinc-600 uppercase tracking-[0.2em] mb-3">Bağlı Hesaplar</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[9px] font-semibold text-zinc-600 uppercase tracking-[0.2em]">Bağlı Hesaplar</h3>
+              <button onClick={() => navigate("/settings")} className="flex items-center gap-1 text-[9px] text-zinc-600 hover:text-violet-400 transition-colors uppercase tracking-wider">
+                <Link2 className="w-3 h-3" /> Ekle
+              </button>
+            </div>
             {accounts.length === 0 ? (
               <p className="text-[11px] text-zinc-700">Henüz hesap yok</p>
             ) : (
@@ -543,7 +626,10 @@ export default function CreatorHubPage() {
           <GlassCard className="p-6">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h3 className="text-sm font-semibold text-white tracking-tight">Kişisel Sesin</h3>
+                <h3 className="text-sm font-semibold text-white tracking-tight flex items-center">
+                  Kişisel Sesin
+                  <InfoTooltip text="Bu dağılım, AI koçunuzun ve içerik üreticinizin ana karakterini belirler. 'Analiz Et' butonuyla otomatik doldurabilirsiniz." />
+                </h3>
                 <p className="text-[10px] text-zinc-600 mt-0.5">Yaratıcı DNA · {TOTAL_POINTS} puanı dağıt</p>
               </div>
               <div className={cn(
@@ -624,23 +710,16 @@ export default function CreatorHubPage() {
               </div>
             </div>
 
-            {/* Principles & Avoid */}
+            {/* Principles & Avoid — Pre-defined Chips */}
             <div className="grid sm:grid-cols-2 gap-5 mt-6 pt-5 border-t border-white/[0.04]">
               <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2 block">İlkeler</label>
-                <TagInput items={principles} onChange={v => { setPrinciples(v); markDirty(); }} placeholder="Kısa ve öz yaz" max={5} />
+                <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2 block">İçerik İlkeleri <span className="text-zinc-800 normal-case tracking-normal">(max 5)</span></label>
+                <ChipSelector options={PRINCIPLE_OPTIONS} selected={principles} onChange={v => { setPrinciples(v); markDirty(); }} max={5} />
               </div>
               <div>
-                <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2 block">Kaçınılacaklar</label>
-                <TagInput items={avoid} onChange={v => { setAvoid(v); markDirty(); }} placeholder="Emoji spam" max={5} />
+                <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2 block">Kaçınılacaklar <span className="text-zinc-800 normal-case tracking-normal">(max 5)</span></label>
+                <ChipSelector options={AVOID_OPTIONS} selected={avoid} onChange={v => { setAvoid(v); markDirty(); }} max={5} />
               </div>
-            </div>
-
-            <div className="mt-5 pt-5 border-t border-white/[0.04]">
-              <label className="text-[9px] uppercase tracking-[0.15em] text-zinc-600 font-semibold mb-2 block">Ses Tarifi</label>
-              <textarea value={sampleVoice} onChange={(e) => { setSampleVoice(e.target.value); markDirty(); }}
-                placeholder="Teknik ama samimi, jargonsuz açıkla..."
-                className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl px-3 py-2.5 text-[11px] text-white placeholder:text-zinc-700 resize-none h-16 focus:outline-none focus:border-violet-500/30 transition-colors leading-relaxed" maxLength={500} />
             </div>
           </GlassCard>
 

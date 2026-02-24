@@ -248,7 +248,13 @@ async def update_avatar(body: AvatarUpdate, user=Depends(require_auth), supabase
             if platform == "twitter":
                 from services.twitter_scraper import scraper
                 info = await scraper.get_user_info_async(username)
-                pic_url = info.get("profile_image_url", "").replace("_normal", "_400x400") if info else None
+                if info:
+                    pic_url = info.get("avatar_url") or info.get("profile_image_url", "")
+                    if pic_url:
+                        pic_url = pic_url.replace("_normal.", "_400x400.").replace("_normal", "_400x400")
+                    # Fallback: unavatar.io
+                    if not pic_url:
+                        pic_url = f"https://unavatar.io/x/{username}"
 
             elif platform == "instagram":
                 async with httpx.AsyncClient(timeout=10) as client:

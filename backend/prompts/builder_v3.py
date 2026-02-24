@@ -154,12 +154,23 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
         tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili", "aggressive": "Agresif", "inspirational": "İlham Verici"}
         tone_parts = [f"%{v} {tone_labels.get(k, k)}" for k, v in sorted(active_tones.items(), key=lambda x: -x[1])]
         parts.append(f"Ton dengesi: {', '.join(tone_parts)}")
+    # Pre-defined chip key → label mapping
+    principle_labels = {
+        "concise": "Kısa ve Öz", "data-driven": "Veri Odaklı", "question-hook": "Soru ile Başla",
+        "storytelling": "Hikayeleştirici", "actionable": "Uygulanabilir Tavsiye", "personal": "Kişisel Deneyim",
+        "contrarian": "Karşıt Görüş", "educational": "Öğretici", "thread-style": "Thread Formatı", "visual-first": "Görsel Ağırlıklı",
+    }
+    avoid_labels = {
+        "emoji-spam": "Emoji Spam", "clickbait": "Tıklama Tuzağı", "corporate": "Kurumsal Dil",
+        "slang": "Aşırı Argo", "generic": "Genel Geçer Klişe", "self-promo": "Sürekli Reklam",
+        "negativity": "Negatif Ton", "jargon": "Teknik Jargon", "long-winded": "Gereksiz Uzun", "hashtag-spam": "Hashtag Spam",
+    }
     if principles:
-        parts.append(f"İlkeleri: {', '.join(principles[:5])}")
+        p_labels = [principle_labels.get(p, p) for p in principles[:5]]
+        parts.append(f"İlkeleri: {', '.join(p_labels)}")
     if avoid:
-        parts.append(f"Kaçınılacaklar: {', '.join(avoid[:5])}")
-    if sample_voice:
-        parts.append(f"Ses tarifi: {sample_voice[:300]}")
+        a_labels = [avoid_labels.get(a, a) for a in avoid[:5]]
+        parts.append(f"Kaçınılacaklar: {', '.join(a_labels)}")
     return chr(10).join(parts)
 
 

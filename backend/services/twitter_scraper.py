@@ -207,7 +207,7 @@ class TwitterScraper:
             core = user_result.get("core", {})
             legacy = user_result.get("legacy", {})
             avatar = user_result.get("avatar", {})
-            avatar_url = (avatar.get("image_url") or "").replace("_normal.", "_400x400.")
+            avatar_url = (avatar.get("image_url") or legacy.get("profile_image_url_https") or legacy.get("profile_image_url") or "").replace("_normal.", "_400x400.")
             return {
                 'username': legacy.get('screen_name') or core.get('screen_name', username),
                 'name': core.get('name') or legacy.get('name', ''),
