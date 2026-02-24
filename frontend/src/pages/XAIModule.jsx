@@ -1282,8 +1282,37 @@ export default function XAIModule() {
   // v2 gelişmiş ayarlar paneli açık/kapalı
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Draft bridge state (Creator Hub → /create)
+  const [draftBridge, setDraftBridge] = useState(null); // { content, trend_topic, trend_summary, draft_id }
+
   // Initialize from URL params
   useEffect(() => {
+    const draftId = searchParams.get("draft_id");
+    if (draftId) {
+      // Bridge: Creator Hub'dan gelen draft'ı API'den çek
+      (async () => {
+        try {
+          const res = await api.get(`${API}/drafts/${draftId}`);
+          const d = res.data?.draft;
+          if (d) {
+            setDraftBridge({ content: d.content, trend_topic: d.trend_topic, trend_summary: d.trend_summary, draft_id: d.id });
+            if (d.trend_topic) setInputValue(d.trend_topic);
+            if (d.trend_summary) setTrendContext(d.trend_summary);
+            if (d.platform && ["twitter","youtube","instagram","tiktok","linkedin","blog"].includes(d.platform)) {
+              setActivePlatform(d.platform);
+            }
+            // Status'ü "edited" yap (döngüyü kapat)
+            api.put(`${API}/drafts/${draftId}`, { status: "edited" }).catch(() => {});
+          }
+        } catch { /* draft bulunamazsa sessizce devam */ }
+      })();
+      // URL'i temizle (draft_id param'ını kaldır)
+      const next = new URLSearchParams(searchParams);
+      next.delete("draft_id");
+      setSearchParams(next, { replace: true });
+      return; // Diğer param'ları okuma, draft her şeyi set etti
+    }
+
     const topic = searchParams.get("topic") || "";
     const context = searchParams.get("trend_context") || "";
     const platformParam = searchParams.get("platform");
@@ -1857,6 +1886,36 @@ export default function XAIModule() {
               >
                 <X size={12} />
               </button>
+            </div>
+          )}
+
+          {/* Draft Bridge Banner */}
+          {draftBridge && (
+            <div className="flex items-start gap-3 mb-3 p-3 rounded-lg" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)" }}>
+              <span className="text-base mt-0.5">✨</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-violet-400 mb-1">DNA Taslağın Hazır</p>
+                <p className="text-[13px] text-white/80 leading-relaxed whitespace-pre-wrap">{draftBridge.content}</p>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(draftBridge.content);
+                    toast.success("Panoya kopyalandı!");
+                    if (draftBridge.draft_id) api.put(`${API}/drafts/${draftBridge.draft_id}`, { status: "published" }).catch(() => {});
+                  }} className="text-[10px] px-2 py-1 rounded-md bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 transition-colors">
+                    Kopyala
+                  </button>
+                  <button onClick={() => {
+                    const text = encodeURIComponent(draftBridge.content);
+                    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
+                    if (draftBridge.draft_id) api.put(`${API}/drafts/${draftBridge.draft_id}`, { status: "published" }).catch(() => {});
+                  }} className="text-[10px] px-2 py-1 rounded-md bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 transition-colors">
+                    X'te Paylaş
+                  </button>
+                  <button onClick={() => setDraftBridge(null)} className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors ml-auto">
+                    Kapat
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

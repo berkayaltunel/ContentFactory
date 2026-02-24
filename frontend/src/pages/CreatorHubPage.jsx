@@ -555,14 +555,18 @@ export default function CreatorHubPage() {
 
   const [dnaTrendTopic, setDnaTrendTopic] = useState("");
 
+  const [dnaDraftId, setDnaDraftId] = useState(null);
+
   const handleDnaTest = async () => {
     setDnaLoading(true);
     setDnaPreview("");
     setDnaTrendTopic("");
+    setDnaDraftId(null);
     try {
       const res = await api.post(`${API}/profile/dna-test`, { tones, principles, avoid, target_audience: targetAudience });
       setDnaPreview(res.data?.content || "");
       setDnaTrendTopic(res.data?.trend_topic || "");
+      setDnaDraftId(res.data?.draft_id || null);
     } catch (err) {
       toast.error("Örnek üretilemedi");
     } finally { setDnaLoading(false); }
@@ -911,7 +915,13 @@ export default function CreatorHubPage() {
                   {dnaTrendTopic && <span className="text-[9px] px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/15 truncate max-w-[200px]">📰 {dnaTrendTopic}</span>}
                 </div>
                 <p className="text-sm text-white/80 leading-relaxed">{dnaPreview}</p>
-                <div className="flex gap-2 mt-3">
+                <div className="flex items-center gap-3 mt-3">
+                  {dnaDraftId && (
+                    <button onClick={() => navigate(`/dashboard/create?draft_id=${dnaDraftId}`)}
+                      className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+                      <span>✨</span> Bu Taslakla İçerik Üret
+                    </button>
+                  )}
                   <button onClick={() => { navigator.clipboard.writeText(dnaPreview); toast.success("Kopyalandı!"); }}
                     className="text-[10px] text-violet-400 hover:text-violet-300 transition-colors">Kopyala</button>
                   <button onClick={handleDnaTest}

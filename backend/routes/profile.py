@@ -329,25 +329,25 @@ class DnaTestRequest(BaseModel):
 
 @router.post("/dna-test")
 async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
-    """DNA ile örnek tweet üret — instant gratification."""
+    """DNA ile örnek tweet üret + daily_drafts'a kaydet (bridge to /create)."""
     from server import openai_client
+    import random
+    import uuid
+    from datetime import timedelta
+    from routes.trends import NICHE_KEYWORDS
+    from prompts.builder_v3 import TONE_VOICE_GUIDES, FEW_SHOT_EXAMPLES, BASE_PROHIBITIONS
 
-    tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili",
-                   "aggressive": "Agresif", "inspirational": "İlham Verici"}
     active = {k: v for k, v in body.tones.items() if v and v > 0}
     sorted_t = sorted(active.items(), key=lambda x: -x[1])
-    tone_str = ", ".join(f"%{v} {tone_labels.get(k, k)}" for k, v in sorted_t[:3])
 
-    # Niche context
     sb = get_supabase()
     profile = sb.table("user_settings").select("niches").eq("user_id", user.id).limit(1).execute()
     niches = profile.data[0].get("niches", []) if profile.data else []
 
-    # Gerçek trend çek (niche'e göre filtreli)
-    import random
-    from datetime import timedelta
-    from routes.trends import NICHE_KEYWORDS
+    if not niches:
+        raise HTTPException(status_code=400, detail="En az 1 ilgi alanı seçmelisiniz")
 
+    # Trend çek
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
     trend_query = sb.table("trends") \
         .select("topic, summary, keywords") \
@@ -358,9 +358,6 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         .limit(20) \
         .execute()
 
-    if not niches:
-        raise HTTPException(status_code=400, detail="En az 1 ilgi alanı seçmelisiniz")
-
     all_trends = trend_query.data or []
     chosen_trend = None
 
@@ -369,7 +366,6 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         for n in niches:
             niche_kws.extend(NICHE_KEYWORDS.get(n, []))
         niche_kws_lower = [kw.lower() for kw in niche_kws]
-
         matching = [t for t in all_trends if any(
             nk in (t.get("topic", "") + " ".join(t.get("keywords", []))).lower()
             for nk in niche_kws_lower
@@ -381,79 +377,104 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         topic_str = chosen_trend["topic"]
         trend_context = f'Güncel trend: "{chosen_trend["topic"]}". Özet: {chosen_trend.get("summary", "")}'
     else:
-        # Evergreen fallback: trend yoksa niche bazlı zamansız içerik
-        niche_labels = {n["slug"]: n["label"] for n in NICHE_TAXONOMY}
-        niche_names = [niche_labels.get(n, n) for n in niches[:3]]
+        niche_labels_map = {n["slug"]: n["label"] for n in NICHE_TAXONOMY}
+        niche_names = [niche_labels_map.get(n, n) for n in niches[:3]]
         fallback_niche = random.choice(niches) if niches else "teknoloji"
-        topic_str = niche_labels.get(fallback_niche, fallback_niche)
-        trend_context = f'Bugün {", ".join(niche_names)} alanında spesifik bir gündem yok. Kullanıcının bu alandaki uzmanlığını kullanarak zamansız (evergreen), sektörel bir tavsiye veya tespit tweeti üret. Genel geçer motivasyon değil, gerçek sektörel bilgi ver.'
+        topic_str = niche_labels_map.get(fallback_niche, fallback_niche)
+        trend_context = f'{", ".join(niche_names)} alanında zamansız, sektörel bir tespit tweeti üret. Genel motivasyon değil, gerçek bilgi.'
 
-    avoid_str = ', '.join(body.avoid[:5]) if body.avoid else ''
-    principles_str = ', '.join(body.principles[:5]) if body.principles else ''
+    # Voice section: dominant tonlar + few-shot örnekler
+    voice_parts = []
 
-    # Tone voice guides (dominant tonların ses kılavuzu)
-    from prompts.builder_v3 import TONE_VOICE_GUIDES, CONTENT_ARCHITECTURE
-    sorted_t = sorted(active.items(), key=lambda x: -x[1])
-    voice_section = ""
-
-    # Audience guide
     if body.target_audience:
         aud_guides = {
             "beginners": "HEDEF KİTLE: Yeni başlayanlar. Basit dil, sıfır jargon.",
-            "professionals": "HEDEF KİTLE: Sektör profesyonelleri. Teknik derinlik, 101 seviyesi değil.",
+            "professionals": "HEDEF KİTLE: Sektör profesyonelleri. Teknik derinlik.",
             "clevel": "HEDEF KİTLE: C-Level yöneticiler. Stratejik, ROI odaklı, kısa.",
-            "founders": "HEDEF KİTLE: Girişimciler/yatırımcılar. Büyüme, metrik, cesur öngörü.",
+            "founders": "HEDEF KİTLE: Girişimciler. Büyüme, metrik, cesur öngörü.",
         }
         aud = aud_guides.get(body.target_audience)
         if aud:
-            voice_section += f"\n{aud}\n"
+            voice_parts.append(aud)
+
     for key, val in sorted_t[:2]:
         guide = TONE_VOICE_GUIDES.get(key)
         if guide:
-            voice_section += f"\n**ANA TON: %{val} {guide['label']}**\nSes: {guide['voice']}\nHook: {guide['hook']}\n"
+            voice_parts.append(f"ANA TON %{val} {guide['label']}: {guide['voice']}")
 
-    # Sentez ipucu
     if len(sorted_t) >= 2:
         l1 = TONE_VOICE_GUIDES.get(sorted_t[0][0], {}).get("label", sorted_t[0][0])
         l2 = TONE_VOICE_GUIDES.get(sorted_t[1][0], {}).get("label", sorted_t[1][0])
-        voice_section += f"\nSENTEZ: {l1} + {l2} = tek bir ruh hali. Bipolar davranma.\n"
+        voice_parts.append(f"SENTEZ: {l1} + {l2} = tek tutarlı ses. Bipolar olma.")
+
+    # Few-shot: dominant tonlara göre örnek seç
+    examples = []
+    for key, _ in sorted_t[:2]:
+        examples.extend(FEW_SHOT_EXAMPLES.get(key, []))
+    if not examples:
+        examples = FEW_SHOT_EXAMPLES.get("witty", [])
+    examples_block = "\n".join(f"  {i+1}. {ex}" for i, ex in enumerate(examples[:3]))
+
+    principles_str = ', '.join(body.principles[:5]) if body.principles else ''
+    avoid_str = ', '.join(body.avoid[:5]) if body.avoid else ''
+
+    voice_section = "\n".join(voice_parts)
 
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": f"""Kullanıcının marka sesiyle, güncel bir trend hakkında tek bir tweet üret.
+                {"role": "system", "content": f"""Tek bir tweet üret. Sadece tweet metnini döndür, başka hiçbir şey yazma.
 
 {trend_context}
 
+SES:
 {voice_section}
 
-{f'ZORUNLU İLKELER: {principles_str}' if principles_str else ''}
-{f'KULLANICI YASAKLARI: {avoid_str}' if avoid_str else ''}
+{f'İLKELER: {principles_str}' if principles_str else ''}
+{f'YASAKLAR: {avoid_str}' if avoid_str else ''}
 
-{CONTENT_ARCHITECTURE}
+ÖRNEK TWEETLER (bu ritimde ve formatta yaz, kopyalama):
+{examples_block}
 
-KIRILMAZ YASAKLAR:
-- Emoji YASAK. Hashtag YASAK.
-- AI şablon kalıpları YASAK ("Unutmayın", "Sonuç olarak", "İşte size")
-- Ucuz etkileşim tuzakları YASAK ("Siz ne düşünüyorsunuz?", "Katılıyor musunuz?")
-- Genel geçer konular YASAK (kahve, ofis, pazartesi)
-- Ana fikri özetleme. Tespit et ve BIRAK.
-- Clickbait, üç nokta, "İşin sırrı..." YASAK.
-
-ZORUNLU:
-- Max 280 karakter
+KURALLAR:
+- Tam olarak yukarıdaki örneklerin ritmi ve formatında yaz
+- Setup → boşluk → punchline yapısı kur
+- Max 280 karakter. Emoji ve hashtag YASAK
+- AI kalıpları ("Unutmayın", "Sonuç olarak") YASAK
+- Tespitini yap ve BIRAK. Açıklama ekleme.
 - Sadece tweet metnini döndür"""},
-                {"role": "user", "content": f'{trend_context}\n\nBu trend hakkında DNA ile bir tweet üret.'}
+                {"role": "user", "content": f"Konu: {topic_str}"}
             ],
             temperature=0.85,
             max_tokens=150,
         )
         content = response.choices[0].message.content.strip().strip('"')
+
+        # Draft'ı daily_drafts'a kaydet (bridge to /create)
+        draft_id = str(uuid.uuid4())
+        try:
+            sb.table("daily_drafts").insert({
+                "id": draft_id,
+                "user_id": user.id,
+                "content": content,
+                "platform": "twitter",
+                "status": "pending",
+                "source": "dna_test",
+                "trend_topic": chosen_trend["topic"] if chosen_trend else topic_str,
+                "trend_summary": chosen_trend.get("summary") if chosen_trend else None,
+                "insight": f"DNA test ile üretildi",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }).execute()
+        except Exception as e:
+            logger.warning(f"DNA test draft save error (non-fatal): {e}")
+            draft_id = None
+
         return {
             "success": True,
             "content": content,
-            "trend_topic": chosen_trend["topic"] if chosen_trend else None,
+            "trend_topic": chosen_trend["topic"] if chosen_trend else topic_str,
+            "draft_id": draft_id,
         }
     except Exception as e:
         logger.error(f"DNA test error: {e}")

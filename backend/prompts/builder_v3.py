@@ -138,13 +138,10 @@ def _extract_tone_essence(tone_id: str) -> str:
 
 
 BASE_PROHIBITIONS = """
-### Kırılmaz Yasaklar (her zaman geçerli)
-- "Unutmayın ki...", "Sonuç olarak...", "İşte size..." gibi AI şablon kalıpları YASAK
-- "Siz ne düşünüyorsunuz?", "Yorumlarınızı bekliyorum" gibi ucuz etkileşim tuzakları YASAK
-- Hashtag spam YASAK (max 1, tercihen 0)
-- Aşırı emoji YASAK (max 1, tercihen 0)
-- Üç nokta (...) ile biten gizemli cümleler YASAK
-- "İşin sırrı...", "Ama aslında..." gibi clickbait yapılar YASAK
+### Kırılmaz Yasaklar
+- AI kalıpları YASAK: "Unutmayın ki", "Sonuç olarak", "İşte size", "Siz ne düşünüyorsunuz?"
+- Emoji, hashtag, üç nokta (...), clickbait ("İşin sırrı...") YASAK
+- Tespitini yap ve BIRAK. Açıklama, özet, soru ile bitirme.
 """
 
 # ═══════════════════════════════════════════
@@ -189,31 +186,46 @@ TONE_VOICE_GUIDES = {
 # ═══════════════════════════════════════════
 
 CONTENT_ARCHITECTURE = """
-### İçerik Mimarisi (Twitter Native Kuralları)
+### İçerik Mimarisi
 
-**HOOK (Kanca):**
-İlk cümle scroll durdurucu olmalı. Düz giriş YASAK. Zıtlık, iddia, soru veya şaşırtıcı veriyle aç.
-
-**SENTEZ KURALI (Bipolar Yapay Zeka Sendromu YASAK):**
-Birden fazla ton aktifse bunları ayrı ayrı cümleler olarak değil, TEK BİR RUH HALİNDE sentezle.
-Örnek: Agresif + Esprili = karanlık ve alaycı (sarcastic), Samimi + Bilgi Verici = erişilebilir uzman.
-Tek bir tutarlı insan sesi çıkar, bipolar davranma.
-
-**RİTİM (Punchline Formülü):**
-Twitter formatında 3 cümleyi yan yana blok halinde yazma.
-Setup (kurulum) yap → satır boşluğu bırak → Punchline (vurucu tespit) indir.
-Nefes alan, ritmik bir yapı kur. Blok metin = ölüm.
-
-**SHOW DON'T TELL (Göster, Söyleme):**
-Ana fikri asla özetleme. Esprini veya tespitini yap ve ORADA BIRAK.
-"Yani kısacası...", "Anlatmak istediğim..." gibi açıklamalar YASAK.
-Okuyucunun zekasına güven. O boşluğu zihninde doldursun.
-
-**KUSURLUlUK İLLÜZYONU (Anti-Grammar):**
-Aşırı resmi ve kusursuz dilbilgisinden kaçın.
-Bazen cümle sonuna nokta koyma. Küçük harfle başla.
-Gerçek bir insanın aceleyle attığı organik bir tweet gibi hissettir.
+**RİTİM:** Setup → satır boşluğu → Punchline. Blok metin yazma, nefes ver.
+**SENTEZ:** Birden fazla ton varsa TEK ruh hali yarat (agresif+esprili = sarcastic). Bipolar olma.
+**SHOW DON'T TELL:** Tespitini yap ve BIRAK. "Yani kısacası" diye açıklama.
+**KUSURLULUK:** Küçük harfle başla, bazen nokta koyma. Organik hissettir.
 """
+
+# ═══════════════════════════════════════════
+# FEW-SHOT EXAMPLES — Her ton için viral tweet örnekleri
+# AI kuraldan çok örnekten öğrenir. Bunları kopyalama ama ritimlerini taklit et.
+# ═══════════════════════════════════════════
+
+FEW_SHOT_EXAMPLES = {
+    "witty": [
+        "herkes yapay zekadan iş kaybetmekten korkuyor\n\nkardeşim sen zaten 4 saat Excel'e bakıp 2 satır yazıyorsun, yapay zeka seni değil sen yapay zekayı kurtarırsın",
+        "startup kurucuları \"başarısızlık öğreticidir\" diyor\n\nöğretici olan senin 3. pivot'un değil, yatırımcının yüz ifadesi",
+        "linkedinde \"open to work\" yazanların %90'ı aslında open to compliment",
+    ],
+    "aggressive": [
+        "herkes AI wrapper yapıp \"SaaS kurdum\" diyor\n\nbir API key'i .env'e yazmak seni founder yapmıyor",
+        "\"network'ün net worth'ündür\" diyen adamın network'ü 3 tane LinkedIn motivasyon hesabı",
+        "Turkish startup ekosistemi: aynı 50 kişi birbirinin eventine gidip \"ekosistem büyüyor\" diyor",
+    ],
+    "informative": [
+        "OpenAI'ın yıllık geliri 2 milyar doları geçti ama hala kar etmiyor\n\nbu detayı atlayan herkes 2000'lerin dotcom balonunu da atlamış demektir",
+        "RAG sistemlerinde chunk size 512 token üstüne çıkınca retrieval kalitesi %40 düşüyor\n\nkoca dokümanı olduğu gibi embedding'e atıp \"çalışmıyor\" diyenler burada mı",
+        "Türkiye'de SaaS churn rate ortalaması %8-12\n\nABD'de bu %5. Fark onboarding'de, üründe değil",
+    ],
+    "friendly": [
+        "geçen hafta müşteriyle toplantıdaydım, adam \"biz aslında ne istediğimizi bilmiyoruz\" dedi\n\nen dürüst brief buydu. keşke herkes böyle başlasa",
+        "junior developer'ken her PR'da kalp krizi geçirirdim\n\nşimdi senior'ım, hala geçiriyorum ama artık bunu normalize ettim",
+        "bir projede en çok zaman alan şey kod yazmak değil\n\nherkesin \"bence şöyle olmalı\"sını dinleyip ortak bir \"tamam şöyle yapalım\"a ulaşmak",
+    ],
+    "inspirational": [
+        "herkes product-market fit arıyor\n\nasıl zor olan founder-problem fit. senin gerçekten umursadığın bir problem mi bu, yoksa pazar büyük diye mi girdin",
+        "10 yıl önce \"mobil first\" dediler herkes güldü\n\nşimdi \"AI first\" diyenlere de gülüyorlar. pattern aynı, sadece gülenlerin ömrü kısalıyor",
+        "en iyi kariyer hamlelerim hep \"mantıksız\" denen şeylerdi\n\nspreadsheet'ler güvenli hissettirir ama hayat spreadsheet'te yaşanmıyor",
+    ],
+}
 
 
 def _build_brand_voice_section(brand_voice: dict = None) -> str:
@@ -283,10 +295,22 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
     }
     if principles:
         p_labels = [principle_labels.get(p, p) for p in principles[:5]]
-        parts.append(f"ZORUNLU İLKELER (her içerikte uygulanmalı): {', '.join(p_labels)}")
+        parts.append(f"İLKELER: {', '.join(p_labels)}")
     if avoid:
         a_labels = [avoid_labels.get(a, a) for a in avoid[:5]]
-        parts.append(f"YASAKLAR (kesinlikle kullanma, ihlal edersen içerik reddedilir): {', '.join(a_labels)}")
+        parts.append(f"YASAKLAR: {', '.join(a_labels)}")
+
+    # Few-shot örnekler (dominant tonlara göre)
+    if active_tones:
+        sorted_for_examples = sorted(active_tones.items(), key=lambda x: -x[1])
+        examples = []
+        for key, _ in sorted_for_examples[:2]:
+            examples.extend(FEW_SHOT_EXAMPLES.get(key, []))
+        if examples:
+            parts.append("\nÖRNEK TWEETLER (bu ritimde yaz, kopyalama):")
+            for i, ex in enumerate(examples[:3], 1):
+                parts.append(f"  {i}. {ex}")
+
     parts.append(BASE_PROHIBITIONS)
     return chr(10).join(parts)
 
@@ -544,4 +568,4 @@ def build_final_prompt_v3(
     return "\n\n---\n\n".join(sections)
 
 
-__all__ = ["build_final_prompt_v3"]
+__all__ = ["build_final_prompt_v3", "FEW_SHOT_EXAMPLES"]

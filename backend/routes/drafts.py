@@ -1,7 +1,8 @@
-"""Magic Morning Daily Drafts API.
+"""Daily Drafts API.
 
 GET  /drafts/today     — Bugünün taslakları (JIT: yoksa üretir)
-PUT  /drafts/{id}      — Taslak güncelle (edit/dismiss)
+GET  /drafts/{id}      — Tek taslak getir (bridge: Creator Hub → /create)
+PUT  /drafts/{id}      — Taslak güncelle (edit/dismiss/published)
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
 from middleware.auth import require_auth
@@ -36,6 +37,29 @@ async def get_today_drafts(
     except Exception as e:
         logger.error(f"Magic Morning error: {e}")
         raise HTTPException(status_code=500, detail="Taslaklar oluşturulamadı")
+
+
+@router.get("/{draft_id}")
+async def get_draft(draft_id: str, user=Depends(require_auth)):
+    """Tek taslak getir. Bridge akışında /create sayfası bunu çeker."""
+    sb = get_supabase()
+    try:
+        result = sb.table("daily_drafts") \
+            .select("*") \
+            .eq("id", draft_id) \
+            .eq("user_id", user.id) \
+            .limit(1) \
+            .execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Taslak bulunamadı")
+
+        return {"success": True, "draft": result.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Draft get error: {e}")
+        raise HTTPException(status_code=500, detail="Taslak getirilemedi")
 
 
 @router.put("/{draft_id}")
