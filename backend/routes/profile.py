@@ -349,7 +349,7 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
     from routes.trends import NICHE_KEYWORDS
 
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
-    trend_query = supabase.table("trends") \
+    trend_query = sb.table("trends") \
         .select("topic, summary, keywords") \
         .eq("is_visible", True) \
         .gte("created_at", cutoff) \
@@ -381,10 +381,12 @@ async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
         topic_str = chosen_trend["topic"]
         trend_context = f'Güncel trend: "{chosen_trend["topic"]}". Özet: {chosen_trend.get("summary", "")}'
     else:
+        # Evergreen fallback: trend yoksa niche bazlı zamansız içerik
         niche_labels = {n["slug"]: n["label"] for n in NICHE_TAXONOMY}
+        niche_names = [niche_labels.get(n, n) for n in niches[:3]]
         fallback_niche = random.choice(niches) if niches else "teknoloji"
         topic_str = niche_labels.get(fallback_niche, fallback_niche)
-        trend_context = f'Konu: {topic_str}'
+        trend_context = f'Bugün {", ".join(niche_names)} alanında spesifik bir gündem yok. Kullanıcının bu alandaki uzmanlığını kullanarak zamansız (evergreen), sektörel bir tavsiye veya tespit tweeti üret. Genel geçer motivasyon değil, gerçek sektörel bilgi ver.'
 
     avoid_str = ', '.join(body.avoid[:5]) if body.avoid else ''
     principles_str = ', '.join(body.principles[:5]) if body.principles else ''
