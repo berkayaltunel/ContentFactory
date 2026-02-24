@@ -429,17 +429,24 @@ export default function DashboardHome() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {magicDrafts.filter(d => d.status === "pending" || d.status === "edited").map((draft, i) => (
                     <div key={draft.id} className="relative group p-4 rounded-xl bg-card/60 border border-border/40 hover:border-violet-500/20 transition-all">
-                      {/* Trend badge */}
+                      {/* Trend badge (tıklanabilir) */}
                       {draft.trend_topic && (
-                        <div className="flex items-center gap-1.5 mb-2">
+                        <button onClick={() => navigate("/dashboard/trends")} className="flex items-center gap-1.5 mb-2 hover:opacity-80 transition-opacity cursor-pointer">
                           <TrendingUp className="h-3 w-3 text-violet-500" />
                           <span className="text-[10px] text-violet-400 font-medium truncate">{draft.trend_topic}</span>
-                        </div>
+                          <span className="text-[8px] text-violet-500/50 ml-0.5">→</span>
+                        </button>
                       )}
                       {/* Content */}
-                      <p className="text-sm leading-relaxed mb-3 line-clamp-4">{draft.content}</p>
+                      <p className="text-sm leading-relaxed mb-2 line-clamp-4">{draft.content}</p>
+                      {/* Trend Summary: neden bu konu */}
+                      {draft.trend_summary && (
+                        <p className="text-[10px] text-muted-foreground/60 italic mb-2 leading-relaxed">
+                          💡 {draft.trend_summary}
+                        </p>
+                      )}
                       {/* Insight */}
-                      {draft.insight && (
+                      {draft.insight && !draft.trend_summary && (
                         <p className="text-[10px] text-muted-foreground italic mb-3 flex items-start gap-1">
                           <Lightbulb className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
                           {draft.insight}
@@ -457,7 +464,7 @@ export default function DashboardHome() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/dashboard/create?platform=${draft.platform || "twitter"}&topic=${encodeURIComponent(draft.trend_topic || "")}&draft=${encodeURIComponent(draft.content)}`)}
+                          onClick={() => navigate(`/dashboard/create?draft_id=${draft.id}`)}
                           className="h-8 px-3 text-[11px]"
                         >
                           <PenLine className="h-3 w-3 mr-1" /> Düzenle
