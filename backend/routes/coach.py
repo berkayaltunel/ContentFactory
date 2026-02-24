@@ -177,12 +177,29 @@ async def create_weekly_plan(
         top_tone = tones.most_common(1)[0][0] if tones else "natural"
         least_persona = personas.most_common()[-1][0] if len(personas) > 1 else None
 
+        # Creator Hub profile
+        profile_res = sb.table("user_settings") \
+            .select("display_name, niches, brand_voice") \
+            .eq("user_id", user.id) \
+            .limit(1) \
+            .execute()
+        profile = profile_res.data[0] if profile_res.data else {}
+        creator_name = profile.get("display_name") or user.email.split("@")[0]
+        creator_niches = profile.get("niches") or []
+        brand_voice = profile.get("brand_voice") or {}
+        bv_tones = brand_voice.get("tones", {})
+        active_bv = {k: v for k, v in bv_tones.items() if v > 0}
+        bv_str = ", ".join(f"%{v} {k}" for k, v in sorted(active_bv.items(), key=lambda x: -x[1])) if active_bv else "ayarlanmamış"
+
         user_context = f"""Kullanıcı bilgisi:
+- İsim: {creator_name}
 - En çok kullandığı karakter: {top_persona}
 - En çok kullandığı ton: {top_tone}
 - En az kullandığı karakter: {least_persona or 'bilinmiyor'}
 - Toplam üretim: {len(gens)} (son 30 içinde)
-- Niche: {body.niche}"""
+- Niche: {body.niche}
+- İlgi alanları: {', '.join(creator_niches) if creator_niches else 'belirtilmemiş'}
+- Marka tonu: {bv_str}"""
 
         # Bugünden başlayan 7 günlük sıralama
         DAY_NAMES_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
@@ -198,7 +215,7 @@ async def create_weekly_plan(
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": f"""Sen bir sosyal medya stratejistisin. Kullanıcı için kişiselleştirilmiş 7 günlük Twitter içerik planı oluştur.
+                {"role": "system", "content": f"""Sen {creator_name} adlı kullanıcının kişisel sosyal medya stratejistisin. Sıcak ve enerjik bir hitapla (Merhaba {creator_name}!) başla. Kişiselleştirilmiş 7 günlük Twitter içerik planı oluştur.
 
 {user_context}
 

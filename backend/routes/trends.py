@@ -63,6 +63,65 @@ SINCE_DELTAS = {
 }
 
 
+# Niche -> Trend keyword mapping (OR semantics)
+NICHE_KEYWORDS = {
+    "ai": ["AI", "yapay zeka", "machine learning", "LLM", "GPT", "deep learning", "OpenAI", "Anthropic", "model"],
+    "saas": ["SaaS", "subscription", "cloud", "B2B", "ARR", "churn"],
+    "startup": ["startup", "girişim", "funding", "VC", "seed", "YC"],
+    "marketing": ["marketing", "pazarlama", "SEO", "growth", "conversion"],
+    "crypto": ["crypto", "kripto", "Bitcoin", "Ethereum", "blockchain", "Web3", "DeFi"],
+    "ecommerce": ["e-ticaret", "ecommerce", "marketplace", "Shopify"],
+    "design": ["tasarım", "design", "UI", "UX", "Figma"],
+    "dev": ["developer", "yazılım", "GitHub", "open source", "framework", "API"],
+    "data": ["data", "veri", "analytics", "SQL", "pipeline"],
+    "content": ["içerik", "content", "creator", "influencer", "viral"],
+    "video": ["video", "YouTube", "streaming"],
+    "gaming": ["gaming", "oyun", "esports", "Steam"],
+    "finance": ["finans", "borsa", "yatırım", "investment", "ekonomi"],
+    "health": ["sağlık", "health", "wellness", "biotech"],
+    "fitness": ["fitness", "spor", "antrenman"],
+    "food": ["yemek", "food", "restoran", "gastronomi"],
+    "travel": ["seyahat", "travel", "turizm"],
+    "education": ["eğitim", "education", "kurs", "online learning"],
+    "music": ["müzik", "music", "Spotify"],
+    "fashion": ["moda", "fashion", "stil"],
+    "photography": ["fotoğraf", "photography", "kamera"],
+    "realestate": ["emlak", "real estate", "konut"],
+    "law": ["hukuk", "KVKK", "GDPR", "regülasyon"],
+    "hr": ["HR", "işe alım", "hiring", "remote work"],
+    "sustainability": ["sürdürülebilirlik", "iklim", "ESG"],
+    "politics": ["politika", "seçim", "gündem"],
+    "science": ["bilim", "science", "araştırma", "uzay", "NASA"],
+    "automotive": ["otomotiv", "EV", "Tesla", "elektrikli"],
+    "parenting": ["ebeveyn", "çocuk", "parenting"],
+    "pets": ["evcil", "kedi", "köpek"],
+    "diy": ["DIY", "kendin yap", "maker"],
+    "motivation": ["motivasyon", "kişisel gelişim", "mindset"],
+    "books": ["kitap", "book", "okuma"],
+    "cinema": ["sinema", "film", "dizi", "Netflix"],
+    "art": ["sanat", "galeri", "sergi"],
+    "news": ["haber", "son dakika", "breaking"],
+    "security": ["güvenlik", "siber", "hack", "malware"],
+    "nocode": ["no-code", "low-code", "n8n", "Zapier", "automation"],
+    "freelance": ["freelance", "uzaktan", "remote"],
+    "community": ["topluluk", "community", "Discord"],
+}
+
+
+def _get_niche_keywords(user_id: str, sb) -> list:
+    """Fetch user niches and expand to keyword list."""
+    try:
+        result = sb.table("user_settings").select("niches").eq("user_id", user_id).limit(1).execute()
+        if not result.data or not result.data[0].get("niches"):
+            return []
+        keywords = []
+        for niche in result.data[0]["niches"]:
+            keywords.extend(NICHE_KEYWORDS.get(niche, []))
+        return keywords
+    except Exception:
+        return []
+
+
 @router.get("")
 async def list_trends(
     category: Optional[str] = Query(None),
@@ -70,6 +129,7 @@ async def list_trends(
     show_hidden: bool = Query(False, description="Show hidden (low-score) trends"),
     archived: bool = Query(False, description="Show archived trends"),
     limit: int = Query(20, le=100),
+    niche_filter: bool = Query(False, description="Filter by user niches"),
     user=Depends(require_auth),
 ):
     """Trend listesi. Default olarak sadece is_visible=true olanları döner."""
@@ -93,7 +153,25 @@ async def list_trends(
             query = query.gte("created_at", cutoff)
 
         result = query.execute()
-        return {"trends": result.data}
+        trends = result.data or []
+        
+        # Niche filtering (OR: trend matches ANY user niche keyword)
+        if niche_filter:
+            niche_kws = _get_niche_keywords(user.id, sb)
+            if niche_kws:
+                niche_kws_lower = [kw.lower() for kw in niche_kws]
+                def matches_niche(t):
+                    t_kws = [k.lower() for k in (t.get("keywords") or [])]
+                    if any(nk in tk or tk in nk for nk in niche_kws_lower for tk in t_kws):
+                        return True
+                    topic_lower = (t.get("topic") or "").lower()
+                    return any(nk in topic_lower for nk in niche_kws_lower)
+                filtered = [t for t in trends if matches_niche(t)]
+                if len(filtered) < 3:
+                    filtered.extend([t for t in trends if t not in filtered][:max(0, 5 - len(filtered))])
+                trends = filtered
+        
+        return {"trends": trends}
     except Exception as e:
         logger.error(f"Trends list error: {e}")
         raise HTTPException(status_code=500, detail="Bir hata oluştu")
