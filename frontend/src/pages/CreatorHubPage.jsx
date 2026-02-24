@@ -427,6 +427,8 @@ export default function CreatorHubPage() {
   const [dirty, setDirty] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeInsight, setAnalyzeInsight] = useState("");
+  const [dnaPreview, setDnaPreview] = useState("");
+  const [dnaLoading, setDnaLoading] = useState(false);
   const fileInputRef = useRef(null);
 
   const toneTotal = Object.values(tones).reduce((a, b) => a + b, 0);
@@ -497,6 +499,17 @@ export default function CreatorHubPage() {
     } catch (err) {
       toast.error(err.response?.data?.detail || "Analiz başarısız");
     } finally { setAnalyzing(false); }
+  };
+
+  const handleDnaTest = async () => {
+    setDnaLoading(true);
+    setDnaPreview("");
+    try {
+      const res = await api.post(`${API}/profile/dna-test`, { tones, principles, avoid });
+      setDnaPreview(res.data?.content || "");
+    } catch (err) {
+      toast.error("Örnek üretilemedi");
+    } finally { setDnaLoading(false); }
   };
 
   const handleSave = async () => {
@@ -592,7 +605,7 @@ export default function CreatorHubPage() {
           <GlassCard className="p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[9px] font-semibold text-zinc-600 uppercase tracking-[0.2em]">Bağlı Hesaplar</h3>
-              <button onClick={() => navigate("/settings")} className="flex items-center gap-1 text-[9px] text-zinc-600 hover:text-violet-400 transition-colors uppercase tracking-wider">
+              <button onClick={() => { toast.info("Yeni hesap eklemek için soldaki menüden ⚙️ Ayarlar'ı açın"); }} className="flex items-center gap-1 text-[9px] text-zinc-600 hover:text-violet-400 transition-colors uppercase tracking-wider">
                 <Link2 className="w-3 h-3" /> Ekle
               </button>
             </div>
@@ -735,6 +748,41 @@ export default function CreatorHubPage() {
               </Badge>
             </div>
             <NicheSelector taxonomy={taxonomy} selected={niches} onChange={v => { setNiches(v); markDirty(); }} max={MAX_NICHES} />
+          </GlassCard>
+
+          {/* DNA TEST — Instant Gratification */}
+          <GlassCard className="p-6" hover={false}>
+            <button
+              onClick={handleDnaTest}
+              disabled={dnaLoading || !isExact}
+              className={cn(
+                "w-full relative overflow-hidden rounded-xl border px-4 py-3.5 text-sm font-medium transition-all duration-500",
+                dnaLoading
+                  ? "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300 cursor-wait"
+                  : "border-fuchsia-500/20 bg-gradient-to-r from-fuchsia-500/10 via-violet-500/10 to-fuchsia-500/10 text-fuchsia-300 hover:border-fuchsia-500/40 hover:shadow-[0_0_30px_rgba(217,70,239,0.15)] hover:-translate-y-0.5"
+              )}
+            >
+              {!dnaLoading && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full animate-[shimmer_3s_ease-in-out_infinite]" />}
+              <div className="relative flex items-center justify-center gap-2">
+                {dnaLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /><span>Sesinle yazıyorum...</span></>
+                ) : (
+                  <><span className="text-lg">🧬</span><span>Bu DNA ile Örnek Tweet Üret</span></>
+                )}
+              </div>
+            </button>
+            {dnaPreview && (
+              <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] animate-[fadeIn_0.5s_ease-out]">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.15em] mb-2">Senin Sesinle</p>
+                <p className="text-sm text-white/80 leading-relaxed">{dnaPreview}</p>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => { navigator.clipboard.writeText(dnaPreview); toast.success("Kopyalandı!"); }}
+                    className="text-[10px] text-violet-400 hover:text-violet-300 transition-colors">Kopyala</button>
+                  <button onClick={handleDnaTest}
+                    className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">Tekrar Üret</button>
+                </div>
+              </div>
+            )}
           </GlassCard>
         </div>
       </div>

@@ -309,6 +309,58 @@ async def update_avatar(body: AvatarUpdate, user=Depends(require_auth), supabase
 # AI TONE ANALYSIS (Twitter → Brand Voice)
 # ═══════════════════════════════════════════
 
+class DnaTestRequest(BaseModel):
+    tones: dict = {}
+    principles: list = []
+    avoid: list = []
+
+
+@router.post("/dna-test")
+async def dna_test(body: DnaTestRequest, user=Depends(require_auth)):
+    """DNA ile örnek tweet üret — instant gratification."""
+    from server import openai_client
+
+    tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili",
+                   "aggressive": "Agresif", "inspirational": "İlham Verici"}
+    active = {k: v for k, v in body.tones.items() if v and v > 0}
+    sorted_t = sorted(active.items(), key=lambda x: -x[1])
+    tone_str = ", ".join(f"%{v} {tone_labels.get(k, k)}" for k, v in sorted_t[:3])
+
+    # Niche context
+    sb = get_supabase()
+    profile = sb.table("user_settings").select("niches").eq("user_id", user.id).limit(1).execute()
+    niches = profile.data[0].get("niches", []) if profile.data else []
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": f"""Kullanıcının marka sesiyle tek bir tweet üret.
+
+Ton: {tone_str}
+İlkeler: {', '.join(body.principles[:5]) if body.principles else 'Yok'}
+Kaçınılacaklar: {', '.join(body.avoid[:5]) if body.avoid else 'Yok'}
+Nişler: {', '.join(niches[:3]) if niches else 'Genel'}
+
+KURALLAR:
+- Max 280 karakter
+- Emoji kullanma
+- AI klişeleri YASAK
+- Ton dağılımına SADIK kal (baskın ton belirgin olmalı)
+- Doğal, kişisel, insan gibi yaz
+- Sadece tweet metnini döndür, başka bir şey yazma"""},
+                {"role": "user", "content": "Bu DNA ile bir tweet üret."}
+            ],
+            temperature=0.8,
+            max_tokens=150,
+        )
+        content = response.choices[0].message.content.strip().strip('"')
+        return {"success": True, "content": content}
+    except Exception as e:
+        logger.error(f"DNA test error: {e}")
+        raise HTTPException(status_code=500, detail="Örnek üretilemedi")
+
+
 class AnalyzeToneRequest(BaseModel):
     twitter_username: Optional[str] = None  # Boşsa bağlı hesaptan alır
 

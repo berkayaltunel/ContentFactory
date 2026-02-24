@@ -152,8 +152,16 @@ def _build_brand_voice_section(brand_voice: dict = None) -> str:
     parts.append("Bu kullanıcının genel yazım eğilimidir. Persona ve Ton seçimleri bunu override edebilir.")
     if active_tones:
         tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili", "aggressive": "Agresif", "inspirational": "İlham Verici"}
-        tone_parts = [f"%{v} {tone_labels.get(k, k)}" for k, v in sorted(active_tones.items(), key=lambda x: -x[1])]
-        parts.append(f"Ton dengesi: {', '.join(tone_parts)}")
+        sorted_tones = sorted(active_tones.items(), key=lambda x: -x[1])
+        # Focus: sadece dominant tonları vurgula, AI'ın kafası karışmasın
+        dominant = sorted_tones[:2]  # En güçlü 2 ton = ana karakter
+        minor = sorted_tones[2:]     # Geri kalan = hafif dokunuş
+        dom_parts = [f"**%{v} {tone_labels.get(k, k)}**" for k, v in dominant]
+        parts.append(f"ANA KARAKTER: {', '.join(dom_parts)}")
+        if minor:
+            min_parts = [f"%{v} {tone_labels.get(k, k)}" for k, v in minor if v >= 10]
+            if min_parts:
+                parts.append(f"Hafif dokunuş: {', '.join(min_parts)}")
     # Pre-defined chip key → label mapping
     principle_labels = {
         "concise": "Kısa ve Öz", "data-driven": "Veri Odaklı", "question-hook": "Soru ile Başla",
