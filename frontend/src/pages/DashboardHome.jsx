@@ -456,6 +456,14 @@ export default function DashboardHome() {
                         </Button>
                         <Button
                           size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/dashboard/create?platform=${draft.platform || "twitter"}&topic=${encodeURIComponent(draft.trend_topic || "")}&draft=${encodeURIComponent(draft.content)}`)}
+                          className="h-8 px-3 text-[11px]"
+                        >
+                          <PenLine className="h-3 w-3 mr-1" /> Düzenle
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="ghost"
                           onClick={() => handleDraftDismiss(draft.id)}
                           className="h-8 px-2 text-muted-foreground/50 hover:text-muted-foreground text-[11px]"

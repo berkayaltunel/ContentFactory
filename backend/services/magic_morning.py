@@ -73,6 +73,67 @@ def _select_diverse_trends(trends: list, count: int = 3) -> list:
     return selected[:count]
 
 
+async def _generate_evergreen_drafts(user_id: str, niches: list, brand_voice: dict, display_name: str, platform: str) -> dict:
+    """Trend yokken evergreen (zamansız) taslaklar üret."""
+    sb = _get_supabase()
+    tones = brand_voice.get("tones", {})
+    active_tones = {k: v for k, v in tones.items() if v > 0}
+    tone_labels = {"informative": "Bilgi Verici", "friendly": "Samimi", "witty": "Esprili",
+                   "aggressive": "Agresif", "inspirational": "İlham Verici"}
+    tone_str = ", ".join(f"%{v} {tone_labels.get(k, k)}" for k, v in sorted(active_tones.items(), key=lambda x: -x[1]))
+    niche_str = ", ".join(niches[:5]) if niches else "genel"
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": f"""Bugün gündemde öne çıkan bir trend yok. Kullanıcının nişlerine ve sesine uygun 3 zamansız (evergreen) tweet taslağı üret.
+
+Niş alanları: {niche_str}
+Ton dengesi: {tone_str}
+
+KURALLAR:
+- Zamansız, her zaman geçerli tavsiyeler/düşünceler
+- Kişisel deneyim veya sektörel bilgi odaklı
+- Twitter max 280 karakter
+- Emoji kullanma, doğal yaz
+- Her biri farklı açıdan
+
+JSON: {{"drafts": [{{"content": "...", "insight": "Neden bu konu her zaman geçerli"}}]}}"""},
+                {"role": "user", "content": "3 zamansız tweet taslağı üret."}
+            ],
+            temperature=0.8,
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(response.choices[0].message.content)
+        drafts_data = result.get("drafts", [])
+    except Exception as e:
+        logger.error(f"Evergreen generation error: {e}")
+        return {"drafts": [], "cached": False, "reason": "generation_failed"}
+
+    saved = []
+    for draft in drafts_data[:3]:
+        doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "trend_id": None,
+            "content": draft.get("content", ""),
+            "platform": platform,
+            "status": "pending",
+            "trend_topic": "💡 Zamansız Tavsiye",
+            "trend_summary": None,
+            "insight": draft.get("insight", ""),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            sb.table("daily_drafts").insert(doc).execute()
+            saved.append(doc)
+        except Exception as e:
+            logger.error(f"Evergreen draft save error: {e}")
+
+    return {"drafts": saved, "cached": False, "evergreen": True}
+
+
 async def generate_magic_morning(user_id: str, platform: str = "twitter") -> dict:
     """Kullanıcı için günlük taslaklar üret (JIT).
     
@@ -122,7 +183,8 @@ async def generate_magic_morning(user_id: str, platform: str = "twitter") -> dic
 
     trends = trend_query.data or []
     if not trends:
-        return {"drafts": [], "cached": False, "reason": "no_trends"}
+        # Evergreen fallback: trend yoksa DNA'ya uygun zamansız tavsiyeler üret
+        return await _generate_evergreen_drafts(user_id, niches, brand_voice, display_name, platform)
 
     # 4. Niche filtering (varsa)
     if niches:
